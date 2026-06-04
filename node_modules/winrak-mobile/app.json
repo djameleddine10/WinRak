@@ -5,69 +5,28 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "primaryColor": "#F5A623",
-
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#1A1A2E"
     },
-
-    "platforms": ["ios", "android"],
-
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "dz.winrak.app",
-      "buildNumber": "1",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "WinRak يحتاج موقعك لتحديد نقطة الانطلاق وإيجاد أقرب سائق.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "WinRak يحتاج موقعك للتتبع أثناء الرحلة.",
-        "NSCameraUsageDescription": "لرفع صور الوثائق المطلوبة.",
-        "NSPhotoLibraryUsageDescription": "لاختيار صورة للملف الشخصي.",
-        "NSMicrophoneUsageDescription": "لإرسال الملاحظات الصوتية في التقييم."
-      }
+      "bundleIdentifier": "dz.winrak.app"
     },
-
     "android": {
       "package": "dz.winrak.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A1A2E"
-      },
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
-      ],
-      "googleServicesFile": "./google-services.json"
+      }
     },
-
-    "plugins": [
-      "expo-router",
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "WinRak يحتاج موقعك للتتبع أثناء الرحلة."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#F5A623"
-        }
-      ]
-    ],
-
     "extra": {
-      "eas": {}
+      "eas": {
+        "projectId": "a03b3e3f-ee0d-4024-86d8-2f9b44c7f973"
+      }
     }
   }
 }
