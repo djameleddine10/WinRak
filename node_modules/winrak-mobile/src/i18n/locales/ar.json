@@ -1,0 +1,104 @@
+{
+  "app": {
+    "name": "وين راك",
+    "tagline": "وين راك؟ نجيك!"
+  },
+  "auth": {
+    "welcome": "مرحباً بك في وين راك",
+    "enterPhone": "أدخل رقم هاتفك",
+    "phonePlaceholder": "05XXXXXXXX",
+    "sendOtp": "إرسال رمز التحقق",
+    "enterOtp": "أدخل رمز التحقق",
+    "otpSent": "تم إرسال الرمز إلى {{phone}}",
+    "verify": "تحقق",
+    "resend": "إعادة الإرسال",
+    "resendIn": "إعادة الإرسال بعد {{seconds}} ثانية"
+  },
+  "home": {
+    "whereToGo": "وين تروح؟",
+    "requestRide": "اطلب سيارة",
+    "recentPlaces": "الأماكن الأخيرة",
+    "noDrivers": "لا يوجد سائقون قريبون حالياً"
+  },
+  "booking": {
+    "pickupPoint": "نقطة الانطلاق",
+    "destination": "الوجهة",
+    "chooseService": "اختر الخدمة",
+    "confirmBooking": "تأكيد الحجز",
+    "estimatedTime": "وقت الوصول المتوقع: {{minutes}} دقيقة",
+    "estimatedPrice": "السعر التقديري: {{price}} دج",
+    "services": {
+      "GO": "وين راك GO — اقتصادي",
+      "PLUS": "وين راك PLUS — مريح",
+      "XL": "وين راك XL — عائلي",
+      "SHE": "وين راك SHE — للسيدات",
+      "DELIVER": "وين راك DELIVER — توصيل"
+    }
+  },
+  "ride": {
+    "driverOnTheWay": "السائق في الطريق إليك",
+    "driverArrived": "السائق وصل!",
+    "rideInProgress": "الرحلة جارية",
+    "rideCompleted": "وصلت بسلام!",
+    "rideCancelled": "تم إلغاء الرحلة",
+    "callDriver": "اتصل بالسائق",
+    "chatDriver": "محادثة",
+    "cancelRide": "إلغاء الرحلة",
+    "sos": "طوارئ"
+  },
+  "rating": {
+    "rateDriver": "قيّم رحلتك",
+    "howWasRide": "كيف كانت رحلتك؟",
+    "cleanliness": "النظافة",
+    "professionalism": "الاحترافية",
+    "safety": "السلامة",
+    "punctuality": "الالتزام بالوقت",
+    "addComment": "أضف تعليقاً...",
+    "submit": "إرسال التقييم",
+    "skip": "تخطي"
+  },
+  "driver": {
+    "goOnline": "ابدأ العمل",
+    "goOffline": "إيقاف",
+    "newRequest": "طلب جديد!",
+    "accept": "قبول",
+    "reject": "رفض",
+    "arrivedAtPickup": "وصلت لنقطة الانطلاق",
+    "startRide": "ابدأ الرحلة",
+    "completeRide": "إتمام الرحلة",
+    "todayEarnings": "أرباح اليوم",
+    "totalTrips": "إجمالي الرحلات"
+  },
+  "contract": {
+    "title": "عقد الشراكة مع WinRak",
+    "profitSharing": "توزيع الأرباح",
+    "lossSharing": "تقاسم الخسائر",
+    "yourShare": "حصتك: {{percent}}%",
+    "winrakShare": "حصة WinRak: {{percent}}%",
+    "monthlyLossCap": "أقصى خسارة شهرية عليك: {{amount}} دج",
+    "coveredCases": "الحالات المغطاة",
+    "signContract": "توقيع العقد",
+    "iAgree": "أوافق على الشروط والأحكام"
+  },
+  "profile": {
+    "myProfile": "ملفي الشخصي",
+    "rideHistory": "سجل الرحلات",
+    "winPoints": "نقاط WinPoints",
+    "paymentMethods": "طرق الدفع",
+    "settings": "الإعدادات",
+    "support": "الدعم والمساعدة",
+    "logout": "تسجيل الخروج"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "save": "حفظ",
+    "back": "رجوع",
+    "next": "التالي",
+    "done": "تم",
+    "currency": "دج"
+  }
+}

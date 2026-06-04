@@ -1,0 +1,13 @@
+{
+  "name": "winrak-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend":    "cd backend && npm run dev",
+    "mobile":     "cd apps/mobile && npx expo start",
+    "dashboard":  "cd apps/web-dashboard && npm run dev",
+    "install:all": "cd backend && npm install && cd ../apps/web-dashboard && npm install",
+    "setup": "node scripts/setup.js"
+  },
+  "workspaces": ["backend", "apps/*", "shared"]
+}

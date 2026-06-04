@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --primary:   #1A1A2E;
+  --secondary: #F5A623;
+  --accent:    #00D4AA;
+  --error:     #FF4757;
+  --success:   #2ED573;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', 'Cairo', sans-serif;
+  background-color: #F8F9FA;
+  color: #2D3436;
+  margin: 0;
+  direction: rtl;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 3px; }
