@@ -17,6 +17,4 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-RUN npx prisma db push --accept-data-loss || true
-
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
+CMD ["npm", "run", "start:prod"]

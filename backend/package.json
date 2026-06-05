@@ -12,7 +12,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "setup": "npm run prisma:push && npx prisma generate && npm run prisma:seed",
-    "start:prod": "npm run build && node dist/index.js"
+    "start:prod": "npx prisma generate && npx prisma db push --accept-data-loss && node dist/index.js"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
