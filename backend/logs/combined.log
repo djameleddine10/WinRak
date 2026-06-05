@@ -98,3 +98,24 @@
 2026-06-04 16:18:45 [[32minfo[39m]: 🚖 WinRak API running on port 3000 — وين راك؟ نجيك!
 2026-06-04 16:18:45 [[32minfo[39m]: ✅ Database connected
 2026-06-04 16:18:45 [[32minfo[39m]: ✅ Redis connected (real)
+2026-06-05 00:29:01 [[32minfo[39m]: ::1 - - [04/Jun/2026:23:29:01 +0000] "GET /api/v1/admin/rides?limit=5 HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-06-05 00:29:01 [[32minfo[39m]: ::1 - - [04/Jun/2026:23:29:01 +0000] "GET /api/v1/admin/stats HTTP/1.1" 200 145 "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-06-05 00:29:03 [[32minfo[39m]: ::1 - - [04/Jun/2026:23:29:03 +0000] "GET /api/v1/admin/drivers HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-06-05 02:41:52 [[32minfo[39m]: ::ffff:192.168.1.4 - - [05/Jun/2026:01:41:52 +0000] "GET /api/v1/health HTTP/1.1" 404 152 "-" "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36"
+2026-06-05 10:49:16 [[32minfo[39m]: 📱 [DEV OTP] Phone: +213660000001 → Code: 732755
+2026-06-05 10:49:16 [[32minfo[39m]: ::1 - - [05/Jun/2026:09:49:16 +0000] "POST /api/v1/auth/send-otp HTTP/1.1" 200 89 "-" "curl/8.18.0"
+2026-06-05 10:54:10 [[32minfo[39m]: 🗄️  Using in-memory store (no Redis required for dev)
+2026-06-05 10:54:11 [[32minfo[39m]: 🚖 WinRak API running on port 3000 — وين راك؟ نجيك!
+2026-06-05 10:54:11 [[32minfo[39m]: ✅ Database connected
+2026-06-05 10:54:11 [[32minfo[39m]: ✅ Redis connected (real)
+2026-06-05 11:00:33 [[32minfo[39m]: 🗄️  Using in-memory store (no Redis required for dev)
+2026-06-05 11:00:34 [[32minfo[39m]: 🚖 WinRak API running on 0.0.0.0:3000 — وين راك؟ نجيك!
+2026-06-05 11:00:34 [[32minfo[39m]: ✅ Database connected
+2026-06-05 11:00:34 [[32minfo[39m]: ✅ Redis connected (real)
+2026-06-05 11:00:44 [[32minfo[39m]: 192.168.1.5 - - [05/Jun/2026:10:00:44 +0000] "GET /health HTTP/1.1" 200 77 "-" "curl/8.18.0"
+2026-06-05 11:04:14 [[32minfo[39m]: 192.168.1.5 - - [05/Jun/2026:10:04:14 +0000] "GET /health HTTP/1.1" 200 77 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; fr-FR) WindowsPowerShell/5.1.26100.8457"
+2026-06-05 11:07:02 [[32minfo[39m]: 192.168.1.5 - - [05/Jun/2026:10:07:02 +0000] "GET /health HTTP/1.1" 200 77 "-" "curl/8.18.0"
+2026-06-05 12:45:27 [[32minfo[39m]: 🗄️  Using in-memory store (no Redis required for dev)
+2026-06-05 12:45:28 [[32minfo[39m]: 🚖 WinRak API running on 0.0.0.0:3000 — وين راك؟ نجيك!
+2026-06-05 12:45:28 [[32minfo[39m]: ✅ Database connected
+2026-06-05 12:45:28 [[32minfo[39m]: ✅ Redis connected (real)
