@@ -5,16 +5,15 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm install
+RUN npm install --production=false
 
 COPY . .
 
-RUN npx prisma generate
-RUN npm run build
+RUN npx prisma generate && npm run build
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push --accept-data-loss && node dist/index.js"]
