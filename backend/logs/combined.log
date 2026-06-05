@@ -119,3 +119,7 @@
 2026-06-05 12:45:28 [[32minfo[39m]: 🚖 WinRak API running on 0.0.0.0:3000 — وين راك؟ نجيك!
 2026-06-05 12:45:28 [[32minfo[39m]: ✅ Database connected
 2026-06-05 12:45:28 [[32minfo[39m]: ✅ Redis connected (real)
+2026-06-05 16:58:37 [[32minfo[39m]: 🗄️  Using in-memory store (no Redis required for dev)
+2026-06-05 16:58:38 [[32minfo[39m]: 🚖 WinRak API running on 0.0.0.0:3000 — وين راك؟ نجيك!
+2026-06-05 16:58:38 [[32minfo[39m]: ✅ Database connected
+2026-06-05 16:58:38 [[32minfo[39m]: ✅ Redis connected (real)
