@@ -47,9 +47,10 @@ app.get('/health', (_, res) => {
 app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  logger.info(`🚖 WinRak API running on port ${PORT} — وين راك؟ نجيك!`);
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const HOST = '0.0.0.0';
+server.listen(PORT, HOST, () => {
+  logger.info(`🚖 WinRak API running on ${HOST}:${PORT} — وين راك؟ نجيك!`);
 });
 
 export default app;

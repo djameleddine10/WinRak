@@ -5,6 +5,7 @@ import {
   Platform,
 } from 'react-native';
 
+// ⚠️ عدّل هذا العنوان إذا تغير IP جهازك
 const API = 'http://192.168.1.5:3000/api/v1';
 const C = {
   primary: '#1A1A2E',
