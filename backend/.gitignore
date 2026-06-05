@@ -1,0 +1,4 @@
+node_modules/
+winrak.db
+winrak.db-*
+*.log
