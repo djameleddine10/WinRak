@@ -8,6 +8,5 @@
     "dashboard":  "cd apps/web-dashboard && npm run dev",
     "install:all": "cd backend && npm install && cd ../apps/web-dashboard && npm install",
     "setup": "node scripts/setup.js"
-  },
-  "workspaces": ["backend", "apps/*", "shared"]
+  }
 }
