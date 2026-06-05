@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: winrak-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npx prisma db push && npm run seed
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        value: file:./prisma/winrak.db

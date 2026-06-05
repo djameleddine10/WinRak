@@ -11,7 +11,8 @@
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
-    "setup": "npm run prisma:push && npx prisma generate && npm run prisma:seed"
+    "setup": "npm run prisma:push && npx prisma generate && npm run prisma:seed",
+    "start:prod": "npm run build && node dist/index.js"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
