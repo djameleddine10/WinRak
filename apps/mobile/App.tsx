@@ -513,10 +513,9 @@ function Verification({ phone, fullName, onLogin, onBack }: { phone: string; ful
 
 // ─── تطبيق الراكب ─────────────────────────────────────────────
 function PassengerApp({ token, user, onLogout }: { token: string; user: any; onLogout: () => void }) {
-  const { t, isRTL } = useLang();
-  const ta: any = isRTL ? 'right' : 'left';
-  const fd: any = isRTL ? 'row-reverse' : 'row';
-  const [tab, setTab] = useState<'home' | 'book' | 'rides' | 'profile'>('home');
+  const { t, openSettings } = useLang();
+  const [view, setView] = useState<'home' | 'rides' | 'account'>('home');
+  const [drawer, setDrawer] = useState(false);
   const [svc, setSvc] = useState('GO');
   const [estimate, setEstimate] = useState<any>(null);
   const [activeRide, setActiveRide] = useState<any>(null);
@@ -524,22 +523,26 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
   const [loading, setLoading] = useState(false);
   const [driver, setDriver] = useState<any>(null);
   const [myLoc, setMyLoc] = useState<any>(null);
-  const [locating, setLocating] = useState(true);
+  const [destPicker, setDestPicker] = useState(false);
 
+  const SCRH = Dimensions.get('window').height;
   const SERVICES = [
-    { type: 'GO', icon: '🚗', name: 'WinRak GO', desc: t('economic') },
-    { type: 'PLUS', icon: '🚙', name: 'WinRak PLUS', desc: t('comfort') },
-    { type: 'XL', icon: '🚐', name: 'WinRak XL', desc: t('family') },
-    { type: 'SHE', icon: '👩', name: 'WinRak SHE', desc: t('forWomen') },
+    { type: 'GO', icon: '🚗', name: 'GO', desc: t('economic') },
+    { type: 'PLUS', icon: '🚙', name: 'PLUS', desc: t('comfort') },
+    { type: 'XL', icon: '🚐', name: 'XL', desc: t('family') },
+    { type: 'SHE', icon: '👩', name: 'SHE', desc: t('forWomen') },
   ];
-  // نقطة الانطلاق = موقعك الحقيقي (GPS)، أو حيدرة افتراضياً
-  const PICKUP = myLoc
-    ? { lat: myLoc.lat, lng: myLoc.lng, address: t('myLocation') }
-    : { lat: 36.749, lng: 3.052, address: 'حيدرة، الجزائر' };
-  const DROPOFF = { lat: 36.770, lng: 2.990, address: 'باب الوادي، الجزائر' };
+  const DESTS = [
+    { address: 'باب الوادي، الجزائر', lat: 36.7906, lng: 3.0506 },
+    { address: 'حيدرة، الجزائر', lat: 36.7490, lng: 3.0520 },
+    { address: 'الأبيار، الجزائر', lat: 36.7680, lng: 3.0360 },
+    { address: 'بئر مراد رايس', lat: 36.7380, lng: 3.0490 },
+    { address: 'المطار الدولي', lat: 36.6910, lng: 3.2150 },
+  ];
+  const [dropoff, setDropoff] = useState(DESTS[0]);
+  const PICKUP = myLoc ? { lat: myLoc.lat, lng: myLoc.lng, address: t('myLocation') } : { lat: 36.7525, lng: 3.042, address: t('myLocation') };
 
-  // الحصول على الموقع الحقيقي عند فتح التطبيق
-  React.useEffect(() => {
+  useEffect(() => {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -548,173 +551,203 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
           setMyLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         }
       } catch {}
-      setLocating(false);
     })();
   }, []);
 
-  const getEstimate = async () => {
-    setLoading(true);
-    const r = await apiFetch('POST', '/rides/estimate', { pickupLat: PICKUP.lat, pickupLng: PICKUP.lng, dropoffLat: DROPOFF.lat, dropoffLng: DROPOFF.lng, vehicleType: svc }, token);
-    setLoading(false);
-    if (r.total) setEstimate(r);
-  };
+  // estimate auto-updates with service/destination
+  useEffect(() => {
+    if (activeRide) return;
+    apiFetch('POST', '/rides/estimate', { pickupLat: PICKUP.lat, pickupLng: PICKUP.lng, dropoffLat: dropoff.lat, dropoffLng: dropoff.lng, vehicleType: svc }, token).then(r => { if (r.total) setEstimate(r); });
+  }, [svc, dropoff, myLoc, activeRide]);
+
   const requestRide = async () => {
     setLoading(true);
     const r = await apiFetch('POST', '/rides/request', {
       pickupLat: PICKUP.lat, pickupLng: PICKUP.lng, pickupAddress: PICKUP.address,
-      dropoffLat: DROPOFF.lat, dropoffLng: DROPOFF.lng, dropoffAddress: DROPOFF.address,
+      dropoffLat: dropoff.lat, dropoffLng: dropoff.lng, dropoffAddress: dropoff.address,
       serviceType: svc, paymentMethod: 'CASH',
     }, token);
     setLoading(false);
-    if (r.ride) { setActiveRide(r.ride); setDriver(null); setTab('home'); Alert.alert(t('requested'), `${svc} — ${r.ride.totalFare} ${t('da')}\n${t('searching')}`); }
-    else Alert.alert(t('error'), t('connFail'));
+    if (r.ride) { setActiveRide(r.ride); setDriver(null); } else Alert.alert(t('error'), t('connFail'));
   };
+  const cancelRide = async () => { if (activeRide) await apiFetch('POST', `/rides/${activeRide.id}/status`, { status: 'CANCELLED' }, token); setActiveRide(null); setDriver(null); };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!activeRide || activeRide.status === 'COMPLETED') return;
     const iv = setInterval(async () => {
       const r = await apiFetch('GET', `/rides/${activeRide.id}`, undefined, token);
       if (r.ride) {
         setActiveRide((prev: any) => ({ ...prev, status: r.ride.status }));
-        if (r.driver && !driver) { setDriver(r.driver); Alert.alert(t('driverFound'), `${r.driver.fullName}\n${r.driver.carModel} • ${r.driver.carPlate}\n⭐ ${r.driver.rating}`); }
-        if (r.ride.status === 'COMPLETED') { Alert.alert(t('rideEnded'), t('thanks')); clearInterval(iv); }
+        if (r.driver && !driver) setDriver(r.driver);
+        if (r.ride.status === 'COMPLETED') { Alert.alert(t('rideEnded'), t('thanks')); clearInterval(iv); setTimeout(() => { setActiveRide(null); setDriver(null); }, 1500); }
       }
     }, 3000);
     return () => clearInterval(iv);
   }, [activeRide?.id, driver]);
 
   const loadRides = async () => { const r = await apiFetch('GET', '/rides/my', undefined, token); if (r.rides) setRides(r.rides); };
-  React.useEffect(() => { if (tab === 'rides') loadRides(); }, [tab]);
+  useEffect(() => { if (view === 'rides') loadRides(); }, [view]);
 
-  const statusTxt = (st2: string) => st2 === 'SEARCHING' ? t('searching') : st2 === 'ACCEPTED' ? t('accepted') : st2 === 'ARRIVED' ? t('arrived') : st2 === 'ONGOING' ? t('ongoing') : st2;
+  const statusTxt = (s: string) => s === 'SEARCHING' ? t('searching') : s === 'ACCEPTED' ? t('accepted') : s === 'ARRIVED' ? t('arrived') : s === 'ONGOING' ? t('ongoing') : s;
+  const initials = (user?.fullName || 'P').trim().charAt(0).toUpperCase();
+  const nav = (v: any) => { setView(v); setDrawer(false); };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
-      <View style={st.header}>
-        <Gear />
-        <Text style={[st.headerSub, { textAlign: ta }]}>{t('hello')} {user?.fullName?.split(' ')[0] || ''} 👋</Text>
-        <Text style={[st.headerTitle, { textAlign: ta }]}>{t('passengerApp')}</Text>
-      </View>
+  const DrawerMenu = () => (
+    <Modal visible={drawer} transparent animationType="fade" onRequestClose={() => setDrawer(false)}>
+      <TouchableOpacity style={dr.drawerBg} activeOpacity={1} onPress={() => setDrawer(false)}>
+        <TouchableOpacity activeOpacity={1} style={dr.drawerPanel}>
+          <View style={dr.avatarBig}><Text style={dr.avatarTxt}>{initials}</Text></View>
+          <Text style={dr.drawerName}>{user?.fullName || t('passengerName')}</Text>
+          <View style={{ alignItems: 'center', marginBottom: 10 }}><Text style={{ color: YELLOW, fontWeight: '700' }}>⭐ {user?.winPoints || 0} WinPoints</Text></View>
+          {[{ id: 'home', icon: 'map', label: t('mHome') }, { id: 'rides', icon: 'time', label: t('tRides') }, { id: 'account', icon: 'person', label: t('mAccount') }].map(it => (
+            <TouchableOpacity key={it.id} style={[dr.drawerItem, view === it.id && dr.drawerItemActive]} onPress={() => nav(it.id)}>
+              <Ionicons name={it.icon as any} size={20} color={view === it.id ? '#111' : '#fff'} />
+              <Text style={[dr.drawerItemTxt, view === it.id && { color: '#111', fontWeight: '800' }]}>{it.label}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={dr.drawerItem} onPress={onLogout}>
+            <Ionicons name="log-out-outline" size={20} color="#FF6B6B" /><Text style={[dr.drawerItemTxt, { color: '#FF6B6B' }]}>{t('mSignOut')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[dr.drawerItem, { marginTop: 'auto' }]} onPress={() => { setDrawer(false); openSettings(); }}>
+            <Ionicons name="settings-outline" size={20} color="#fff" /><Text style={dr.drawerItemTxt}>{t('settings')}</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 90 }}>
-        {tab === 'home' && (
-          <>
-            <View style={st.card}>
-              <Text style={[st.cardTitle, { textAlign: ta }]}>{t('winBalance')}</Text>
-              <Text style={st.bigNum}>{user?.winPoints || 0} <Text style={{ fontSize: 16, color: '#888' }}>{t('points')}</Text></Text>
-            </View>
-            <View style={st.card}>
-              <Text style={[st.cardTitle, { textAlign: ta }]}>{t('routeMap')}</Text>
-              {locating ? (
-                <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: '#eef2f5', borderRadius: 16 }}>
-                  <ActivityIndicator color={C.accent} /><Text style={{ color: '#888', marginTop: 8 }}>{t('locating')}</Text>
+  // ===== RIDES history / ACCOUNT (dark scroll) =====
+  if (view === 'rides' || view === 'account') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+        <StatusBar barStyle="dark-content" backgroundColor={YELLOW} />
+        <DrawerMenu />
+        <SafeAreaView style={{ backgroundColor: YELLOW }}>
+          <View style={dr.headerTop}>
+            <TouchableOpacity style={dr.menuBtn} onPress={() => setDrawer(true)}><Ionicons name="menu" size={24} color={YELLOW} /></TouchableOpacity>
+            <TouchableOpacity style={dr.avatarSm} onPress={() => setDrawer(true)}><Text style={{ color: '#111', fontWeight: '800' }}>{initials}</Text></TouchableOpacity>
+          </View>
+        </SafeAreaView>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
+          {view === 'rides' && (
+            <>
+              <Text style={dr.sectionTitle}>{t('ridesHistory')} ({rides.length})</Text>
+              {rides.length === 0 ? <Text style={dr.emptyTxt}>{t('noRides')}</Text> : rides.map((r: any) => <TripCard key={r.id} trip={r} />)}
+            </>
+          )}
+          {view === 'account' && (
+            <>
+              <View style={dr.accCard}>
+                <View style={[dr.avatarBig, { marginBottom: 12 }]}><Text style={dr.avatarTxt}>{initials}</Text></View>
+                <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{user?.fullName || t('passengerName')}</Text>
+                <Text style={{ color: '#888', marginBottom: 10 }}>{user?.phone}</Text>
+                <View style={{ backgroundColor: YELLOW, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 }}>
+                  <Text style={{ color: '#111', fontWeight: '800' }}>⭐ {user?.winPoints || 0} WinPoints</Text>
                 </View>
-              ) : (
-                <RideMap pickup={PICKUP} dropoff={DROPOFF} driver={driver} height={220} />
-              )}
-              <Text style={[st.routeTxt, { textAlign: ta, marginTop: 10 }]}>🟢 {t('from')}: {PICKUP.address}</Text>
-              <Text style={[st.routeTxt, { textAlign: ta }]}>🔴 {t('to')}: {DROPOFF.address}</Text>
-              <TouchableOpacity style={[st.btn, { marginTop: 10 }]} onPress={() => setTab('book')}><Text style={st.btnTxt}>{t('orderNow')}</Text></TouchableOpacity>
-            </View>
-            {activeRide && activeRide.status !== 'COMPLETED' && (
-              <View style={[st.card, { borderColor: C.accent, borderWidth: 2 }]}>
-                <Text style={[st.cardTitle, { textAlign: ta }]}>{t('activeRide')}</Text>
-                <Text style={[st.routeTxt, { textAlign: ta }]}>{t('status')}: <Text style={{ color: C.accent, fontWeight: '700' }}>{statusTxt(activeRide.status)}</Text></Text>
-                <Text style={[st.routeTxt, { textAlign: ta }]}>{t('fare')}: {activeRide.totalFare} {t('da')}</Text>
-                <View style={{ marginTop: 10 }}>
-                  <RideMap pickup={PICKUP} dropoff={DROPOFF} driver={driver} height={200} />
-                </View>
-                {driver && (
-                  <View style={{ marginTop: 12, backgroundColor: C.accent + '15', borderRadius: 12, padding: 12 }}>
-                    <Text style={{ fontWeight: '800', color: C.primary, textAlign: ta, fontSize: 16 }}>🚗 {driver.fullName}</Text>
-                    <Text style={{ color: '#666', textAlign: ta, marginTop: 4 }}>{driver.carModel} • {driver.carPlate}</Text>
-                    <Text style={{ color: C.secondary, textAlign: ta, marginTop: 2, fontWeight: '700' }}>⭐ {driver.rating}</Text>
-                  </View>
-                )}
-                {activeRide.status === 'SEARCHING' && (
-                  <View style={{ marginTop: 10, flexDirection: fd, alignItems: 'center', gap: 8 }}>
-                    <ActivityIndicator color={C.accent} /><Text style={{ color: '#888' }}>{t('waitingDriver')}</Text>
-                  </View>
-                )}
               </View>
-            )}
-          </>
-        )}
+              <TouchableOpacity style={[dr.smallBtn, { backgroundColor: C.error }]} onPress={onLogout}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('mSignOut')}</Text></TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
 
-        {tab === 'book' && (
+  // ===== HOME (full-map booking + live tracking) =====
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#e8eef2" />
+      <DrawerMenu />
+
+      {/* destination picker */}
+      <Modal visible={destPicker} transparent animationType="slide" onRequestClose={() => setDestPicker(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setDestPicker(false)}>
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34 }}>
+            <Text style={{ fontWeight: '800', fontSize: 16, marginBottom: 14, color: '#111' }}>{t('to')}</Text>
+            {DESTS.map((d, i) => (
+              <TouchableOpacity key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: i < DESTS.length - 1 ? 1 : 0, borderBottomColor: '#eee' }} onPress={() => { setDropoff(d); setDestPicker(false); }}>
+                <Ionicons name="location" size={20} color={YELLOW} /><Text style={{ fontSize: 15, color: '#111' }}>{d.address}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <RideMap pickup={PICKUP} dropoff={dropoff} driver={driver} height={SCRH} />
+
+      <SafeAreaView style={rs.floatTop} pointerEvents="box-none">
+        <TouchableOpacity style={dr.menuBtn} onPress={() => setDrawer(true)}><Ionicons name="menu" size={24} color={YELLOW} /></TouchableOpacity>
+        <TouchableOpacity style={dr.avatarSm} onPress={() => setDrawer(true)}><Text style={{ color: '#111', fontWeight: '800' }}>{initials}</Text></TouchableOpacity>
+      </SafeAreaView>
+
+      <View style={rs.sheet}>
+        <View style={rs.grab} />
+        {!activeRide ? (
+          // ── Booking ──
           <>
-            <View style={st.card}>
-              <Text style={[st.cardTitle, { textAlign: ta }]}>{t('chooseService')}</Text>
+            <Text style={ps.label}>{t('from')}</Text>
+            <View style={[au.input, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+              <Ionicons name="location" size={16} color="#111" /><Text style={{ color: '#111', flex: 1 }} numberOfLines={1}>{PICKUP.address}</Text>
+            </View>
+            <Text style={ps.label}>{t('to')}</Text>
+            <TouchableOpacity style={[au.input, { flexDirection: 'row', alignItems: 'center', gap: 8 }]} onPress={() => setDestPicker(true)}>
+              <Ionicons name="location" size={16} color={YELLOW === '#FFD400' ? '#E0A800' : YELLOW} /><Text style={{ color: '#111', flex: 1 }} numberOfLines={1}>{dropoff.address}</Text>
+              <Ionicons name="chevron-down" size={16} color="#888" />
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', gap: 8, marginVertical: 6 }}>
               {SERVICES.map(sv => (
-                <TouchableOpacity key={sv.type} style={[st.svcRow, { flexDirection: fd }, svc === sv.type && st.svcRowSel]} onPress={() => { setSvc(sv.type); setEstimate(null); }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.secondary, minWidth: 60 }}>{estimate && svc === sv.type ? `${estimate.total} ${t('da')}` : ''}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ textAlign: ta, fontWeight: '700', color: C.primary }}>{sv.name}</Text>
-                    <Text style={{ textAlign: ta, color: '#888', fontSize: 12 }}>{sv.desc}</Text>
-                  </View>
-                  <Text style={{ fontSize: 26 }}>{sv.icon}</Text>
+                <TouchableOpacity key={sv.type} style={[ps.svcChip, svc === sv.type && { backgroundColor: YELLOW, borderColor: YELLOW }]} onPress={() => setSvc(sv.type)}>
+                  <Text style={{ fontSize: 18 }}>{sv.icon}</Text>
+                  <Text style={[ps.svcTxt, svc === sv.type && { color: '#111', fontWeight: '800' }]}>{sv.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity style={[st.btn, { backgroundColor: '#eee' }]} onPress={getEstimate} disabled={loading}>
-              {loading ? <ActivityIndicator color={C.primary} /> : <Text style={[st.btnTxt, { color: C.primary }]}>{t('calcPrice')}</Text>}
-            </TouchableOpacity>
+
             {estimate && (
-              <View style={[st.card, { backgroundColor: '#FFFBF0' }]}>
-                <Text style={[st.cardTitle, { textAlign: ta }]}>{t('estimate')}</Text>
-                <Text style={[st.infoRow, { textAlign: ta }]}>{t('price')}: <Text style={st.infoVal}>{estimate.total} {t('da')}</Text></Text>
-                <Text style={[st.infoRow, { textAlign: ta }]}>{t('distance')}: <Text style={st.infoVal}>{estimate.estimatedDistance?.toFixed(1)} {t('km')}</Text></Text>
-                <Text style={[st.infoRow, { textAlign: ta }]}>{t('duration')}: <Text style={st.infoVal}>{estimate.estimatedDuration} {t('min')}</Text></Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 20 }}>{estimate.total} {t('da')}</Text>
+                <Text style={{ color: '#999' }}>{estimate.estimatedDistance?.toFixed(1)} {t('km')} • {fmtDur(estimate.estimatedDuration)}</Text>
               </View>
             )}
-            <TouchableOpacity style={st.btn} onPress={requestRide} disabled={loading}>
-              {loading ? <ActivityIndicator color={C.primary} /> : <Text style={st.btnTxt}>{t('confirmOrder')}</Text>}
+
+            <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW }]} onPress={requestRide} disabled={loading}>
+              {loading ? <ActivityIndicator color="#111" /> : <Text style={rs.btnD}>{t('confirmOrder')}</Text>}
             </TouchableOpacity>
           </>
-        )}
-
-        {tab === 'rides' && (
+        ) : activeRide.status === 'SEARCHING' ? (
+          // ── Searching ──
           <>
-            <Text style={[st.secTitle, { textAlign: ta }]}>{t('ridesHistory')} ({rides.length})</Text>
-            {rides.length === 0 && <Text style={st.emptyTxt}>{t('noRides')}</Text>}
-            {rides.map((r: any) => (
-              <View key={r.id} style={st.rideCard}>
-                <View style={{ flexDirection: fd, justifyContent: 'space-between' }}>
-                  <Text style={{ color: r.status === 'COMPLETED' ? C.success : C.error, fontWeight: '700', fontSize: 13 }}>{r.status === 'COMPLETED' ? t('completed') : r.status === 'CANCELLED' ? t('cancelled') : '🔄 ' + r.status}</Text>
-                  <Text style={{ color: C.secondary, fontWeight: '800', fontSize: 15 }}>{r.totalFare} {t('da')}</Text>
-                </View>
-                <Text style={[st.routeTxt, { textAlign: ta }]}>{r.pickupAddress} ← {r.dropoffAddress}</Text>
-                <Text style={{ color: '#aaa', fontSize: 11, textAlign: ta }}>{new Date(r.requestedAt).toLocaleDateString()} | {r.serviceType}</Text>
-              </View>
-            ))}
-          </>
-        )}
-
-        {tab === 'profile' && (
-          <>
-            <View style={[st.card, { alignItems: 'center' }]}>
-              <Text style={{ fontSize: 60, marginBottom: 10 }}>🧑</Text>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: C.primary }}>{user?.fullName || t('passengerName')}</Text>
-              <Text style={{ color: '#888', marginBottom: 14 }}>{user?.phone}</Text>
-              <View style={{ backgroundColor: C.secondary + '22', borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8 }}>
-                <Text style={{ color: C.primary, fontWeight: '700' }}>⭐ {user?.winPoints || 0} WinPoints</Text>
-              </View>
+            <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+              <ActivityIndicator color={YELLOW} size="large" />
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginTop: 12 }}>{t('searching')}</Text>
+              <Text style={{ color: '#999', marginTop: 4 }}>{activeRide.totalFare} {t('da')} • {activeRide.distance} {t('km')}</Text>
             </View>
-            <TouchableOpacity style={[st.btn, { backgroundColor: C.error }]} onPress={onLogout}><Text style={[st.btnTxt, { color: '#fff' }]}>{t('logout')}</Text></TouchableOpacity>
+            <TouchableOpacity style={[rs.btn, { backgroundColor: C.error }]} onPress={cancelRide}><Text style={rs.btnW}>{t('cancelTrip')}</Text></TouchableOpacity>
+          </>
+        ) : (
+          // ── Driver assigned / en route ──
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={[rs.pAvatar, { width: 50, height: 50, borderRadius: 25 }]}><Text style={{ color: '#111', fontWeight: '900', fontSize: 20 }}>{(driver?.fullName || 'D').charAt(0)}</Text></View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{driver?.fullName || t('driver')}</Text>
+                <Text style={{ color: '#999', fontSize: 13 }}>{driver?.carModel} • {driver?.carPlate}</Text>
+                <View style={{ marginTop: 2 }}><Stars n={Math.round(driver?.rating || 5)} /></View>
+              </View>
+              <TouchableOpacity style={rs.circleBtn} onPress={() => driver && Alert.alert('📞', driver.fullName)}><Ionicons name="call" size={18} color="#111" /></TouchableOpacity>
+            </View>
+            <View style={{ backgroundColor: '#1a1a1a', borderRadius: 12, padding: 12, marginTop: 14 }}>
+              <Text style={{ color: YELLOW, fontWeight: '800', textAlign: 'center' }}>{statusTxt(activeRide.status)}</Text>
+              <Text style={{ color: '#999', textAlign: 'center', marginTop: 4 }}>{activeRide.totalFare} {t('da')}</Text>
+            </View>
+            {(activeRide.status === 'ACCEPTED' || activeRide.status === 'ARRIVED') && (
+              <TouchableOpacity style={[rs.btn, { backgroundColor: C.error }]} onPress={cancelRide}><Text style={rs.btnW}>{t('cancelTrip')}</Text></TouchableOpacity>
+            )}
           </>
         )}
-      </ScrollView>
-
-      <View style={[st.tabBar, { flexDirection: fd }]}>
-        {[{ id: 'home', icon: '🏠', label: t('tHome') }, { id: 'book', icon: '🚖', label: t('tBook') }, { id: 'rides', icon: '📋', label: t('tRides') }, { id: 'profile', icon: '👤', label: t('tProfile') }].map(tb => (
-          <TouchableOpacity key={tb.id} style={st.tabItem} onPress={() => setTab(tb.id as any)}>
-            <Text style={{ fontSize: 22 }}>{tb.icon}</Text>
-            <Text style={[st.tabLbl, tab === tb.id && { color: C.primary, fontWeight: '700' }]}>{tb.label}</Text>
-          </TouchableOpacity>
-        ))}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1221,4 +1254,11 @@ const rs = StyleSheet.create({
   statSm: { color: '#888', fontSize: 12 },
   finishWrap: { flex: 1, backgroundColor: '#0D0D0D', justifyContent: 'center', alignItems: 'center', padding: 40 },
   finishCard: { backgroundColor: '#fff', borderRadius: 20, paddingVertical: 60, paddingHorizontal: 50, alignItems: 'center', width: '100%' },
+});
+
+// أنماط واجهة الراكب (booking)
+const ps = StyleSheet.create({
+  label: { color: '#999', fontSize: 12, marginBottom: 6, marginTop: 2 },
+  svcChip: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: '#1c1c1c', borderWidth: 1.5, borderColor: '#2a2a2a', gap: 2 },
+  svcTxt: { color: '#bbb', fontSize: 11, fontWeight: '600' },
 });
