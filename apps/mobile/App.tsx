@@ -917,14 +917,14 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                     </>
                   )}
                   {myRide.status === 'ONGOING' && (
-                    paused ? (
-                      <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW }]} onPress={() => setPaused(false)}><Text style={rs.btnD}>{t('resumeTrip')}</Text></TouchableOpacity>
-                    ) : (
-                      <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: '#fff' }]} onPress={() => setPaused(true)}><Text style={rs.btnD}>{t('pauseTrip')}</Text></TouchableOpacity>
-                        <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: YELLOW }]} onPress={() => updateRide('COMPLETED')}><Text style={rs.btnD}>{t('arrivedDrop')}</Text></TouchableOpacity>
-                      </View>
-                    )
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? YELLOW : '#fff' }]} onPress={() => setPaused(!paused)}>
+                        <Text style={rs.btnD}>{paused ? t('resumeTrip') : t('pauseTrip')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? '#d9d9d9' : YELLOW }]} onPress={() => updateRide('COMPLETED')}>
+                        <Text style={rs.btnD}>{t('arrivedDrop')}</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </>
               ) : isOnline ? (
