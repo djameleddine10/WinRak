@@ -17,6 +17,15 @@ app.use((req, res, next) => {
 
 // ─── In-memory store ──────────────────────────────────────────
 const DB = { users: {}, drivers: {}, rides: {}, contracts: {} };
+
+// 🤖 سائق محاكاة للتجربة على جهاز واحد
+const SIM_DRIVER = {
+  id: 'sim-driver', userId: 'sim-user', isOnline: true,
+  lat: 36.751, lng: 3.048, carModel: 'رينو سيمبول', carPlate: '09823-114-16',
+  rating: 4.8, totalTrips: 342, totalEarnings: 0,
+};
+DB.drivers['sim-user'] = SIM_DRIVER;
+DB.users['sim-user'] = { id: 'sim-user', phone: '+213699999999', fullName: 'محمد السائق', role: 'DRIVER' };
 const uid = (p) => p + '-' + crypto.randomBytes(6).toString('hex');
 const PRICES = { GO: 35, PLUS: 50, XL: 70, SHE: 45, DELIVER: 30 };
 
@@ -84,6 +93,21 @@ app.post('/api/v1/rides/request', (req, res) => {
   };
   DB.rides[id] = ride;
   res.json({ success: true, ride });
+
+  // 🤖 محاكاة: سائق افتراضي يقبل ويتقدّم تلقائياً (للتجربة على جهاز واحد)
+  // إن قبِلها سائق حقيقي قبل 6 ثوان، تتوقف المحاكاة
+  setTimeout(() => {
+    const r = DB.rides[id];
+    if (r && r.status === 'SEARCHING') {
+      r.status = 'ACCEPTED'; r.driverId = SIM_DRIVER.id; r.simulated = true;
+    }
+  }, 6000);
+  setTimeout(() => { const r = DB.rides[id]; if (r && r.simulated && r.status === 'ACCEPTED') r.status = 'ARRIVED'; }, 14000);
+  setTimeout(() => { const r = DB.rides[id]; if (r && r.simulated && r.status === 'ARRIVED') r.status = 'ONGOING'; }, 22000);
+  setTimeout(() => {
+    const r = DB.rides[id];
+    if (r && r.simulated && r.status === 'ONGOING') { r.status = 'COMPLETED'; r.completedAt = new Date().toISOString(); }
+  }, 38000);
 });
 
 app.get('/api/v1/rides/my', (req, res) => {
