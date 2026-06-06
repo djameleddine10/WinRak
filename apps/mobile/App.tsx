@@ -78,7 +78,7 @@ const TR: any = {
     acceptance: 'القبول', ratingLbl: 'التقييم', cancellation: 'الإلغاء', hailRide: 'طلب راكب',
     reject: 'رفض', accept: 'قبول', rideRequestLbl: 'طلب رحلة', cancelTrip: 'إلغاء',
     arrivedPickup: 'وصلت لنقطة الانطلاق', startTripBtn: 'بدء الرحلة', pauseTrip: 'إيقاف مؤقت', resumeTrip: 'استئناف',
-    arrivedDrop: 'وصلت', tripFinished: 'انتهت الرحلة', goOnlineNow: 'ابدأ العمل', goOfflineNow: 'إيقاف',
+    arrivedDrop: 'وصلت لنقطة النزول', dropPoint: 'نقطة نزول', tripFinished: 'انتهت الرحلة', goOnlineNow: 'ابدأ العمل', goOfflineNow: 'إيقاف',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -134,7 +134,7 @@ const TR: any = {
     acceptance: 'Acceptation', ratingLbl: 'Note', cancellation: 'Annulation', hailRide: 'Héler',
     reject: 'Refuser', accept: 'Accepter', rideRequestLbl: 'Demande', cancelTrip: 'Annuler',
     arrivedPickup: 'Arrivé au départ', startTripBtn: 'Démarrer', pauseTrip: 'Pause', resumeTrip: 'Reprendre',
-    arrivedDrop: 'Arrivé', tripFinished: 'Course terminée', goOnlineNow: 'Commencer', goOfflineNow: 'Arrêter',
+    arrivedDrop: 'Arrivé à destination', dropPoint: 'Point', tripFinished: 'Course terminée', goOnlineNow: 'Commencer', goOfflineNow: 'Arrêter',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -190,7 +190,7 @@ const TR: any = {
     acceptance: 'Acceptance', ratingLbl: 'Rating', cancellation: 'Cancellation', hailRide: 'Hail ride',
     reject: 'Reject', accept: 'Accept', rideRequestLbl: 'Ride request', cancelTrip: 'Cancel',
     arrivedPickup: 'Arrived pickup location', startTripBtn: 'Start trip', pauseTrip: 'Pause trip', resumeTrip: 'Resume trip',
-    arrivedDrop: 'Arrived', tripFinished: 'Trip Finished', goOnlineNow: 'Go online', goOfflineNow: 'Go offline',
+    arrivedDrop: 'Arrived drop point', dropPoint: 'Drop point', tripFinished: 'Trip Finished', goOnlineNow: 'Go online', goOfflineNow: 'Go offline',
   },
 };
 
@@ -768,6 +768,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const [paused, setPaused] = useState(false);
   const [finished, setFinished] = useState(false);
   const [countdown, setCountdown] = useState(25);
+  const [stopIndex, setStopIndex] = useState(0);
 
   // countdown for the top incoming request (auto-skip at 0)
   useEffect(() => {
@@ -777,7 +778,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
     return () => clearTimeout(id);
   }, [isOnline, myRide, requests, countdown]);
 
-  const acceptRide = async (ride: any) => { const r = await apiFetch('POST', `/rides/${ride.id}/accept`, {}, token); if (r.success) { setMyRide(r.ride); setPaused(false); setRequests([]); } };
+  const acceptRide = async (ride: any) => { const r = await apiFetch('POST', `/rides/${ride.id}/accept`, {}, token); if (r.success) { setMyRide(r.ride); setPaused(false); setStopIndex(0); setRequests([]); } };
   const reject = () => { setRequests([]); setCountdown(25); };
   const updateRide = async (status: string) => {
     await apiFetch('POST', `/rides/${myRide.id}/status`, { status }, token);
@@ -851,6 +852,11 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Ionicons name="location" size={15} color={YELLOW} /><Text style={rs.addr} numberOfLines={1}>{ride.dropoffAddress}</Text>
         </View>
+        {(ride.stops || []).map((s: any, i: number) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <Ionicons name="location" size={15} color={YELLOW} /><Text style={rs.addr} numberOfLines={1}>{s.address}</Text>
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -908,24 +914,24 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                     </>
                   )}
                   {myRide.status === 'ARRIVED' && (
-                    <>
-                      <View style={rs.callRow}>
-                        <TouchableOpacity style={rs.circleBtn} onPress={callPassenger}><Ionicons name="call" size={18} color="#111" /></TouchableOpacity>
-                        <TouchableOpacity style={rs.circleBtn} onPress={() => Alert.alert('💬', myRide.passengerName)}><Ionicons name="chatbubble-ellipses" size={18} color="#111" /></TouchableOpacity>
+                    <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW }]} onPress={() => updateRide('ONGOING')}><Text style={rs.btnD}>{t('startTripBtn')}</Text></TouchableOpacity>
+                  )}
+                  {myRide.status === 'ONGOING' && (() => {
+                    const stops = myRide.stops || [];
+                    const moreStops = stops.length > 0 && stopIndex < stops.length;
+                    const arriveLabel = moreStops ? `${t('arrivedDrop')} ${stopIndex + 1}` : t('arrivedDrop');
+                    const onArrive = () => { if (moreStops) setStopIndex(stopIndex + 1); else updateRide('COMPLETED'); };
+                    return (
+                      <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? YELLOW : '#fff' }]} onPress={() => setPaused(!paused)}>
+                          <Text style={rs.btnD}>{paused ? t('resumeTrip') : t('pauseTrip')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? '#d9d9d9' : YELLOW }]} onPress={onArrive}>
+                          <Text style={rs.btnD}>{arriveLabel}</Text>
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW }]} onPress={() => updateRide('ONGOING')}><Text style={rs.btnD}>{t('startTripBtn')}</Text></TouchableOpacity>
-                    </>
-                  )}
-                  {myRide.status === 'ONGOING' && (
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? YELLOW : '#fff' }]} onPress={() => setPaused(!paused)}>
-                        <Text style={rs.btnD}>{paused ? t('resumeTrip') : t('pauseTrip')}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? '#d9d9d9' : YELLOW }]} onPress={() => updateRide('COMPLETED')}>
-                        <Text style={rs.btnD}>{t('arrivedDrop')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                    );
+                  })()}
                 </>
               ) : isOnline ? (
                 requests.length > 0 ? (
