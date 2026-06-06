@@ -2,7 +2,7 @@ import React, { useState, createContext, useContext, useMemo, useRef, useEffect 
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, ActivityIndicator, StatusBar, SafeAreaView,
-  Platform, Modal, Animated, Easing, Dimensions, Linking,
+  Platform, Modal, Animated, Easing, Dimensions, Linking, KeyboardAvoidingView,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -95,6 +95,7 @@ const TR: any = {
     enterNew: 'أدخل كلمة المرور الجديدة', confirmNew: 'تأكيد كلمة المرور الجديدة', enterPhoneAttached: 'أدخل رقم الهاتف المرتبط بحسابك',
     sendBtn: 'إرسال', enter6digit: 'أدخل الرمز المكوّن من 6 أرقام المُرسل إلى هاتفك', verifyBtn: 'تحقّق',
     createNewPassword: 'إنشاء كلمة مرور جديدة', confirmPassword: 'تأكيد كلمة المرور', submitBtn: 'إرسال', pwMismatch: 'كلمتا المرور غير متطابقتين',
+    supportGreeting: 'مرحباً، كيف يمكنني مساعدتك؟', supportReply: 'شكراً لتواصلك! سيرد فريقنا عليك قريباً.', enterMessage: 'اكتب رسالة...',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -161,6 +162,7 @@ const TR: any = {
     enterNew: 'Nouveau mot de passe', confirmNew: 'Confirmer le nouveau mot de passe', enterPhoneAttached: 'Entrez le numéro lié à votre compte',
     sendBtn: 'Envoyer', enter6digit: 'Entrez le code à 6 chiffres envoyé à votre téléphone', verifyBtn: 'Vérifier',
     createNewPassword: 'Créer un nouveau mot de passe', confirmPassword: 'Confirmer le mot de passe', submitBtn: 'Soumettre', pwMismatch: 'Les mots de passe ne correspondent pas',
+    supportGreeting: 'Bonjour, comment puis-je vous aider ?', supportReply: 'Merci ! Notre équipe vous répondra bientôt.', enterMessage: 'Écrire un message...',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -227,6 +229,7 @@ const TR: any = {
     enterNew: 'Enter new password', confirmNew: 'Confirm new password', enterPhoneAttached: 'Enter the phone number attached to your account',
     sendBtn: 'Send', enter6digit: 'Enter the 6-digit code we sent to your phone', verifyBtn: 'Verify',
     createNewPassword: 'Create new password', confirmPassword: 'Confirm password', submitBtn: 'Submit', pwMismatch: 'Passwords do not match',
+    supportGreeting: 'Hi, how can I help you?', supportReply: 'Thanks! Our team will get back to you shortly.', enterMessage: 'Enter message...',
   },
 };
 
@@ -844,6 +847,13 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const [veh, setVeh] = useState({ brand: '', model: '', year: '', plate: '' });
   const [pwStep, setPwStep] = useState<'menu' | 'change' | 'fphone' | 'fotp' | 'fnew'>('menu');
   const [pwCode, setPwCode] = useState('');
+  const [chat, setChat] = useState<{ from: string; text: string }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const sendChat = () => {
+    const m = chatInput.trim(); if (!m) return;
+    setChat(c => [...c, { from: 'user', text: m }]); setChatInput('');
+    setTimeout(() => setChat(c => [...c, { from: 'agent', text: t('supportReply') }]), 1200);
+  };
 
   useEffect(() => {
     if (view !== 'account') return;
@@ -1101,6 +1111,24 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
               <TouchableOpacity onPress={goBack}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
               <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{title}</Text>
             </View>
+            {acctView === 'support' ? (
+              <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80}>
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, flexGrow: 1, justifyContent: 'flex-end' }}>
+                  {chat.map((m, i) => (
+                    <View key={i} style={{ flexDirection: m.from === 'agent' ? 'row' : 'row-reverse', alignItems: 'flex-end', marginBottom: 12 }}>
+                      {m.from === 'agent' && <View style={ch.agent}><Ionicons name="headset" size={16} color="#111" /></View>}
+                      <View style={[ch.bubble, m.from === 'agent' ? { backgroundColor: YELLOW, borderBottomLeftRadius: 3 } : { backgroundColor: '#222', borderBottomRightRadius: 3 }]}>
+                        <Text style={{ color: m.from === 'agent' ? '#111' : '#fff', fontSize: 14 }}>{m.text}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View style={ch.inputBar}>
+                  <TextInput style={{ flex: 1, color: '#fff', fontSize: 15 }} placeholder={t('enterMessage')} placeholderTextColor="#888" value={chatInput} onChangeText={setChatInput} onSubmitEditing={sendChat} returnKeyType="send" />
+                  <TouchableOpacity onPress={sendChat}><Ionicons name="send" size={22} color={YELLOW} /></TouchableOpacity>
+                </View>
+              </KeyboardAvoidingView>
+            ) : (
             <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 0 }}>
               {acctView === 'details' && (<>
                 <Text style={ps.label}>{t('firstName')}</Text>
@@ -1169,16 +1197,8 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                 <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
                 <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={() => { Alert.alert('✅', t('saved')); setAcctView('main'); setPwStep('menu'); }}><Text style={rs.btnD}>{t('submitBtn')}</Text></TouchableOpacity>
               </>)}
-              {acctView === 'support' && (<>
-                <Text style={{ color: '#bbb', fontSize: 15, marginBottom: 16 }}>{t('supportText')}</Text>
-                <TouchableOpacity style={dr.tripCard} onPress={() => Linking.openURL('tel:+213555000000')}>
-                  <Ionicons name="call" size={20} color={YELLOW} /><Text style={{ color: '#fff', marginLeft: 12 }}>+213 555 000 000</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={dr.tripCard} onPress={() => Linking.openURL('mailto:support@winrak.dz')}>
-                  <Ionicons name="mail" size={20} color={YELLOW} /><Text style={{ color: '#fff', marginLeft: 12 }}>support@winrak.dz</Text>
-                </TouchableOpacity>
-              </>)}
             </ScrollView>
+            )}
           </SafeAreaView>
         </View>
       );
@@ -1214,7 +1234,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
         </SafeAreaView>
         <ScrollView contentContainerStyle={{ padding: 18 }}>
           {ITEMS.map(it => (
-            <TouchableOpacity key={it.id} style={dr2.acctRow} onPress={() => setAcctView(it.id as any)}>
+            <TouchableOpacity key={it.id} style={dr2.acctRow} onPress={() => { setAcctView(it.id as any); if (it.id === 'password') setPwStep('menu'); if (it.id === 'support') setChat([{ from: 'agent', text: t('supportGreeting') }]); }}>
               <Ionicons name={it.icon as any} size={20} color={YELLOW} />
               <Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontSize: 15, fontWeight: '600' }}>{it.label}</Text>
               <Ionicons name="chevron-forward" size={18} color="#666" />
@@ -1428,6 +1448,13 @@ const dr2 = StyleSheet.create({
   acctAvatar: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#111' },
   pencil: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: YELLOW, borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' },
   acctRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#171717', borderRadius: 14, padding: 16, marginBottom: 10 },
+});
+
+// أنماط محادثة الدعم
+const ch = StyleSheet.create({
+  agent: { width: 30, height: 30, borderRadius: 15, backgroundColor: YELLOW, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  bubble: { maxWidth: '74%', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  inputBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' },
 });
 
 // أنماط واجهة الراكب (booking)
