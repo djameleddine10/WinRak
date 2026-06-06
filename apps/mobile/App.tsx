@@ -206,6 +206,8 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
     else Alert.alert('', r.message || 'فشل الاتصال');
   };
 
+  const [driver, setDriver] = useState<any>(null);
+
   const requestRide = async () => {
     setLoading(true);
     const r = await apiFetch('POST', '/rides/request', {
@@ -216,9 +218,28 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
     setLoading(false);
     if (r.ride) {
       setActiveRide(r.ride);
-      Alert.alert('✅ تم الطلب!', `${svc} — ${r.ride.totalFare} دج\nالحالة: جاري البحث عن سائق`);
+      setDriver(null);
+      setTab('home');
+      Alert.alert('✅ تم الطلب!', `${svc} — ${r.ride.totalFare} دج\n🔍 جاري البحث عن سائق...`);
     } else Alert.alert('خطأ', r.message);
   };
+
+  // 🔴 LIVE: poll active ride every 3s for driver assignment & status
+  React.useEffect(() => {
+    if (!activeRide || activeRide.status === 'COMPLETED') return;
+    const iv = setInterval(async () => {
+      const r = await apiFetch('GET', `/rides/${activeRide.id}`, undefined, token);
+      if (r.ride) {
+        setActiveRide((prev: any) => ({ ...prev, status: r.ride.status }));
+        if (r.driver && !driver) {
+          setDriver(r.driver);
+          Alert.alert('🚗 وُجد سائق!', `${r.driver.fullName}\n${r.driver.carModel} • ${r.driver.carPlate}\n⭐ ${r.driver.rating}`);
+        }
+        if (r.ride.status === 'COMPLETED') { Alert.alert('✅ انتهت الرحلة', 'شكراً لاستخدامك WinRak!'); clearInterval(iv); }
+      }
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [activeRide?.id, driver]);
 
   const loadRides = async () => {
     const r = await apiFetch('GET', '/rides/my', undefined, token);
@@ -254,11 +275,30 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
                 <Text style={s.btnTxt}>اطلب رحلة الآن 🚖</Text>
               </TouchableOpacity>
             </View>
-            {activeRide && (
+            {activeRide && activeRide.status !== 'COMPLETED' && (
               <View style={[s.card, { borderColor: C.accent, borderWidth: 2 }]}>
                 <Text style={s.cardTitle}>🚖 رحلتك الجارية</Text>
-                <Text style={s.routeTxt}>الحالة: <Text style={{ color: C.accent, fontWeight: '700' }}>{activeRide.status}</Text></Text>
+                <Text style={s.routeTxt}>الحالة: <Text style={{ color: C.accent, fontWeight: '700' }}>
+                  {activeRide.status === 'SEARCHING' ? '🔍 جاري البحث عن سائق...' :
+                   activeRide.status === 'ACCEPTED' ? '✅ قبل السائق — في الطريق إليك' :
+                   activeRide.status === 'ARRIVED' ? '📍 وصل السائق!' :
+                   activeRide.status === 'ONGOING' ? '🚗 الرحلة جارية' : activeRide.status}
+                </Text></Text>
                 <Text style={s.routeTxt}>الأجرة: {activeRide.totalFare} دج</Text>
+
+                {driver && (
+                  <View style={{ marginTop: 12, backgroundColor: C.accent + '15', borderRadius: 12, padding: 12 }}>
+                    <Text style={{ fontWeight: '800', color: C.primary, textAlign: 'right', fontSize: 16 }}>🚗 {driver.fullName}</Text>
+                    <Text style={{ color: '#666', textAlign: 'right', marginTop: 4 }}>{driver.carModel} • {driver.carPlate}</Text>
+                    <Text style={{ color: C.secondary, textAlign: 'right', marginTop: 2, fontWeight: '700' }}>⭐ {driver.rating}</Text>
+                  </View>
+                )}
+                {activeRide.status === 'SEARCHING' && (
+                  <View style={{ marginTop: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+                    <ActivityIndicator color={C.accent} />
+                    <Text style={{ color: '#888' }}>ننتظر سائقاً قريباً...</Text>
+                  </View>
+                )}
               </View>
             )}
           </>
@@ -365,16 +405,46 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
 
 // ─── تطبيق السائق ─────────────────────────────────────────────
 function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogout: () => void }) {
-  const [tab, setTab] = useState<'home' | 'earnings' | 'contract' | 'profile'>('home');
+  const [tab, setTab] = useState<'home' | 'requests' | 'contract' | 'profile'>('home');
   const [isOnline, setIsOnline] = useState(false);
   const [earnings, setEarnings] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [myRide, setMyRide] = useState<any>(null);
+
+  const loadEarnings = () => apiFetch('GET', '/drivers/me/earnings?period=today', undefined, token).then(r => { if (r.success !== false) setEarnings(r); });
 
   React.useEffect(() => {
-    apiFetch('GET', '/drivers/me/earnings?period=today', undefined, token).then(r => { if (r.success !== false) setEarnings(r); });
+    loadEarnings();
     apiFetch('GET', '/contracts/my', undefined, token).then(r => { if (r.contract) setContract(r.contract); });
   }, []);
+
+  // 🔴 LIVE: poll incoming ride requests every 3s when online
+  React.useEffect(() => {
+    if (!isOnline || myRide) return;
+    const iv = setInterval(async () => {
+      const r = await apiFetch('GET', '/rides/available', undefined, token);
+      if (r.rides) setRequests(r.rides);
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [isOnline, myRide]);
+
+  const acceptRide = async (ride: any) => {
+    const r = await apiFetch('POST', `/rides/${ride.id}/accept`, {}, token);
+    if (r.success) { setMyRide(r.ride); setTab('requests'); Alert.alert('✅ قبلت الرحلة', 'توجّه إلى الراكب'); }
+  };
+
+  const updateRide = async (status: string) => {
+    await apiFetch('POST', `/rides/${myRide.id}/status`, { status }, token);
+    if (status === 'COMPLETED') {
+      setMyRide(null); loadEarnings();
+      Alert.alert('✅ اكتملت الرحلة', 'تمت إضافة أرباحك (85%)');
+    } else {
+      setMyRide({ ...myRide, status });
+      Alert.alert('تم', status === 'ARRIVED' ? 'أبلغنا الراكب بوصولك' : 'بدأت الرحلة');
+    }
+  };
 
   const toggleOnline = async () => {
     setLoading(true);
@@ -422,6 +492,69 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                 <Text style={s.infoRow}>حصتك: <Text style={[s.infoVal, { color: C.success }]}>{contract.profitDriverPercent}%</Text></Text>
                 <Text style={s.infoRow}>WinRak تغطي الخسائر: <Text style={[s.infoVal, { color: C.accent }]}>{contract.lossWinrakPercent}%</Text></Text>
               </View>
+            )}
+          </>
+        )}
+
+        {/* REQUESTS — live incoming rides */}
+        {tab === 'requests' && (
+          <>
+            {!isOnline && (
+              <View style={s.card}>
+                <Text style={{ textAlign: 'center', color: '#888', padding: 10 }}>
+                  🔴 أنت غير متصل. اذهب للرئيسية واضغط "ابدأ العمل" لاستقبال الطلبات.
+                </Text>
+              </View>
+            )}
+
+            {/* السائق لديه رحلة جارية */}
+            {myRide ? (
+              <View style={[s.card, { borderColor: C.success, borderWidth: 2 }]}>
+                <Text style={[s.cardTitle, { color: C.success }]}>🚖 رحلتك الحالية</Text>
+                <Text style={s.infoRow}>الأجرة: <Text style={s.infoVal}>{myRide.totalFare} دج</Text></Text>
+                <Text style={s.routeTxt}>🟢 {myRide.pickupAddress}</Text>
+                <Text style={s.routeTxt}>🔴 {myRide.dropoffAddress}</Text>
+                <Text style={s.infoRow}>حصتك (85%): <Text style={[s.infoVal, { color: C.success }]}>{Math.round(myRide.totalFare * 0.85)} دج</Text></Text>
+
+                {myRide.status === 'ACCEPTED' && (
+                  <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: C.secondary }]} onPress={() => updateRide('ARRIVED')}>
+                    <Text style={s.btnTxt}>📍 وصلت إلى الراكب</Text>
+                  </TouchableOpacity>
+                )}
+                {myRide.status === 'ARRIVED' && (
+                  <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: C.accent }]} onPress={() => updateRide('ONGOING')}>
+                    <Text style={[s.btnTxt, { color: '#fff' }]}>🚗 بدء الرحلة</Text>
+                  </TouchableOpacity>
+                )}
+                {myRide.status === 'ONGOING' && (
+                  <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: C.success }]} onPress={() => updateRide('COMPLETED')}>
+                    <Text style={[s.btnTxt, { color: '#fff' }]}>✅ إنهاء الرحلة</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <>
+                <Text style={s.secTitle}>📲 الطلبات الواردة ({requests.length})</Text>
+                {isOnline && requests.length === 0 && (
+                  <View style={{ alignItems: 'center', padding: 20 }}>
+                    <ActivityIndicator color={C.accent} />
+                    <Text style={{ color: '#888', marginTop: 10 }}>في انتظار طلبات الركاب...</Text>
+                  </View>
+                )}
+                {requests.map((rq: any) => (
+                  <View key={rq.id} style={s.rideCard}>
+                    <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between' }}>
+                      <Text style={{ color: C.secondary, fontWeight: '800', fontSize: 18 }}>{rq.totalFare} دج</Text>
+                      <Text style={{ color: '#888', fontSize: 12 }}>{rq.serviceType} • {rq.distance} كم</Text>
+                    </View>
+                    <Text style={s.routeTxt}>🟢 {rq.pickupAddress}</Text>
+                    <Text style={s.routeTxt}>🔴 {rq.dropoffAddress}</Text>
+                    <TouchableOpacity style={[s.btn, { marginTop: 10, backgroundColor: C.success }]} onPress={() => acceptRide(rq)}>
+                      <Text style={[s.btnTxt, { color: '#fff' }]}>قبول الطلب ✅</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </>
             )}
           </>
         )}
@@ -481,7 +614,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
       <View style={s.tabBar}>
         {[
           { id: 'home', icon: '🏠', label: 'الرئيسية' },
-          { id: 'earnings', icon: '💰', label: 'الأرباح' },
+          { id: 'requests', icon: '📲', label: 'الطلبات' },
           { id: 'contract', icon: '📄', label: 'العقد' },
           { id: 'profile', icon: '👤', label: 'حسابي' },
         ].map(t => (

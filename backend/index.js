@@ -122,6 +122,42 @@ app.post('/api/v1/rides/:id/accept', (req, res) => {
   res.json({ success: true, ride });
 });
 
+// driver updates ride status (ARRIVED / ONGOING / COMPLETED)
+app.post('/api/v1/rides/:id/status', (req, res) => {
+  const u = userFromToken(req);
+  const { status } = req.body;
+  const ride = db.prepare('SELECT * FROM rides WHERE id = ?').get(req.params.id);
+  if (!ride) return res.json({ success: false });
+
+  if (status === 'COMPLETED') {
+    db.prepare("UPDATE rides SET status='COMPLETED', completedAt=datetime('now') WHERE id=?").run(req.params.id);
+    // pay the driver (85% share)
+    const drv = db.prepare('SELECT * FROM drivers WHERE userId = ?').get(u.id);
+    if (drv) {
+      const share = Math.round(ride.totalFare * 0.85);
+      db.prepare('UPDATE drivers SET totalTrips=totalTrips+1, totalEarnings=totalEarnings+? WHERE id=?').run(share, drv.id);
+    }
+  } else {
+    db.prepare('UPDATE rides SET status=? WHERE id=?').run(status, req.params.id);
+  }
+  res.json({ success: true });
+});
+
+// get single ride status + driver info (passenger polls this)
+app.get('/api/v1/rides/:id', (req, res) => {
+  const ride = db.prepare('SELECT * FROM rides WHERE id = ?').get(req.params.id);
+  if (!ride) return res.json({ success: false });
+  let driver = null;
+  if (ride.driverId) {
+    const d = db.prepare('SELECT * FROM drivers WHERE id = ?').get(ride.driverId);
+    if (d) {
+      const du = db.prepare('SELECT * FROM users WHERE id = ?').get(d.userId);
+      driver = { fullName: du?.fullName || 'سائق', carModel: d.carModel, carPlate: d.carPlate, rating: d.rating, lat: d.lat, lng: d.lng };
+    }
+  }
+  res.json({ success: true, ride, driver });
+});
+
 // ─── Drivers ──────────────────────────────────────────────────
 app.get('/api/v1/drivers/me/earnings', (req, res) => {
   const u = userFromToken(req);
