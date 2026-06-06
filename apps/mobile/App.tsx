@@ -96,6 +96,7 @@ const TR: any = {
     sendBtn: 'إرسال', enter6digit: 'أدخل الرمز المكوّن من 6 أرقام المُرسل إلى هاتفك', verifyBtn: 'تحقّق',
     createNewPassword: 'إنشاء كلمة مرور جديدة', confirmPassword: 'تأكيد كلمة المرور', submitBtn: 'إرسال', pwMismatch: 'كلمتا المرور غير متطابقتين',
     supportGreeting: 'مرحباً، كيف يمكنني مساعدتك؟', supportReply: 'شكراً لتواصلك! سيرد فريقنا عليك قريباً.', enterMessage: 'اكتب رسالة...',
+    incomingCall: 'مكالمة واردة', calling: 'جاري الاتصال', chatGreeting: 'مرحباً، هل أنت قريب؟', chatReply: 'حسناً، أنا في الطريق 👍',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -163,6 +164,7 @@ const TR: any = {
     sendBtn: 'Envoyer', enter6digit: 'Entrez le code à 6 chiffres envoyé à votre téléphone', verifyBtn: 'Vérifier',
     createNewPassword: 'Créer un nouveau mot de passe', confirmPassword: 'Confirmer le mot de passe', submitBtn: 'Soumettre', pwMismatch: 'Les mots de passe ne correspondent pas',
     supportGreeting: 'Bonjour, comment puis-je vous aider ?', supportReply: 'Merci ! Notre équipe vous répondra bientôt.', enterMessage: 'Écrire un message...',
+    incomingCall: 'Appel entrant', calling: 'Appel en cours', chatGreeting: 'Bonjour, êtes-vous proche ?', chatReply: 'D\'accord, je suis en route 👍',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -230,6 +232,7 @@ const TR: any = {
     sendBtn: 'Send', enter6digit: 'Enter the 6-digit code we sent to your phone', verifyBtn: 'Verify',
     createNewPassword: 'Create new password', confirmPassword: 'Confirm password', submitBtn: 'Submit', pwMismatch: 'Passwords do not match',
     supportGreeting: 'Hi, how can I help you?', supportReply: 'Thanks! Our team will get back to you shortly.', enterMessage: 'Enter message...',
+    incomingCall: 'Incoming call', calling: 'Calling', chatGreeting: 'Hello, are you nearby?', chatReply: 'OK, I\'m on my way 👍',
   },
 };
 
@@ -284,6 +287,87 @@ function Gear({ dark }: { dark?: boolean }) {
     <TouchableOpacity onPress={openSettings} style={st.gear} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
       <Text style={{ fontSize: 22 }}>⚙️</Text>
     </TouchableOpacity>
+  );
+}
+
+// ─── شاشة المكالمة (واردة / جارية) ────────────────────────────
+function CallModal({ visible, name, initials, incoming, onClose }: { visible: boolean; name: string; initials: string; incoming: boolean; onClose: () => void }) {
+  const { t } = useLang();
+  const [active, setActive] = useState(!incoming);
+  const [secs, setSecs] = useState(0);
+  useEffect(() => { if (!visible) { setActive(!incoming); setSecs(0); } }, [visible, incoming]);
+  useEffect(() => {
+    if (!visible || !active) return;
+    const id = setInterval(() => setSecs(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [visible, active]);
+  const mmss = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
+  const ringing = incoming && !active;
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+        <View style={cm.yellowTop} />
+        <View style={{ alignItems: 'center', marginTop: -70 }}>
+          <View style={cm.avatar}><Text style={{ color: '#111', fontWeight: '900', fontSize: 40 }}>{initials}</Text></View>
+          <Text style={{ color: '#999', fontSize: 15, marginTop: 14 }}>{ringing ? t('incomingCall') : t('calling')}</Text>
+          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginTop: 4 }}>{name}</Text>
+          {active && <Text style={{ color: '#bbb', fontSize: 16, marginTop: 10 }}>{mmss}</Text>}
+        </View>
+        <View style={{ flex: 1 }} />
+        <View style={{ flexDirection: 'row', justifyContent: ringing ? 'space-evenly' : 'center', paddingBottom: 70 }}>
+          {ringing ? (
+            <>
+              <TouchableOpacity style={[cm.callBtn, { backgroundColor: '#8B0000' }]} onPress={onClose}><Ionicons name="call" size={28} color="#fff" style={{ transform: [{ rotate: '135deg' }] }} /></TouchableOpacity>
+              <TouchableOpacity style={[cm.callBtn, { backgroundColor: C.success }]} onPress={() => setActive(true)}><Ionicons name="call" size={28} color="#fff" /></TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={[cm.callBtn, { backgroundColor: '#8B0000' }]} onPress={onClose}><Ionicons name="call" size={28} color="#fff" style={{ transform: [{ rotate: '135deg' }] }} /></TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── شاشة المحادثة (راكب ↔ سائق) ──────────────────────────────
+function ChatModal({ visible, name, initials, onClose }: { visible: boolean; name: string; initials: string; onClose: () => void }) {
+  const { t } = useLang();
+  const [msgs, setMsgs] = useState<{ from: string; text: string }[]>([]);
+  const [input, setInput] = useState('');
+  useEffect(() => { if (visible) setMsgs([{ from: 'them', text: t('chatGreeting') }]); }, [visible]);
+  const send = () => {
+    const m = input.trim(); if (!m) return;
+    setMsgs(x => [...x, { from: 'me', text: m }]); setInput('');
+    setTimeout(() => setMsgs(x => [...x, { from: 'them', text: t('chatReply') }]), 1200);
+  };
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: 1, borderBottomColor: '#222' }}>
+            <TouchableOpacity onPress={onClose}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
+            <View style={[ch.agent, { marginRight: 0 }]}><Text style={{ color: '#111', fontWeight: '800' }}>{initials}</Text></View>
+            <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800' }}>{name}</Text>
+          </View>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={10}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, flexGrow: 1, justifyContent: 'flex-end' }}>
+              {msgs.map((m, i) => (
+                <View key={i} style={{ flexDirection: m.from === 'them' ? 'row' : 'row-reverse', alignItems: 'flex-end', marginBottom: 12 }}>
+                  {m.from === 'them' && <View style={ch.agent}><Text style={{ color: '#111', fontWeight: '800', fontSize: 12 }}>{initials}</Text></View>}
+                  <View style={[ch.bubble, m.from === 'them' ? { backgroundColor: YELLOW, borderBottomLeftRadius: 3 } : { backgroundColor: '#222', borderBottomRightRadius: 3 }]}>
+                    <Text style={{ color: m.from === 'them' ? '#111' : '#fff', fontSize: 14 }}>{m.text}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={ch.inputBar}>
+              <TextInput style={{ flex: 1, color: '#fff', fontSize: 15 }} placeholder={t('enterMessage')} placeholderTextColor="#888" value={input} onChangeText={setInput} onSubmitEditing={send} returnKeyType="send" />
+              <TouchableOpacity onPress={send}><Ionicons name="send" size={22} color={YELLOW} /></TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </View>
+    </Modal>
   );
 }
 
@@ -554,6 +638,10 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
   const [driver, setDriver] = useState<any>(null);
   const [myLoc, setMyLoc] = useState<any>(null);
   const [destPicker, setDestPicker] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const [callIncoming, setCallIncoming] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const calledRef = useRef(false);
 
   const SCRH = Dimensions.get('window').height;
   const SERVICES = [
@@ -617,6 +705,15 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
 
   const loadRides = async () => { const r = await apiFetch('GET', '/rides/my', undefined, token); if (r.rides) setRides(r.rides); };
   useEffect(() => { if (view === 'rides') loadRides(); }, [view]);
+
+  // محاكاة: السائق يتصل بك بعد قبوله الرحلة (يُظهر شاشة المكالمة الواردة)
+  useEffect(() => {
+    if (driver && !calledRef.current) {
+      calledRef.current = true;
+      const id = setTimeout(() => { setCallIncoming(true); setCallOpen(true); }, 6000);
+      return () => clearTimeout(id);
+    }
+  }, [driver]);
 
   const statusTxt = (s: string) => s === 'SEARCHING' ? t('searching') : s === 'ACCEPTED' ? t('accepted') : s === 'ARRIVED' ? t('arrived') : s === 'ONGOING' ? t('ongoing') : s;
   const initials = (user?.fullName || 'P').trim().charAt(0).toUpperCase();
@@ -765,7 +862,10 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
                 <Text style={{ color: '#999', fontSize: 13 }}>{driver?.carModel} • {driver?.carPlate}</Text>
                 <View style={{ marginTop: 2 }}><Stars n={Math.round(driver?.rating || 5)} /></View>
               </View>
-              <TouchableOpacity style={rs.circleBtn} onPress={() => driver && Alert.alert('📞', driver.fullName)}><Ionicons name="call" size={18} color="#111" /></TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={rs.circleBtn} onPress={() => { setCallIncoming(false); setCallOpen(true); }}><Ionicons name="call" size={18} color="#111" /></TouchableOpacity>
+                <TouchableOpacity style={rs.circleBtn} onPress={() => setChatOpen(true)}><Ionicons name="chatbubble-ellipses" size={18} color="#111" /></TouchableOpacity>
+              </View>
             </View>
             <View style={{ backgroundColor: '#1a1a1a', borderRadius: 12, padding: 12, marginTop: 14 }}>
               <Text style={{ color: YELLOW, fontWeight: '800', textAlign: 'center' }}>{statusTxt(activeRide.status)}</Text>
@@ -777,6 +877,9 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
           </>
         )}
       </View>
+
+      <CallModal visible={callOpen} name={driver?.fullName || t('driver')} initials={(driver?.fullName || 'D').charAt(0)} incoming={callIncoming} onClose={() => setCallOpen(false)} />
+      <ChatModal visible={chatOpen} name={driver?.fullName || t('driver')} initials={(driver?.fullName || 'D').charAt(0)} onClose={() => setChatOpen(false)} />
     </View>
   );
 }
@@ -902,6 +1005,8 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const SCRH = Dimensions.get('window').height;
   const driverLoc = myRide ? { lat: myRide.pickupLat + 0.003, lng: myRide.pickupLng + 0.002 } : { lat: 36.7525, lng: 3.042 };
   const initOf = (n: string) => (n || 'P').trim().charAt(0).toUpperCase();
+  const [callOpen, setCallOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // ── Side Drawer ──
   const DrawerMenu = () => (
@@ -1010,8 +1115,8 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                   {myRide.status === 'ACCEPTED' && (
                     <>
                       <View style={rs.callRow}>
-                        <TouchableOpacity style={rs.circleBtn} onPress={callPassenger}><Ionicons name="call" size={18} color="#111" /></TouchableOpacity>
-                        <TouchableOpacity style={rs.circleBtn} onPress={() => Alert.alert('💬', myRide.passengerName)}><Ionicons name="chatbubble-ellipses" size={18} color="#111" /></TouchableOpacity>
+                        <TouchableOpacity style={rs.circleBtn} onPress={() => setCallOpen(true)}><Ionicons name="call" size={18} color="#111" /></TouchableOpacity>
+                        <TouchableOpacity style={rs.circleBtn} onPress={() => setChatOpen(true)}><Ionicons name="chatbubble-ellipses" size={18} color="#111" /></TouchableOpacity>
                         <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: C.error }]} onPress={cancelRide}><Text style={rs.btnW}>{t('cancelTrip')}</Text></TouchableOpacity>
                       </View>
                       <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW }]} onPress={() => updateRide('ARRIVED')}><Text style={rs.btnD}>{t('arrivedPickup')}</Text></TouchableOpacity>
@@ -1089,6 +1194,8 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
             </View>
           </>
         )}
+        <CallModal visible={callOpen} name={myRide?.passengerName || t('passengerName')} initials={initOf(myRide?.passengerName || '')} incoming={false} onClose={() => setCallOpen(false)} />
+        <ChatModal visible={chatOpen} name={myRide?.passengerName || t('passengerName')} initials={initOf(myRide?.passengerName || '')} onClose={() => setChatOpen(false)} />
       </View>
     );
   }
@@ -1448,6 +1555,13 @@ const dr2 = StyleSheet.create({
   acctAvatar: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#111' },
   pencil: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: YELLOW, borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' },
   acctRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#171717', borderRadius: 14, padding: 16, marginBottom: 10 },
+});
+
+// أنماط شاشة المكالمة
+const cm = StyleSheet.create({
+  yellowTop: { height: 230, backgroundColor: YELLOW, borderBottomLeftRadius: 90, borderBottomRightRadius: 90 },
+  avatar: { width: 130, height: 130, borderRadius: 65, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#0D0D0D' },
+  callBtn: { width: 66, height: 66, borderRadius: 33, justifyContent: 'center', alignItems: 'center' },
 });
 
 // أنماط محادثة الدعم
