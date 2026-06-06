@@ -778,6 +778,15 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const [finished, setFinished] = useState(false);
   const [countdown, setCountdown] = useState(25);
   const [stopIndex, setStopIndex] = useState(0);
+  const [nearDrop, setNearDrop] = useState(false);
+
+  // محاكاة القيادة: زر "Arrived" يظهر بعد الاقتراب من الوجهة (~10ث من بدء الرحلة)
+  useEffect(() => {
+    if (myRide?.status === 'ONGOING' && !nearDrop && !paused) {
+      const id = setTimeout(() => setNearDrop(true), 10000);
+      return () => clearTimeout(id);
+    }
+  }, [myRide?.status, nearDrop, paused]);
 
   // countdown for the top incoming request (auto-skip at 0)
   useEffect(() => {
@@ -787,7 +796,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
     return () => clearTimeout(id);
   }, [isOnline, myRide, requests, countdown]);
 
-  const acceptRide = async (ride: any) => { const r = await apiFetch('POST', `/rides/${ride.id}/accept`, {}, token); if (r.success) { setMyRide(r.ride); setPaused(false); setStopIndex(0); setRequests([]); } };
+  const acceptRide = async (ride: any) => { const r = await apiFetch('POST', `/rides/${ride.id}/accept`, {}, token); if (r.success) { setMyRide(r.ride); setPaused(false); setStopIndex(0); setNearDrop(false); setRequests([]); } };
   const reject = () => { setRequests([]); setCountdown(25); };
   const updateRide = async (status: string) => {
     await apiFetch('POST', `/rides/${myRide.id}/status`, { status }, token);
@@ -930,12 +939,16 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                     const stops = myRide.stops || [];
                     const moreStops = stops.length > 0 && stopIndex < stops.length;
                     const arriveLabel = moreStops ? `${t('arrivedDrop')} ${stopIndex + 1}` : t('arrivedDrop');
-                    const onArrive = () => { if (moreStops) setStopIndex(stopIndex + 1); else updateRide('COMPLETED'); };
-                    return (
+                    const onArrive = () => { if (moreStops) { setStopIndex(stopIndex + 1); setNearDrop(false); } else updateRide('COMPLETED'); };
+                    const pauseBtn = (full?: boolean) => (
+                      <TouchableOpacity style={[rs.btn, full ? {} : { flex: 1 }, { backgroundColor: paused ? YELLOW : '#fff' }]} onPress={() => setPaused(!paused)}>
+                        <Text style={rs.btnD}>{paused ? t('resumeTrip') : t('pauseTrip')}</Text>
+                      </TouchableOpacity>
+                    );
+                    // قبل الاقتراب: زر واحد بعرض كامل — بعده: زرّان مع Arrived
+                    return !nearDrop ? pauseBtn(true) : (
                       <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? YELLOW : '#fff' }]} onPress={() => setPaused(!paused)}>
-                          <Text style={rs.btnD}>{paused ? t('resumeTrip') : t('pauseTrip')}</Text>
-                        </TouchableOpacity>
+                        {pauseBtn()}
                         <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: paused ? '#d9d9d9' : YELLOW }]} onPress={onArrive}>
                           <Text style={rs.btnD}>{arriveLabel}</Text>
                         </TouchableOpacity>
