@@ -34,6 +34,8 @@ export default {
     },
     plugins: [
       ['expo-location', { locationWhenInUsePermission: LOC_MSG }],
+      ['expo-image-picker', { photosPermission: 'WinRak يحتاج الوصول للصور لرفع وثائقك.' }],
+      'expo-notifications',
     ],
     extra: {
       appVariant: variant,

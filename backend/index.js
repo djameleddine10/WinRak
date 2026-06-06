@@ -233,6 +233,69 @@ app.patch('/api/v1/users/me/profile', (req, res) => {
   res.json({ success: true, user: u });
 });
 
+// 📍 بث موقع السائق المباشر
+app.patch('/api/v1/drivers/me/location', (req, res) => {
+  const u = userFromToken(req);
+  const drv = DB.drivers[u?.id];
+  if (!drv) return res.json({ success: false });
+  if (typeof req.body.lat === 'number') drv.lat = req.body.lat;
+  if (typeof req.body.lng === 'number') drv.lng = req.body.lng;
+  res.json({ success: true });
+});
+
+// 💰 المحفظة + الكاش + المعاملات
+app.get('/api/v1/drivers/me/wallet', (req, res) => {
+  const u = userFromToken(req);
+  const drv = DB.drivers[u?.id];
+  if (!drv) return res.json({ success: true, balance: 0, transactions: [] });
+  const completed = Object.values(DB.rides).filter(r => r.driverId === drv.id && r.status === 'COMPLETED');
+  const tx = completed.map(r => {
+    const share = Math.round(r.totalFare * 0.85);
+    return { rideId: r.id, fare: r.totalFare, driverShare: share, commission: r.totalFare - share, paymentMethod: r.paymentMethod, date: r.completedAt || r.requestedAt, route: `${r.pickupAddress} → ${r.dropoffAddress}` };
+  }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const cashRides = completed.filter(r => r.paymentMethod === 'CASH');
+  res.json({
+    success: true,
+    balance: Math.round(drv.totalEarnings || 0),
+    today: sum(tx.filter(t => (t.date || '').slice(0, 10) === today), t => t.driverShare),
+    week: Math.round(drv.totalEarnings || 0),
+    month: Math.round(drv.totalEarnings || 0),
+    cashCollected: sum(cashRides, r => r.totalFare),
+    commissionOwed: sum(cashRides, r => r.totalFare - Math.round(r.totalFare * 0.85)),
+    transactions: tx,
+  });
+});
+
+// 📊 لوحة تقاسم الأرباح/الخسائر (ميزة WinRak الحصرية)
+app.get('/api/v1/drivers/me/sharing', (req, res) => {
+  const u = userFromToken(req);
+  const drv = DB.drivers[u?.id];
+  const c = drv ? DB.contracts[drv.id] : null;
+  const monthProfit = Math.round(drv?.totalEarnings || 0);
+  const monthLoss = drv?.monthLoss || 0;
+  const lossCovered = Math.round(monthLoss * ((c?.lossWinrakPercent || 30) / 100));
+  res.json({ success: true, contract: c, monthProfit, monthLoss, lossCovered, lossCap: c?.monthlyLossCap || 20000, lossCapRemaining: (c?.monthlyLossCap || 20000) - monthLoss });
+});
+
+// 📄 وثائق السائق (KYC)
+app.patch('/api/v1/drivers/me/documents', (req, res) => {
+  const u = userFromToken(req);
+  const drv = DB.drivers[u?.id];
+  if (!drv) return res.json({ success: false });
+  drv.documents = { ...(drv.documents || {}), ...req.body };
+  res.json({ success: true, documents: drv.documents });
+});
+
+// 🔔 تسجيل رمز الإشعارات
+app.patch('/api/v1/users/me/push-token', (req, res) => {
+  const u = userFromToken(req);
+  if (!u) return res.json({ success: false });
+  u.pushToken = req.body.token;
+  res.json({ success: true });
+});
+
 app.patch('/api/v1/drivers/status', (req, res) => {
   const u = userFromToken(req);
   const drv = DB.drivers[u?.id];

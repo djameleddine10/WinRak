@@ -5,9 +5,16 @@ import {
   Platform, Modal, Animated, Easing, Dimensions, Linking, KeyboardAvoidingView,
 } from 'react-native';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import RideMap from './Map';
+
+// إظهار الإشعارات عندما يكون التطبيق مفتوحاً
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true } as any),
+});
 
 // نوع التطبيق: 'driver' = WinRak Driver | 'passenger' = WinRak | 'both' = تطوير (اختيار الدور)
 const APP_VARIANT: string = (Constants.expoConfig?.extra as any)?.appVariant || 'both';
@@ -101,6 +108,11 @@ const TR: any = {
     createNewPassword: 'إنشاء كلمة مرور جديدة', confirmPassword: 'تأكيد كلمة المرور', submitBtn: 'إرسال', pwMismatch: 'كلمتا المرور غير متطابقتين',
     supportGreeting: 'مرحباً، كيف يمكنني مساعدتك؟', supportReply: 'شكراً لتواصلك! سيرد فريقنا عليك قريباً.', enterMessage: 'اكتب رسالة...',
     incomingCall: 'مكالمة واردة', calling: 'جاري الاتصال', chatGreeting: 'مرحباً، هل أنت قريب؟', chatReply: 'حسناً، أنا في الطريق 👍',
+    mWallet: 'المحفظة', navigate: 'الملاحة', balance: 'الرصيد', cashCollected: 'الكاش المحصّل', commissionOwed: 'عمولة مستحقّة',
+    withdraw: 'سحب الأموال', transactions: 'المعاملات', noTransactions: 'لا معاملات بعد', earningsSharing: 'الأرباح والتقاسم',
+    monthProfit: 'ربح الشهر', lossCapRemaining: 'سقف الخسارة المتبقّي', lossCovered: 'WinRak غطّت', documents: 'الوثائق',
+    driverLicense: 'رخصة القيادة', vehicleReg: 'بطاقة المركبة', insurance: 'التأمين', profilePhoto: 'الصورة الشخصية',
+    upload: 'رفع', uploaded: 'تم الرفع ✓', withdrawSoon: 'السحب سيتوفّر قريباً', newRideRequest: 'طلب رحلة جديد! 🚖', tapToAccept: 'اضغط للقبول',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -169,6 +181,11 @@ const TR: any = {
     createNewPassword: 'Créer un nouveau mot de passe', confirmPassword: 'Confirmer le mot de passe', submitBtn: 'Soumettre', pwMismatch: 'Les mots de passe ne correspondent pas',
     supportGreeting: 'Bonjour, comment puis-je vous aider ?', supportReply: 'Merci ! Notre équipe vous répondra bientôt.', enterMessage: 'Écrire un message...',
     incomingCall: 'Appel entrant', calling: 'Appel en cours', chatGreeting: 'Bonjour, êtes-vous proche ?', chatReply: 'D\'accord, je suis en route 👍',
+    mWallet: 'Portefeuille', navigate: 'Naviguer', balance: 'Solde', cashCollected: 'Espèces collectées', commissionOwed: 'Commission due',
+    withdraw: 'Retirer', transactions: 'Transactions', noTransactions: 'Aucune transaction', earningsSharing: 'Gains & Partage',
+    monthProfit: 'Profit du mois', lossCapRemaining: 'Plafond de perte restant', lossCovered: 'WinRak a couvert', documents: 'Documents',
+    driverLicense: 'Permis de conduire', vehicleReg: 'Carte grise', insurance: 'Assurance', profilePhoto: 'Photo de profil',
+    upload: 'Téléverser', uploaded: 'Téléversé ✓', withdrawSoon: 'Retrait bientôt disponible', newRideRequest: 'Nouvelle demande ! 🚖', tapToAccept: 'Appuyez pour accepter',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -237,6 +254,11 @@ const TR: any = {
     createNewPassword: 'Create new password', confirmPassword: 'Confirm password', submitBtn: 'Submit', pwMismatch: 'Passwords do not match',
     supportGreeting: 'Hi, how can I help you?', supportReply: 'Thanks! Our team will get back to you shortly.', enterMessage: 'Enter message...',
     incomingCall: 'Incoming call', calling: 'Calling', chatGreeting: 'Hello, are you nearby?', chatReply: 'OK, I\'m on my way 👍',
+    mWallet: 'Wallet', navigate: 'Navigate', balance: 'Balance', cashCollected: 'Cash collected', commissionOwed: 'Commission owed',
+    withdraw: 'Withdraw', transactions: 'Transactions', noTransactions: 'No transactions yet', earningsSharing: 'Earnings & Sharing',
+    monthProfit: 'Month profit', lossCapRemaining: 'Loss cap remaining', lossCovered: 'WinRak covered', documents: 'Documents',
+    driverLicense: 'Driver license', vehicleReg: 'Vehicle registration', insurance: 'Insurance', profilePhoto: 'Profile photo',
+    upload: 'Upload', uploaded: 'Uploaded ✓', withdrawSoon: 'Withdraw coming soon', newRideRequest: 'New ride request! 🚖', tapToAccept: 'Tap to accept',
   },
 };
 
@@ -925,7 +947,7 @@ function TripCard({ trip }: { trip: any }) {
 
 function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogout: () => void }) {
   const { t, openSettings } = useLang();
-  const [view, setView] = useState<'home' | 'rides' | 'account'>('home');
+  const [view, setView] = useState<'home' | 'rides' | 'wallet' | 'account'>('home');
   const [drawer, setDrawer] = useState(false);
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today');
   const [isOnline, setIsOnline] = useState(false);
@@ -951,9 +973,12 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const [countdown, setCountdown] = useState(25);
   const [stopIndex, setStopIndex] = useState(0);
   const [nearDrop, setNearDrop] = useState(false);
-  const [acctView, setAcctView] = useState<'main' | 'details' | 'vehicle' | 'password' | 'support'>('main');
+  const [acctView, setAcctView] = useState<'main' | 'details' | 'vehicle' | 'password' | 'support' | 'documents' | 'sharing'>('main');
   const [prof, setProf] = useState({ firstName: '', lastName: '', email: '', city: '', phone: '' });
   const [veh, setVeh] = useState({ brand: '', model: '', year: '', plate: '' });
+  const [wallet, setWallet] = useState<any>(null);
+  const [sharing, setSharing] = useState<any>(null);
+  const [docs, setDocs] = useState<any>({});
   const [pwStep, setPwStep] = useState<'menu' | 'change' | 'fphone' | 'fotp' | 'fnew'>('menu');
   const [pwCode, setPwCode] = useState('');
   const [chat, setChat] = useState<{ from: string; text: string }[]>([]);
@@ -968,11 +993,61 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
     if (view !== 'account') return;
     apiFetch('GET', '/drivers/me', undefined, token).then(r => {
       if (r.user) { const p = (r.user.fullName || '').split(' '); setProf({ firstName: p[0] || '', lastName: p.slice(1).join(' '), email: r.user.email || '', city: r.user.city || '', phone: r.user.phone || '' }); }
-      if (r.driver) setVeh({ brand: r.driver.carBrand || '', model: r.driver.carModel || '', year: String(r.driver.carYear || ''), plate: r.driver.carPlate || '' });
+      if (r.driver) { setVeh({ brand: r.driver.carBrand || '', model: r.driver.carModel || '', year: String(r.driver.carYear || ''), plate: r.driver.carPlate || '' }); setDocs(r.driver.documents || {}); }
     });
   }, [view]);
   const saveProfile = async () => { await apiFetch('PATCH', '/drivers/me/profile', { fullName: `${prof.firstName} ${prof.lastName}`.trim(), email: prof.email, city: prof.city, phone: prof.phone }, token); Alert.alert('✅', t('saved')); setAcctView('main'); };
   const saveVehicle = async () => { await apiFetch('PATCH', '/drivers/me/vehicle', veh, token); Alert.alert('✅', t('saved')); setAcctView('main'); };
+
+  // 💰 تحميل المحفظة عند فتحها
+  useEffect(() => { if (view === 'wallet') apiFetch('GET', '/drivers/me/wallet', undefined, token).then(r => { if (r.success !== false) setWallet(r); }); }, [view]);
+  // 📊 تحميل بيانات التقاسم
+  useEffect(() => { if (acctView === 'sharing') apiFetch('GET', '/drivers/me/sharing', undefined, token).then(r => { if (r.success !== false) setSharing(r); }); }, [acctView]);
+  // 📄 رفع وثيقة (اختيار صورة)
+  const pickDoc = async (key: string) => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.4 });
+      if (!res.canceled) { setDocs((d: any) => ({ ...d, [key]: true })); apiFetch('PATCH', '/drivers/me/documents', { [key]: true }, token); Alert.alert('✅', t('uploaded')); }
+    } catch {}
+  };
+
+  // 🔔 تسجيل الإشعارات
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Notifications.getPermissionsAsync();
+        if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
+        if (status === 'granted') {
+          const pid = (Constants.expoConfig?.extra as any)?.eas?.projectId;
+          const tok = (await Notifications.getExpoPushTokenAsync(pid ? { projectId: pid } : undefined as any)).data;
+          apiFetch('PATCH', '/users/me/push-token', { token: tok }, token);
+        }
+      } catch {}
+    })();
+  }, []);
+  // إشعار محلي عند وصول طلب جديد
+  const prevReqLen = useRef(0);
+  useEffect(() => {
+    if (requests.length > prevReqLen.current && requests.length > 0) {
+      Notifications.scheduleNotificationAsync({ content: { title: t('newRideRequest'), body: `${requests[0].totalFare} ${t('da')} • ${requests[0].pickupAddress}` }, trigger: null }).catch(() => {});
+    }
+    prevReqLen.current = requests.length;
+  }, [requests]);
+  // 📍 بث الموقع المباشر أثناء الرحلة
+  useEffect(() => {
+    if (!myRide) return;
+    let sub: any;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        sub = await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 25, timeInterval: 5000 }, (pos) => {
+          apiFetch('PATCH', '/drivers/me/location', { lat: pos.coords.latitude, lng: pos.coords.longitude }, token);
+        });
+      } catch {}
+    })();
+    return () => { if (sub) sub.remove(); };
+  }, [myRide?.id]);
 
   // محاكاة القيادة: زر "Arrived" يظهر بعد الاقتراب من الوجهة (~10ث من بدء الرحلة)
   useEffect(() => {
@@ -999,6 +1074,12 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   };
   const cancelRide = async () => { if (myRide) await apiFetch('POST', `/rides/${myRide.id}/status`, { status: 'CANCELLED' }, token); setMyRide(null); setPaused(false); };
   const callPassenger = () => { if (myRide?.passengerPhone) Linking.openURL(`tel:${myRide.passengerPhone}`); else Alert.alert('📞', myRide?.passengerName || ''); };
+  const openNav = () => {
+    if (!myRide) return;
+    const d = myRide.status === 'ACCEPTED' ? { lat: myRide.pickupLat, lng: myRide.pickupLng } : { lat: myRide.dropoffLat, lng: myRide.dropoffLng };
+    const url = Platform.OS === 'ios' ? `http://maps.apple.com/?daddr=${d.lat},${d.lng}` : `google.navigation:q=${d.lat},${d.lng}`;
+    Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}&travelmode=driving`));
+  };
   const toggleOnline = async () => {
     setLoading(true);
     const r = await apiFetch('PATCH', '/drivers/status', { isOnline: !isOnline }, token);
@@ -1025,6 +1106,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
           {[
             { id: 'home', icon: 'home', label: t('mHome') },
             { id: 'rides', icon: 'car-sport', label: t('mRides') },
+            { id: 'wallet', icon: 'wallet', label: t('mWallet') },
             { id: 'account', icon: 'person', label: t('mAccount') },
           ].map(it => (
             <TouchableOpacity key={it.id} style={[dr.drawerItem, view === it.id && dr.drawerItemActive]} onPress={() => nav(it.id)}>
@@ -1118,6 +1200,9 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
               {myRide ? (
                 <>
                   <PassengerCard ride={myRide} />
+                  <TouchableOpacity style={[rs.btn, { backgroundColor: '#1a1a1a', flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 12, marginBottom: 0 }]} onPress={openNav}>
+                    <Ionicons name="navigate" size={18} color={YELLOW} /><Text style={{ color: YELLOW, fontWeight: '800' }}>{t('navigate')}</Text>
+                  </TouchableOpacity>
                   {myRide.status === 'ACCEPTED' && (
                     <>
                       <View style={rs.callRow}>
@@ -1206,11 +1291,64 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
     );
   }
 
+  // ===== WALLET (محفظة + كاش + معاملات) =====
+  if (view === 'wallet') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+        <StatusBar barStyle="dark-content" backgroundColor={YELLOW} />
+        <DrawerMenu />
+        <SafeAreaView style={{ backgroundColor: YELLOW }}>
+          <View style={dr.headerTop}>
+            <TouchableOpacity style={dr.menuBtn} onPress={() => setDrawer(true)}><Ionicons name="menu" size={24} color={YELLOW} /></TouchableOpacity>
+            <Text style={{ color: '#111', fontWeight: '900', fontSize: 18 }}>{t('mWallet')}</Text>
+            <View style={{ width: 44 }} />
+          </View>
+        </SafeAreaView>
+        <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
+          <View style={{ backgroundColor: YELLOW, borderRadius: 18, padding: 22, marginBottom: 14 }}>
+            <Text style={{ color: '#5a4a00', fontSize: 13, fontWeight: '700' }}>{t('balance')}</Text>
+            <Text style={{ color: '#111', fontSize: 40, fontWeight: '900' }}>{(wallet?.balance || 0).toLocaleString()} <Text style={{ fontSize: 18 }}>{t('da')}</Text></Text>
+            <View style={{ flexDirection: 'row', gap: 18, marginTop: 6 }}>
+              <Text style={{ color: '#5a4a00', fontSize: 12 }}>{t('pToday')}: {wallet?.today || 0}</Text>
+              <Text style={{ color: '#5a4a00', fontSize: 12 }}>{t('pMonth')}: {wallet?.month || 0}</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+            <View style={[dr.accCard, { flex: 1, alignItems: 'flex-start', padding: 16, marginBottom: 0 }]}>
+              <Ionicons name="cash-outline" size={20} color={C.success} />
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17, marginTop: 6 }}>{(wallet?.cashCollected || 0).toLocaleString()}</Text>
+              <Text style={{ color: '#888', fontSize: 11 }}>{t('cashCollected')}</Text>
+            </View>
+            <View style={[dr.accCard, { flex: 1, alignItems: 'flex-start', padding: 16, marginBottom: 0 }]}>
+              <Ionicons name="arrow-up-circle-outline" size={20} color={C.error} />
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17, marginTop: 6 }}>{(wallet?.commissionOwed || 0).toLocaleString()}</Text>
+              <Text style={{ color: '#888', fontSize: 11 }}>{t('commissionOwed')}</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW }]} onPress={() => Alert.alert('💰', t('withdrawSoon'))}><Text style={rs.btnD}>{t('withdraw')}</Text></TouchableOpacity>
+          <Text style={dr.sectionTitle}>{t('transactions')}</Text>
+          {(!wallet?.transactions || wallet.transactions.length === 0) ? <Text style={dr.emptyTxt}>{t('noTransactions')}</Text> : wallet.transactions.map((tx: any, i: number) => (
+            <View key={i} style={dr.tripCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }} numberOfLines={1}>{tx.route}</Text>
+                <Text style={{ color: '#888', fontSize: 11, marginTop: 2 }}>{new Date(tx.date).toLocaleDateString()} • {tx.paymentMethod === 'CASH' ? t('payCash') : t('payCard')}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ color: C.success, fontWeight: '800' }}>+{tx.driverShare} {t('da')}</Text>
+                <Text style={{ color: '#666', fontSize: 10 }}>-{tx.commission}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
   // ===== ACCOUNT (profile + settings) =====
   if (view === 'account') {
     if (acctView !== 'main') {
       const pwTitle = pwStep === 'change' ? t('changePassword') : (pwStep === 'fphone' || pwStep === 'fotp') ? t('forgotPassword') : pwStep === 'fnew' ? t('createNewPassword') : t('passwordLbl');
-      const title = acctView === 'details' ? t('accountDetails') : acctView === 'vehicle' ? t('vehicleDetails') : acctView === 'password' ? pwTitle : t('customerSupport');
+      const title = acctView === 'details' ? t('accountDetails') : acctView === 'vehicle' ? t('vehicleDetails') : acctView === 'password' ? pwTitle : acctView === 'documents' ? t('documents') : acctView === 'sharing' ? t('earningsSharing') : t('customerSupport');
       const goBack = () => {
         if (acctView === 'password' && pwStep !== 'menu') setPwStep(pwStep === 'change' || pwStep === 'fphone' ? 'menu' : pwStep === 'fotp' ? 'fphone' : 'fotp');
         else setAcctView('main');
@@ -1310,6 +1448,30 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                 <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
                 <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={() => { Alert.alert('✅', t('saved')); setAcctView('main'); setPwStep('menu'); }}><Text style={rs.btnD}>{t('submitBtn')}</Text></TouchableOpacity>
               </>)}
+              {acctView === 'documents' && (<>
+                {[{ k: 'license', label: t('driverLicense') }, { k: 'registration', label: t('vehicleReg') }, { k: 'insurance', label: t('insurance') }, { k: 'photo', label: t('profilePhoto') }].map(d => (
+                  <TouchableOpacity key={d.k} style={dr2.acctRow} onPress={() => pickDoc(d.k)}>
+                    <Ionicons name={docs[d.k] ? 'checkmark-circle' : 'cloud-upload-outline'} size={22} color={docs[d.k] ? C.success : YELLOW} />
+                    <Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontWeight: '600' }}>{d.label}</Text>
+                    <Text style={{ color: docs[d.k] ? C.success : '#888', fontSize: 12, fontWeight: '700' }}>{docs[d.k] ? t('uploaded') : t('upload')}</Text>
+                  </TouchableOpacity>
+                ))}
+              </>)}
+              {acctView === 'sharing' && sharing && (<>
+                <View style={dr.accCard}>
+                  <Text style={{ color: '#999', fontSize: 13 }}>{t('monthProfit')}</Text>
+                  <Text style={{ color: C.success, fontSize: 38, fontWeight: '900' }}>{sharing.monthProfit?.toLocaleString()} {t('da')}</Text>
+                </View>
+                <View style={[dr.accCard, { borderWidth: 1.5, borderColor: C.accent, alignItems: 'stretch' }]}>
+                  <Text style={{ color: C.accent, fontWeight: '800', marginBottom: 12, fontSize: 16, textAlign: 'center' }}>{t('lossSharing')}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 }}>
+                    <View style={{ alignItems: 'center' }}><Text style={{ fontSize: 30, fontWeight: '900', color: C.success }}>{sharing.contract?.profitDriverPercent}%</Text><Text style={{ color: '#888', fontSize: 12 }}>{t('yourShare')}</Text></View>
+                    <View style={{ alignItems: 'center' }}><Text style={{ fontSize: 30, fontWeight: '900', color: C.accent }}>{sharing.contract?.lossWinrakPercent}%</Text><Text style={{ color: '#888', fontSize: 12 }}>{t('lossCovered')}</Text></View>
+                  </View>
+                  <Text style={{ color: '#bbb', fontSize: 13, textAlign: 'center' }}>{t('lossCapRemaining')}: <Text style={{ color: YELLOW, fontWeight: '800' }}>{sharing.lossCapRemaining?.toLocaleString()} {t('da')}</Text></Text>
+                </View>
+                <Text style={{ color: '#888', fontSize: 13, lineHeight: 22 }}>{t('coverList')}</Text>
+              </>)}
             </ScrollView>
             )}
           </SafeAreaView>
@@ -1319,6 +1481,8 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
     const wallet = Math.round(earnings?.total || 0);
     const ITEMS = [
       { id: 'details', icon: 'create-outline', label: t('profileSettings') },
+      { id: 'sharing', icon: 'stats-chart-outline', label: t('earningsSharing') },
+      { id: 'documents', icon: 'document-text-outline', label: t('documents') },
       { id: 'password', icon: 'lock-closed-outline', label: t('passwordLbl') },
       { id: 'vehicle', icon: 'car-outline', label: t('vehicleDetails') },
       { id: 'support', icon: 'headset-outline', label: t('customerSupport') },
