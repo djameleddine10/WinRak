@@ -11,6 +11,12 @@ import RideMap from './Map';
 // لون الثيم الأصفر (من تصميم Figma)
 const YELLOW = '#FFD400';
 
+// تنسيق المدة بالدقائق → "00h 25m"
+const fmtDur = (min: number) => {
+  const m = Math.max(0, Math.round(min || 0));
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}h ${String(m % 60).padStart(2, '0')}m`;
+};
+
 // ✅ Backend على السحابة - يعمل من أي مكان
 const API = 'https://winrak-backend-production.up.railway.app/api/v1';
 const C = {
@@ -79,6 +85,7 @@ const TR: any = {
     reject: 'رفض', accept: 'قبول', rideRequestLbl: 'طلب رحلة', cancelTrip: 'إلغاء',
     arrivedPickup: 'وصلت لنقطة الانطلاق', startTripBtn: 'بدء الرحلة', pauseTrip: 'إيقاف مؤقت', resumeTrip: 'استئناف',
     arrivedDrop: 'وصلت لنقطة النزول', dropPoint: 'نقطة نزول', tripFinished: 'انتهت الرحلة', goOnlineNow: 'ابدأ العمل', goOfflineNow: 'إيقاف',
+    stopOverPoints: 'نقاط التوقّف المحدّدة',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -135,6 +142,7 @@ const TR: any = {
     reject: 'Refuser', accept: 'Accepter', rideRequestLbl: 'Demande', cancelTrip: 'Annuler',
     arrivedPickup: 'Arrivé au départ', startTripBtn: 'Démarrer', pauseTrip: 'Pause', resumeTrip: 'Reprendre',
     arrivedDrop: 'Arrivé à destination', dropPoint: 'Point', tripFinished: 'Course terminée', goOnlineNow: 'Commencer', goOfflineNow: 'Arrêter',
+    stopOverPoints: 'Points d\'arrêt désignés',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -191,6 +199,7 @@ const TR: any = {
     reject: 'Reject', accept: 'Accept', rideRequestLbl: 'Ride request', cancelTrip: 'Cancel',
     arrivedPickup: 'Arrived pickup location', startTripBtn: 'Start trip', pauseTrip: 'Pause trip', resumeTrip: 'Resume trip',
     arrivedDrop: 'Arrived drop point', dropPoint: 'Drop point', tripFinished: 'Trip Finished', goOnlineNow: 'Go online', goOfflineNow: 'Go offline',
+    stopOverPoints: 'Designated stop over points',
   },
 };
 
@@ -842,9 +851,10 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
         <Stars n={Math.round(ride.passengerRating || 5)} />
       </View>
       <View style={{ flex: 1, paddingLeft: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
           <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>{ride.totalFare} {t('da')}</Text>
           <Text style={{ color: '#999', fontSize: 13 }}>{ride.distance} {t('km')}</Text>
+          <Text style={{ color: '#999', fontSize: 13 }}>{fmtDur(ride.duration)}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <Ionicons name="location" size={15} color="#fff" /><Text style={rs.addr} numberOfLines={1}>{ride.pickupAddress}</Text>
@@ -942,6 +952,17 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                       <View style={rs.countdown}><Text style={{ color: '#111', fontWeight: '800' }}>{countdown}</Text></View>
                       <TouchableOpacity style={[rs.btn, { flex: 1, backgroundColor: YELLOW }]} onPress={() => acceptRide(requests[0])}><Text style={rs.btnD}>{t('accept')}</Text></TouchableOpacity>
                     </View>
+                    {(requests[0].stops || []).length > 0 && (
+                      <View style={{ marginTop: 16 }}>
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13, marginBottom: 8 }}>{t('stopOverPoints')}</Text>
+                        {requests[0].stops.map((s: any, i: number) => (
+                          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                            <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: YELLOW }} />
+                            <Text style={{ color: '#bbb', fontSize: 12 }} numberOfLines={1}>{s.address}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </>
                 ) : (
                   <>
