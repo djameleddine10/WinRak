@@ -52,14 +52,15 @@ app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', service: 'WinRa
 app.post('/api/v1/auth/send-otp', (req, res) => res.json({ success: true, message: 'OTP sent' }));
 
 app.post('/api/v1/auth/verify-otp', (req, res) => {
-  const { phone, code } = req.body;
+  const { phone, code, fullName } = req.body;
   if (code !== '000000') return res.json({ success: false, message: 'رمز خاطئ' });
   const isDriver = phone === '+213660000001' || phone.startsWith('+21366');
 
   let user = Object.values(DB.users).find(u => u.phone === phone);
   if (!user) {
     const id = uid(isDriver ? 'driver' : 'passenger');
-    user = { id, phone, fullName: isDriver ? 'سائق WinRak' : 'راكب WinRak', role: isDriver ? 'DRIVER' : 'PASSENGER', winPoints: isDriver ? 0 : 100, createdAt: new Date().toISOString() };
+    const name = (fullName && fullName.trim()) ? fullName.trim() : (isDriver ? 'سائق WinRak' : 'راكب WinRak');
+    user = { id, phone, fullName: name, role: isDriver ? 'DRIVER' : 'PASSENGER', winPoints: isDriver ? 0 : 100, createdAt: new Date().toISOString() };
     DB.users[id] = user;
     if (isDriver) {
       const did = uid('drv');
@@ -117,8 +118,14 @@ app.get('/api/v1/rides/my', (req, res) => {
   res.json({ success: true, rides });
 });
 
+// enrich a ride with passenger info for the driver UI
+function enrichRide(r) {
+  const p = DB.users[r.passengerId];
+  return { ...r, passengerName: p?.fullName || 'راكب', passengerPhone: p?.phone || '', passengerRating: 4.8 };
+}
+
 app.get('/api/v1/rides/available', (req, res) => {
-  const rides = Object.values(DB.rides).filter(r => r.status === 'SEARCHING').sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)).slice(0, 20);
+  const rides = Object.values(DB.rides).filter(r => r.status === 'SEARCHING').sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)).slice(0, 20).map(enrichRide);
   res.json({ success: true, rides });
 });
 
@@ -129,7 +136,7 @@ app.post('/api/v1/rides/:id/accept', (req, res) => {
   if (!ride || !drv) return res.json({ success: false });
   ride.status = 'ACCEPTED';
   ride.driverId = drv.id;
-  res.json({ success: true, ride });
+  res.json({ success: true, ride: enrichRide(ride) });
 });
 
 app.post('/api/v1/rides/:id/status', (req, res) => {
@@ -141,7 +148,7 @@ app.post('/api/v1/rides/:id/status', (req, res) => {
     ride.status = 'COMPLETED';
     ride.completedAt = new Date().toISOString();
     const drv = DB.drivers[u?.id];
-    if (drv) { drv.totalTrips += 1; drv.totalEarnings += Math.round(ride.totalFare * 0.85); }
+    if (drv) { drv.totalTrips += 1; drv.totalEarnings += Math.round(ride.totalFare * 0.85); drv.hoursOnline = Math.round(((drv.hoursOnline || 0) + 0.4) * 10) / 10; }
   } else ride.status = status;
   res.json({ success: true });
 });
@@ -169,7 +176,18 @@ app.get('/api/v1/rides/:id', (req, res) => {
 app.get('/api/v1/drivers/me/earnings', (req, res) => {
   const u = userFromToken(req);
   const drv = DB.drivers[u?.id];
-  res.json({ success: true, total: drv?.totalEarnings || 0, period: 'today', driver: { totalTrips: drv?.totalTrips || 0 } });
+  res.json({ success: true, total: drv?.totalEarnings || 0, hoursOnline: drv?.hoursOnline || 0, rating: drv?.rating || 4.9, acceptance: 95.0, cancellation: 2.0, period: 'today', driver: { totalTrips: drv?.totalTrips || 0 } });
+});
+
+// رحلات السائق (السجل + الحالية) لشاشة Home
+app.get('/api/v1/drivers/me/trips', (req, res) => {
+  const u = userFromToken(req);
+  const drv = DB.drivers[u?.id];
+  if (!drv) return res.json({ success: true, trips: [] });
+  const trips = Object.values(DB.rides)
+    .filter(r => r.driverId === drv.id)
+    .sort((a, b) => (b.completedAt || b.requestedAt).localeCompare(a.completedAt || a.requestedAt));
+  res.json({ success: true, trips });
 });
 
 app.patch('/api/v1/drivers/status', (req, res) => {
