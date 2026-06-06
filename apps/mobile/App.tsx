@@ -91,6 +91,10 @@ const TR: any = {
     firstName: 'الاسم', lastName: 'اللقب', email: 'البريد الإلكتروني', city: 'المدينة', save: 'حفظ', saved: 'تم الحفظ',
     vehicleBrand: 'ماركة المركبة', vehicleModel: 'الموديل', yearLbl: 'السنة', plateNumber: 'رقم اللوحة',
     currentPassword: 'كلمة المرور الحالية', newPassword: 'كلمة المرور الجديدة', supportText: 'للمساعدة تواصل معنا:',
+    changePassword: 'تغيير كلمة المرور', forgotPassword: 'نسيت كلمة المرور', enterOld: 'أدخل كلمة المرور القديمة',
+    enterNew: 'أدخل كلمة المرور الجديدة', confirmNew: 'تأكيد كلمة المرور الجديدة', enterPhoneAttached: 'أدخل رقم الهاتف المرتبط بحسابك',
+    sendBtn: 'إرسال', enter6digit: 'أدخل الرمز المكوّن من 6 أرقام المُرسل إلى هاتفك', verifyBtn: 'تحقّق',
+    createNewPassword: 'إنشاء كلمة مرور جديدة', confirmPassword: 'تأكيد كلمة المرور', submitBtn: 'إرسال', pwMismatch: 'كلمتا المرور غير متطابقتين',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -153,6 +157,10 @@ const TR: any = {
     firstName: 'Prénom', lastName: 'Nom', email: 'E-mail', city: 'Ville', save: 'Enregistrer', saved: 'Enregistré',
     vehicleBrand: 'Marque', vehicleModel: 'Modèle', yearLbl: 'Année', plateNumber: 'Plaque',
     currentPassword: 'Mot de passe actuel', newPassword: 'Nouveau mot de passe', supportText: 'Besoin d\'aide ? Contactez-nous :',
+    changePassword: 'Changer le mot de passe', forgotPassword: 'Mot de passe oublié', enterOld: 'Ancien mot de passe',
+    enterNew: 'Nouveau mot de passe', confirmNew: 'Confirmer le nouveau mot de passe', enterPhoneAttached: 'Entrez le numéro lié à votre compte',
+    sendBtn: 'Envoyer', enter6digit: 'Entrez le code à 6 chiffres envoyé à votre téléphone', verifyBtn: 'Vérifier',
+    createNewPassword: 'Créer un nouveau mot de passe', confirmPassword: 'Confirmer le mot de passe', submitBtn: 'Soumettre', pwMismatch: 'Les mots de passe ne correspondent pas',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -215,6 +223,10 @@ const TR: any = {
     firstName: 'First name', lastName: 'Last name', email: 'Email', city: 'City', save: 'Save', saved: 'Saved',
     vehicleBrand: 'Vehicle brand', vehicleModel: 'Model', yearLbl: 'Year', plateNumber: 'Plate number',
     currentPassword: 'Current password', newPassword: 'New password', supportText: 'Need help? Contact us:',
+    changePassword: 'Change password', forgotPassword: 'Forgot password', enterOld: 'Enter old password',
+    enterNew: 'Enter new password', confirmNew: 'Confirm new password', enterPhoneAttached: 'Enter the phone number attached to your account',
+    sendBtn: 'Send', enter6digit: 'Enter the 6-digit code we sent to your phone', verifyBtn: 'Verify',
+    createNewPassword: 'Create new password', confirmPassword: 'Confirm password', submitBtn: 'Submit', pwMismatch: 'Passwords do not match',
   },
 };
 
@@ -830,6 +842,8 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const [acctView, setAcctView] = useState<'main' | 'details' | 'vehicle' | 'password' | 'support'>('main');
   const [prof, setProf] = useState({ firstName: '', lastName: '', email: '', city: '', phone: '' });
   const [veh, setVeh] = useState({ brand: '', model: '', year: '', plate: '' });
+  const [pwStep, setPwStep] = useState<'menu' | 'change' | 'fphone' | 'fotp' | 'fnew'>('menu');
+  const [pwCode, setPwCode] = useState('');
 
   useEffect(() => {
     if (view !== 'account') return;
@@ -1072,14 +1086,19 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   // ===== ACCOUNT (profile + settings) =====
   if (view === 'account') {
     if (acctView !== 'main') {
-      const title = acctView === 'details' ? t('accountDetails') : acctView === 'vehicle' ? t('vehicleDetails') : acctView === 'password' ? t('passwordLbl') : t('customerSupport');
+      const pwTitle = pwStep === 'change' ? t('changePassword') : (pwStep === 'fphone' || pwStep === 'fotp') ? t('forgotPassword') : pwStep === 'fnew' ? t('createNewPassword') : t('passwordLbl');
+      const title = acctView === 'details' ? t('accountDetails') : acctView === 'vehicle' ? t('vehicleDetails') : acctView === 'password' ? pwTitle : t('customerSupport');
+      const goBack = () => {
+        if (acctView === 'password' && pwStep !== 'menu') setPwStep(pwStep === 'change' || pwStep === 'fphone' ? 'menu' : pwStep === 'fotp' ? 'fphone' : 'fotp');
+        else setAcctView('main');
+      };
       return (
         <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
           <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
           <DrawerMenu />
           <SafeAreaView style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 20 }}>
-              <TouchableOpacity onPress={() => setAcctView('main')}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
+              <TouchableOpacity onPress={goBack}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
               <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{title}</Text>
             </View>
             <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 0 }}>
@@ -1107,12 +1126,48 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
                 <TextInput style={au.input} value={veh.plate} onChangeText={(v) => setVeh({ ...veh, plate: v })} placeholder="80519MR" placeholderTextColor="#999" />
                 <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={saveVehicle}><Text style={rs.btnD}>{t('save')}</Text></TouchableOpacity>
               </>)}
-              {acctView === 'password' && (<>
-                <Text style={ps.label}>{t('currentPassword')}</Text>
-                <TextInput style={au.input} secureTextEntry placeholder="••••••" placeholderTextColor="#999" />
-                <Text style={ps.label}>{t('newPassword')}</Text>
-                <TextInput style={au.input} secureTextEntry placeholder="••••••" placeholderTextColor="#999" />
-                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={() => { Alert.alert('✅', t('saved')); setAcctView('main'); }}><Text style={rs.btnD}>{t('save')}</Text></TouchableOpacity>
+              {acctView === 'password' && pwStep === 'menu' && (<>
+                <TouchableOpacity style={dr2.acctRow} onPress={() => setPwStep('change')}>
+                  <Ionicons name="lock-closed-outline" size={20} color={YELLOW} /><Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontWeight: '600' }}>{t('changePassword')}</Text><Ionicons name="chevron-forward" size={18} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity style={dr2.acctRow} onPress={() => { setPwCode(''); setPwStep('fphone'); }}>
+                  <Ionicons name="help-circle-outline" size={20} color={YELLOW} /><Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontWeight: '600' }}>{t('forgotPassword')}</Text><Ionicons name="chevron-forward" size={18} color="#666" />
+                </TouchableOpacity>
+              </>)}
+              {acctView === 'password' && pwStep === 'change' && (<>
+                <Text style={ps.label}>{t('enterOld')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('enterNew')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('confirmNew')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={() => { Alert.alert('✅', t('saved')); setAcctView('main'); setPwStep('menu'); }}><Text style={rs.btnD}>{t('save')}</Text></TouchableOpacity>
+              </>)}
+              {acctView === 'password' && pwStep === 'fphone' && (<>
+                <Text style={{ color: '#ccc', textAlign: 'center', marginTop: 30, marginBottom: 18, fontSize: 15 }}>{t('enterPhoneAttached')}</Text>
+                <TextInput style={au.input} keyboardType="phone-pad" placeholder="+213..." placeholderTextColor="#999" defaultValue={user?.phone} />
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 6 }]} onPress={() => setPwStep('fotp')}><Text style={rs.btnD}>{t('sendBtn')}</Text></TouchableOpacity>
+              </>)}
+              {acctView === 'password' && pwStep === 'fotp' && (<>
+                <Text style={{ color: '#ccc', textAlign: 'center', marginTop: 30, marginBottom: 18, fontSize: 15 }}>{t('enter6digit')}</Text>
+                <View style={{ marginBottom: 8 }}>
+                  <TextInput value={pwCode} onChangeText={(v) => setPwCode(v.replace(/\D/g, '').slice(0, 6))} keyboardType="numeric" maxLength={6} autoFocus style={{ position: 'absolute', width: '100%', height: 56, opacity: 0, zIndex: 2 }} />
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    {[0, 1, 2, 3, 4, 5].map(i => (
+                      <View key={i} style={{ width: 46, height: 56, borderRadius: 10, borderWidth: 2, borderColor: pwCode[i] ? YELLOW : '#333', backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800' }}>{pwCode[i] || ''}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 6 }]} onPress={() => setPwStep('fnew')}><Text style={rs.btnD}>{t('verifyBtn')}</Text></TouchableOpacity>
+              </>)}
+              {acctView === 'password' && pwStep === 'fnew' && (<>
+                <Text style={ps.label}>{t('enterNew')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('confirmPassword')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="Password" placeholderTextColor="#999" />
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={() => { Alert.alert('✅', t('saved')); setAcctView('main'); setPwStep('menu'); }}><Text style={rs.btnD}>{t('submitBtn')}</Text></TouchableOpacity>
               </>)}
               {acctView === 'support' && (<>
                 <Text style={{ color: '#bbb', fontSize: 15, marginBottom: 16 }}>{t('supportText')}</Text>
