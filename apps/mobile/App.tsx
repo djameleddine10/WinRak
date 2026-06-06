@@ -83,7 +83,7 @@ const TR: any = {
     contractFull: '📄 عقد الشراكة مع WinRak', active: '✅ ساري المفعول', profitDist: '💰 توزيع الأرباح',
     lossSharing: '🛡️ تقاسم الخسائر — الميزة الحصرية', winrakBears: 'WinRak تتحمل', maxLoss: 'أقصى خسارة شهرية عليك',
     coverList: '✅ حوادث الطريق\n✅ أعطال السيارة أثناء الرحلة\n✅ أضرار الراكب\n✅ إلغاء الرحلة المفاجئ',
-    settings: 'الإعدادات', chooseLang: 'اختر اللغة', close: 'إغلاق',
+    settings: 'الإعدادات', chooseLang: 'اختر اللغة', close: 'إغلاق', language: 'اللغة',
     passengerName: 'راكب', driverName: 'سائق',
     tMap: 'الخريطة', myLocation: '📍 موقعي الحالي', locating: 'جاري تحديد موقعك...',
     locationOff: 'لم نتمكن من تحديد موقعك — فعّل صلاحية الموقع', routeMap: '🗺️ مسار الرحلة', driverOnMap: 'السائق على الخريطة',
@@ -156,7 +156,7 @@ const TR: any = {
     contractFull: '📄 Contrat de partenariat WinRak', active: '✅ Actif', profitDist: '💰 Répartition des profits',
     lossSharing: '🛡️ Partage des pertes — exclusif', winrakBears: 'WinRak prend en charge', maxLoss: 'Perte mensuelle max',
     coverList: '✅ Accidents de route\n✅ Pannes pendant la course\n✅ Dommages passager\n✅ Annulation soudaine',
-    settings: 'Paramètres', chooseLang: 'Choisissez la langue', close: 'Fermer',
+    settings: 'Paramètres', chooseLang: 'Choisissez la langue', close: 'Fermer', language: 'Langue',
     passengerName: 'Passager', driverName: 'Chauffeur',
     tMap: 'Carte', myLocation: '📍 Ma position', locating: 'Localisation...',
     locationOff: 'Position introuvable — activez la localisation', routeMap: '🗺️ Itinéraire', driverOnMap: 'Chauffeur sur la carte',
@@ -229,7 +229,7 @@ const TR: any = {
     contractFull: '📄 Partnership contract with WinRak', active: '✅ Active', profitDist: '💰 Profit distribution',
     lossSharing: '🛡️ Loss sharing — exclusive feature', winrakBears: 'WinRak bears', maxLoss: 'Max monthly loss on you',
     coverList: '✅ Road accidents\n✅ Car breakdowns during ride\n✅ Passenger damages\n✅ Sudden cancellation',
-    settings: 'Settings', chooseLang: 'Choose language', close: 'Close',
+    settings: 'Settings', chooseLang: 'Choose language', close: 'Close', language: 'Language',
     passengerName: 'Passenger', driverName: 'Driver',
     tMap: 'Map', myLocation: '📍 My location', locating: 'Locating you...',
     locationOff: 'Could not locate you — enable location permission', routeMap: '🗺️ Trip route', driverOnMap: 'Driver on map',
@@ -800,7 +800,12 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
                   <Text style={{ color: '#111', fontWeight: '800' }}>⭐ {user?.winPoints || 0} WinPoints</Text>
                 </View>
               </View>
-              <TouchableOpacity style={[dr.smallBtn, { backgroundColor: C.error }]} onPress={onLogout}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('mSignOut')}</Text></TouchableOpacity>
+              <TouchableOpacity style={dr2.acctRow} onPress={openSettings}>
+                <Ionicons name="language-outline" size={20} color={YELLOW} />
+                <Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontSize: 15, fontWeight: '600' }}>{t('language')}</Text>
+                <Ionicons name="chevron-forward" size={18} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[dr.smallBtn, { backgroundColor: C.error, marginTop: 8 }]} onPress={onLogout}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('mSignOut')}</Text></TouchableOpacity>
             </>
           )}
         </ScrollView>
@@ -1483,8 +1488,9 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
       { id: 'details', icon: 'create-outline', label: t('profileSettings') },
       { id: 'sharing', icon: 'stats-chart-outline', label: t('earningsSharing') },
       { id: 'documents', icon: 'document-text-outline', label: t('documents') },
-      { id: 'password', icon: 'lock-closed-outline', label: t('passwordLbl') },
       { id: 'vehicle', icon: 'car-outline', label: t('vehicleDetails') },
+      { id: 'password', icon: 'lock-closed-outline', label: t('passwordLbl') },
+      { id: 'language', icon: 'language-outline', label: t('language') },
       { id: 'support', icon: 'headset-outline', label: t('customerSupport') },
     ];
     return (
@@ -1511,7 +1517,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
         </SafeAreaView>
         <ScrollView contentContainerStyle={{ padding: 18 }}>
           {ITEMS.map(it => (
-            <TouchableOpacity key={it.id} style={dr2.acctRow} onPress={() => { setAcctView(it.id as any); if (it.id === 'password') setPwStep('menu'); if (it.id === 'support') setChat([{ from: 'agent', text: t('supportGreeting') }]); }}>
+            <TouchableOpacity key={it.id} style={dr2.acctRow} onPress={() => { if (it.id === 'language') { openSettings(); return; } setAcctView(it.id as any); if (it.id === 'password') setPwStep('menu'); if (it.id === 'support') setChat([{ from: 'agent', text: t('supportGreeting') }]); }}>
               <Ionicons name={it.icon as any} size={20} color={YELLOW} />
               <Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontSize: 15, fontWeight: '600' }}>{it.label}</Text>
               <Ionicons name="chevron-forward" size={18} color="#666" />
