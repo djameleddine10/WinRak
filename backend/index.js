@@ -152,7 +152,15 @@ app.get('/api/v1/rides/:id', (req, res) => {
   let driver = null;
   if (ride.driverId) {
     const d = Object.values(DB.drivers).find(x => x.id === ride.driverId);
-    if (d) { const du = DB.users[d.userId]; driver = { fullName: du?.fullName || 'سائق', carModel: d.carModel, carPlate: d.carPlate, rating: d.rating, lat: d.lat, lng: d.lng }; }
+    if (d) {
+      const du = DB.users[d.userId];
+      // السائق الافتراضي يظهر قرب موقع الراكب (~300م) ليبدو واقعياً في أي مدينة
+      let lat = d.lat, lng = d.lng;
+      if (d.id === SIM_DRIVER.id && ride.pickupLat) {
+        lat = ride.pickupLat + 0.003; lng = ride.pickupLng + 0.002;
+      }
+      driver = { fullName: du?.fullName || 'سائق', carModel: d.carModel, carPlate: d.carPlate, rating: d.rating, lat, lng };
+    }
   }
   res.json({ success: true, ride, driver });
 });

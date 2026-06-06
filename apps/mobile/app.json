@@ -13,16 +13,23 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "dz.winrak.app"
+      "bundleIdentifier": "dz.winrak.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "WinRak يحتاج موقعك لتحديد نقطة انطلاق رحلتك."
+      }
     },
     "android": {
       "package": "dz.winrak.app",
-      "versionCode": 1,
+      "versionCode": 2,
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A1A2E"
       }
     },
+    "plugins": [
+      ["expo-location", { "locationWhenInUsePermission": "WinRak يحتاج موقعك لتحديد نقطة انطلاق رحلتك." }]
+    ],
     "extra": {
       "eas": {
         "projectId": "a03b3e3f-ee0d-4024-86d8-2f9b44c7f973"

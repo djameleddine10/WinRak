@@ -4,6 +4,8 @@ import {
   StyleSheet, Alert, ActivityIndicator, StatusBar, SafeAreaView,
   Platform, Modal,
 } from 'react-native';
+import * as Location from 'expo-location';
+import RideMap from './Map';
 
 // ✅ Backend على السحابة - يعمل من أي مكان
 const API = 'https://winrak-backend-production.up.railway.app/api/v1';
@@ -57,6 +59,8 @@ const TR: any = {
     coverList: '✅ حوادث الطريق\n✅ أعطال السيارة أثناء الرحلة\n✅ أضرار الراكب\n✅ إلغاء الرحلة المفاجئ',
     settings: 'الإعدادات', chooseLang: 'اختر اللغة', close: 'إغلاق',
     passengerName: 'راكب', driverName: 'سائق',
+    tMap: 'الخريطة', myLocation: '📍 موقعي الحالي', locating: 'جاري تحديد موقعك...',
+    locationOff: 'لم نتمكن من تحديد موقعك — فعّل صلاحية الموقع', routeMap: '🗺️ مسار الرحلة', driverOnMap: 'السائق على الخريطة',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -97,6 +101,8 @@ const TR: any = {
     coverList: '✅ Accidents de route\n✅ Pannes pendant la course\n✅ Dommages passager\n✅ Annulation soudaine',
     settings: 'Paramètres', chooseLang: 'Choisissez la langue', close: 'Fermer',
     passengerName: 'Passager', driverName: 'Chauffeur',
+    tMap: 'Carte', myLocation: '📍 Ma position', locating: 'Localisation...',
+    locationOff: 'Position introuvable — activez la localisation', routeMap: '🗺️ Itinéraire', driverOnMap: 'Chauffeur sur la carte',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -137,6 +143,8 @@ const TR: any = {
     coverList: '✅ Road accidents\n✅ Car breakdowns during ride\n✅ Passenger damages\n✅ Sudden cancellation',
     settings: 'Settings', chooseLang: 'Choose language', close: 'Close',
     passengerName: 'Passenger', driverName: 'Driver',
+    tMap: 'Map', myLocation: '📍 My location', locating: 'Locating you...',
+    locationOff: 'Could not locate you — enable location permission', routeMap: '🗺️ Trip route', driverOnMap: 'Driver on map',
   },
 };
 
@@ -340,6 +348,8 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
   const [rides, setRides] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [driver, setDriver] = useState<any>(null);
+  const [myLoc, setMyLoc] = useState<any>(null);
+  const [locating, setLocating] = useState(true);
 
   const SERVICES = [
     { type: 'GO', icon: '🚗', name: 'WinRak GO', desc: t('economic') },
@@ -347,8 +357,25 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
     { type: 'XL', icon: '🚐', name: 'WinRak XL', desc: t('family') },
     { type: 'SHE', icon: '👩', name: 'WinRak SHE', desc: t('forWomen') },
   ];
-  const PICKUP = { lat: 36.749, lng: 3.052, address: 'حيدرة، الجزائر' };
+  // نقطة الانطلاق = موقعك الحقيقي (GPS)، أو حيدرة افتراضياً
+  const PICKUP = myLoc
+    ? { lat: myLoc.lat, lng: myLoc.lng, address: t('myLocation') }
+    : { lat: 36.749, lng: 3.052, address: 'حيدرة، الجزائر' };
   const DROPOFF = { lat: 36.770, lng: 2.990, address: 'باب الوادي، الجزائر' };
+
+  // الحصول على الموقع الحقيقي عند فتح التطبيق
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          setMyLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        }
+      } catch {}
+      setLocating(false);
+    })();
+  }, []);
 
   const getEstimate = async () => {
     setLoading(true);
@@ -403,16 +430,26 @@ function PassengerApp({ token, user, onLogout }: { token: string; user: any; onL
               <Text style={st.bigNum}>{user?.winPoints || 0} <Text style={{ fontSize: 16, color: '#888' }}>{t('points')}</Text></Text>
             </View>
             <View style={st.card}>
-              <Text style={[st.cardTitle, { textAlign: ta }]}>{t('readyTrip')}</Text>
-              <Text style={[st.routeTxt, { textAlign: ta }]}>🟢 {t('from')}: {PICKUP.address}</Text>
+              <Text style={[st.cardTitle, { textAlign: ta }]}>{t('routeMap')}</Text>
+              {locating ? (
+                <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: '#eef2f5', borderRadius: 16 }}>
+                  <ActivityIndicator color={C.accent} /><Text style={{ color: '#888', marginTop: 8 }}>{t('locating')}</Text>
+                </View>
+              ) : (
+                <RideMap pickup={PICKUP} dropoff={DROPOFF} driver={driver} height={220} />
+              )}
+              <Text style={[st.routeTxt, { textAlign: ta, marginTop: 10 }]}>🟢 {t('from')}: {PICKUP.address}</Text>
               <Text style={[st.routeTxt, { textAlign: ta }]}>🔴 {t('to')}: {DROPOFF.address}</Text>
-              <TouchableOpacity style={[st.btn, { marginTop: 14 }]} onPress={() => setTab('book')}><Text style={st.btnTxt}>{t('orderNow')}</Text></TouchableOpacity>
+              <TouchableOpacity style={[st.btn, { marginTop: 10 }]} onPress={() => setTab('book')}><Text style={st.btnTxt}>{t('orderNow')}</Text></TouchableOpacity>
             </View>
             {activeRide && activeRide.status !== 'COMPLETED' && (
               <View style={[st.card, { borderColor: C.accent, borderWidth: 2 }]}>
                 <Text style={[st.cardTitle, { textAlign: ta }]}>{t('activeRide')}</Text>
                 <Text style={[st.routeTxt, { textAlign: ta }]}>{t('status')}: <Text style={{ color: C.accent, fontWeight: '700' }}>{statusTxt(activeRide.status)}</Text></Text>
                 <Text style={[st.routeTxt, { textAlign: ta }]}>{t('fare')}: {activeRide.totalFare} {t('da')}</Text>
+                <View style={{ marginTop: 10 }}>
+                  <RideMap pickup={PICKUP} dropoff={DROPOFF} driver={driver} height={200} />
+                </View>
                 {driver && (
                   <View style={{ marginTop: 12, backgroundColor: C.accent + '15', borderRadius: 12, padding: 12 }}>
                     <Text style={{ fontWeight: '800', color: C.primary, textAlign: ta, fontSize: 16 }}>🚗 {driver.fullName}</Text>
