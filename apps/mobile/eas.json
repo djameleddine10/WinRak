@@ -14,6 +14,16 @@
       "distribution": "internal",
       "android": { "buildType": "apk" }
     },
+    "passenger": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "APP_VARIANT": "passenger" }
+    },
+    "driver": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "APP_VARIANT": "driver" }
+    },
     "production": {
       "autoIncrement": true,
       "android": { "buildType": "app-bundle" },

@@ -6,7 +6,11 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import RideMap from './Map';
+
+// نوع التطبيق: 'driver' = WinRak Driver | 'passenger' = WinRak | 'both' = تطوير (اختيار الدور)
+const APP_VARIANT: string = (Constants.expoConfig?.extra as any)?.appVariant || 'both';
 
 // لون الثيم الأصفر (من تصميم Figma)
 const YELLOW = '#FFD400';
@@ -394,16 +398,18 @@ export default function App() {
 }
 
 function Root() {
+  const fixedRole: 'passenger' | 'driver' | null = APP_VARIANT === 'driver' ? 'driver' : APP_VARIANT === 'passenger' ? 'passenger' : null;
   const [screen, setScreen] = useState<'splash' | 'role' | 'login' | 'passenger' | 'driver'>('splash');
-  const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
+  const [role, setRole] = useState<'passenger' | 'driver'>(fixedRole || 'passenger');
   const [token, setToken] = useState('');
   const [user, setUser] = useState<any>(null);
 
   const handleLogin = (t: string, u: any) => { setToken(t); setUser(u); setScreen(role); };
 
-  if (screen === 'splash') return <SplashScreen onDone={() => setScreen('role')} />;
+  // التطبيق المنفصل: بعد البداية يذهب مباشرة لتسجيل الدخول (بلا شاشة اختيار الدور)
+  if (screen === 'splash') return <SplashScreen onDone={() => setScreen(fixedRole ? 'login' : 'role')} />;
   if (screen === 'role') return <RoleScreen onSelect={(r) => { setRole(r); setScreen('login'); }} />;
-  if (screen === 'login') return <LoginScreen role={role} onLogin={handleLogin} onBack={() => setScreen('role')} />;
+  if (screen === 'login') return <LoginScreen role={role} onLogin={handleLogin} onBack={() => setScreen(fixedRole ? 'splash' : 'role')} />;
   if (screen === 'passenger') return <PassengerApp token={token} user={user} onLogout={() => setScreen('role')} />;
   if (screen === 'driver') return <DriverApp token={token} user={user} onLogout={() => setScreen('role')} />;
   return null;
