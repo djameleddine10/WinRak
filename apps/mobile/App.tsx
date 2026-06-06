@@ -86,6 +86,11 @@ const TR: any = {
     arrivedPickup: 'وصلت لنقطة الانطلاق', startTripBtn: 'بدء الرحلة', pauseTrip: 'إيقاف مؤقت', resumeTrip: 'استئناف',
     arrivedDrop: 'وصلت لنقطة النزول', dropPoint: 'نقطة نزول', tripFinished: 'انتهت الرحلة', goOnlineNow: 'ابدأ العمل', goOfflineNow: 'إيقاف',
     stopOverPoints: 'نقاط التوقّف المحدّدة',
+    walletBalance: 'رصيد المحفظة', dedicated: 'موثّق', profileSettings: 'إعدادات الملف', passwordLbl: 'كلمة المرور',
+    vehicleDetails: 'تفاصيل المركبة', customerSupport: 'دعم العملاء', accountDetails: 'تفاصيل الحساب',
+    firstName: 'الاسم', lastName: 'اللقب', email: 'البريد الإلكتروني', city: 'المدينة', save: 'حفظ', saved: 'تم الحفظ',
+    vehicleBrand: 'ماركة المركبة', vehicleModel: 'الموديل', yearLbl: 'السنة', plateNumber: 'رقم اللوحة',
+    currentPassword: 'كلمة المرور الحالية', newPassword: 'كلمة المرور الجديدة', supportText: 'للمساعدة تواصل معنا:',
   },
   fr: {
     tagline: 'Où es-tu ? On vient ! 🚖', who: 'Qui êtes-vous ?',
@@ -143,6 +148,11 @@ const TR: any = {
     arrivedPickup: 'Arrivé au départ', startTripBtn: 'Démarrer', pauseTrip: 'Pause', resumeTrip: 'Reprendre',
     arrivedDrop: 'Arrivé à destination', dropPoint: 'Point', tripFinished: 'Course terminée', goOnlineNow: 'Commencer', goOfflineNow: 'Arrêter',
     stopOverPoints: 'Points d\'arrêt désignés',
+    walletBalance: 'Solde du portefeuille', dedicated: 'Vérifié', profileSettings: 'Paramètres du profil', passwordLbl: 'Mot de passe',
+    vehicleDetails: 'Détails du véhicule', customerSupport: 'Support client', accountDetails: 'Détails du compte',
+    firstName: 'Prénom', lastName: 'Nom', email: 'E-mail', city: 'Ville', save: 'Enregistrer', saved: 'Enregistré',
+    vehicleBrand: 'Marque', vehicleModel: 'Modèle', yearLbl: 'Année', plateNumber: 'Plaque',
+    currentPassword: 'Mot de passe actuel', newPassword: 'Nouveau mot de passe', supportText: 'Besoin d\'aide ? Contactez-nous :',
   },
   en: {
     tagline: 'Where are you? We\'ll come! 🚖', who: 'Who are you?',
@@ -200,6 +210,11 @@ const TR: any = {
     arrivedPickup: 'Arrived pickup location', startTripBtn: 'Start trip', pauseTrip: 'Pause trip', resumeTrip: 'Resume trip',
     arrivedDrop: 'Arrived drop point', dropPoint: 'Drop point', tripFinished: 'Trip Finished', goOnlineNow: 'Go online', goOfflineNow: 'Go offline',
     stopOverPoints: 'Designated stop over points',
+    walletBalance: 'Wallet Balance', dedicated: 'Dedicated', profileSettings: 'Profile settings', passwordLbl: 'Password',
+    vehicleDetails: 'Vehicle details', customerSupport: 'Customer support', accountDetails: 'Account details',
+    firstName: 'First name', lastName: 'Last name', email: 'Email', city: 'City', save: 'Save', saved: 'Saved',
+    vehicleBrand: 'Vehicle brand', vehicleModel: 'Model', yearLbl: 'Year', plateNumber: 'Plate number',
+    currentPassword: 'Current password', newPassword: 'New password', supportText: 'Need help? Contact us:',
   },
 };
 
@@ -812,6 +827,19 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   const [countdown, setCountdown] = useState(25);
   const [stopIndex, setStopIndex] = useState(0);
   const [nearDrop, setNearDrop] = useState(false);
+  const [acctView, setAcctView] = useState<'main' | 'details' | 'vehicle' | 'password' | 'support'>('main');
+  const [prof, setProf] = useState({ firstName: '', lastName: '', email: '', city: '', phone: '' });
+  const [veh, setVeh] = useState({ brand: '', model: '', year: '', plate: '' });
+
+  useEffect(() => {
+    if (view !== 'account') return;
+    apiFetch('GET', '/drivers/me', undefined, token).then(r => {
+      if (r.user) { const p = (r.user.fullName || '').split(' '); setProf({ firstName: p[0] || '', lastName: p.slice(1).join(' '), email: r.user.email || '', city: r.user.city || '', phone: r.user.phone || '' }); }
+      if (r.driver) setVeh({ brand: r.driver.carBrand || '', model: r.driver.carModel || '', year: String(r.driver.carYear || ''), plate: r.driver.carPlate || '' });
+    });
+  }, [view]);
+  const saveProfile = async () => { await apiFetch('PATCH', '/drivers/me/profile', { fullName: `${prof.firstName} ${prof.lastName}`.trim(), email: prof.email, city: prof.city, phone: prof.phone }, token); Alert.alert('✅', t('saved')); setAcctView('main'); };
+  const saveVehicle = async () => { await apiFetch('PATCH', '/drivers/me/vehicle', veh, token); Alert.alert('✅', t('saved')); setAcctView('main'); };
 
   // محاكاة القيادة: زر "Arrived" يظهر بعد الاقتراب من الوجهة (~10ث من بدء الرحلة)
   useEffect(() => {
@@ -846,7 +874,7 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
   };
 
   const initials = (user?.fullName || 'D').trim().charAt(0).toUpperCase();
-  const nav = (v: any) => { setView(v); setDrawer(false); };
+  const nav = (v: any) => { setView(v); setDrawer(false); if (v === 'account') setAcctView('main'); };
   const SCRH = Dimensions.get('window').height;
   const driverLoc = myRide ? { lat: myRide.pickupLat + 0.003, lng: myRide.pickupLng + 0.002 } : { lat: 36.7525, lng: 3.042 };
   const initOf = (n: string) => (n || 'P').trim().charAt(0).toUpperCase();
@@ -1041,7 +1069,111 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
     );
   }
 
-  // ===== HOME / ACCOUNT (yellow header + scroll) =====
+  // ===== ACCOUNT (profile + settings) =====
+  if (view === 'account') {
+    if (acctView !== 'main') {
+      const title = acctView === 'details' ? t('accountDetails') : acctView === 'vehicle' ? t('vehicleDetails') : acctView === 'password' ? t('passwordLbl') : t('customerSupport');
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+          <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+          <DrawerMenu />
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 20 }}>
+              <TouchableOpacity onPress={() => setAcctView('main')}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{title}</Text>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 0 }}>
+              {acctView === 'details' && (<>
+                <Text style={ps.label}>{t('firstName')}</Text>
+                <TextInput style={au.input} value={prof.firstName} onChangeText={(v) => setProf({ ...prof, firstName: v })} placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('lastName')}</Text>
+                <TextInput style={au.input} value={prof.lastName} onChangeText={(v) => setProf({ ...prof, lastName: v })} placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('email')}</Text>
+                <TextInput style={au.input} value={prof.email} onChangeText={(v) => setProf({ ...prof, email: v })} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('city')}</Text>
+                <TextInput style={au.input} value={prof.city} onChangeText={(v) => setProf({ ...prof, city: v })} placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('phone')}</Text>
+                <TextInput style={au.input} value={prof.phone} onChangeText={(v) => setProf({ ...prof, phone: v })} keyboardType="phone-pad" placeholderTextColor="#999" />
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={saveProfile}><Text style={rs.btnD}>{t('save')}</Text></TouchableOpacity>
+              </>)}
+              {acctView === 'vehicle' && (<>
+                <Text style={ps.label}>{t('vehicleBrand')}</Text>
+                <TextInput style={au.input} value={veh.brand} onChangeText={(v) => setVeh({ ...veh, brand: v })} placeholder="Toyota" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('vehicleModel')}</Text>
+                <TextInput style={au.input} value={veh.model} onChangeText={(v) => setVeh({ ...veh, model: v })} placeholder="Camry" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('yearLbl')}</Text>
+                <TextInput style={au.input} value={veh.year} onChangeText={(v) => setVeh({ ...veh, year: v })} keyboardType="numeric" placeholder="2006" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('plateNumber')}</Text>
+                <TextInput style={au.input} value={veh.plate} onChangeText={(v) => setVeh({ ...veh, plate: v })} placeholder="80519MR" placeholderTextColor="#999" />
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={saveVehicle}><Text style={rs.btnD}>{t('save')}</Text></TouchableOpacity>
+              </>)}
+              {acctView === 'password' && (<>
+                <Text style={ps.label}>{t('currentPassword')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="••••••" placeholderTextColor="#999" />
+                <Text style={ps.label}>{t('newPassword')}</Text>
+                <TextInput style={au.input} secureTextEntry placeholder="••••••" placeholderTextColor="#999" />
+                <TouchableOpacity style={[rs.btn, { backgroundColor: YELLOW, marginTop: 10 }]} onPress={() => { Alert.alert('✅', t('saved')); setAcctView('main'); }}><Text style={rs.btnD}>{t('save')}</Text></TouchableOpacity>
+              </>)}
+              {acctView === 'support' && (<>
+                <Text style={{ color: '#bbb', fontSize: 15, marginBottom: 16 }}>{t('supportText')}</Text>
+                <TouchableOpacity style={dr.tripCard} onPress={() => Linking.openURL('tel:+213555000000')}>
+                  <Ionicons name="call" size={20} color={YELLOW} /><Text style={{ color: '#fff', marginLeft: 12 }}>+213 555 000 000</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={dr.tripCard} onPress={() => Linking.openURL('mailto:support@winrak.dz')}>
+                  <Ionicons name="mail" size={20} color={YELLOW} /><Text style={{ color: '#fff', marginLeft: 12 }}>support@winrak.dz</Text>
+                </TouchableOpacity>
+              </>)}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      );
+    }
+    const wallet = Math.round(earnings?.total || 0);
+    const ITEMS = [
+      { id: 'details', icon: 'create-outline', label: t('profileSettings') },
+      { id: 'password', icon: 'lock-closed-outline', label: t('passwordLbl') },
+      { id: 'vehicle', icon: 'car-outline', label: t('vehicleDetails') },
+      { id: 'support', icon: 'headset-outline', label: t('customerSupport') },
+    ];
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
+        <StatusBar barStyle="dark-content" backgroundColor={YELLOW} />
+        <DrawerMenu />
+        <SafeAreaView style={{ backgroundColor: YELLOW }}>
+          <View style={dr2.acctHeader}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity style={dr.menuBtn} onPress={() => setDrawer(true)}><Ionicons name="menu" size={24} color={YELLOW} /></TouchableOpacity>
+              <View style={dr2.wallet}><Text style={{ color: '#999', fontSize: 10 }}>{t('walletBalance')}</Text><Text style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>{t('da')} {wallet.toLocaleString()}</Text></View>
+              <View style={{ width: 44 }} />
+            </View>
+            <View style={{ alignItems: 'center', marginTop: 6 }}>
+              <View style={dr2.acctAvatar}>
+                <Text style={{ color: '#111', fontWeight: '900', fontSize: 32 }}>{initials}</Text>
+                <View style={dr2.pencil}><Ionicons name="pencil" size={12} color="#111" /></View>
+              </View>
+              <Text style={{ color: '#111', fontSize: 18, fontWeight: '900', marginTop: 8 }}>{user?.fullName || t('driverName')}</Text>
+              <Stars n={5} size={13} />
+              <Text style={{ color: '#5a4a00', fontSize: 12, marginTop: 4 }}>{user?.phone}</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+        <ScrollView contentContainerStyle={{ padding: 18 }}>
+          {ITEMS.map(it => (
+            <TouchableOpacity key={it.id} style={dr2.acctRow} onPress={() => setAcctView(it.id as any)}>
+              <Ionicons name={it.icon as any} size={20} color={YELLOW} />
+              <Text style={{ color: '#fff', flex: 1, marginLeft: 14, fontSize: 15, fontWeight: '600' }}>{it.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color="#666" />
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={{ alignItems: 'center', marginTop: 20 }} onPress={onLogout}>
+            <Text style={{ color: YELLOW, fontWeight: '800', fontSize: 15 }}>⏻ {t('mSignOut')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ===== HOME (yellow header + scroll) =====
   return (
     <View style={{ flex: 1, backgroundColor: '#0D0D0D' }}>
       <StatusBar barStyle="dark-content" backgroundColor={YELLOW} />
@@ -1085,28 +1217,6 @@ function DriverApp({ token, user, onLogout }: { token: string; user: any; onLogo
             </TouchableOpacity>
             <Text style={dr.sectionTitle}>{t('tripsToday')}</Text>
             {trips.length === 0 ? <Text style={dr.emptyTxt}>{t('noTrips')}</Text> : trips.map((tr: any) => <TripCard key={tr.id} trip={tr} />)}
-          </>
-        )}
-
-        {view === 'account' && (
-          <>
-            <View style={dr.accCard}>
-              <View style={[dr.avatarBig, { marginBottom: 12 }]}><Text style={dr.avatarTxt}>{initials}</Text></View>
-              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{user?.fullName || t('driverName')}</Text>
-              <Text style={{ color: '#888', marginBottom: 8 }}>{user?.phone}</Text>
-              <Stars n={5} size={16} />
-            </View>
-            {contract && (
-              <View style={dr.accCard}>
-                <Text style={{ color: C.accent, fontWeight: '800', marginBottom: 12, fontSize: 16 }}>{t('contractFull')}</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 }}>
-                  <View style={{ alignItems: 'center' }}><Text style={{ fontSize: 30, fontWeight: '900', color: C.success }}>{contract.profitDriverPercent}%</Text><Text style={{ color: '#888', fontSize: 12 }}>{t('yourShare')}</Text></View>
-                  <View style={{ alignItems: 'center' }}><Text style={{ fontSize: 30, fontWeight: '900', color: YELLOW }}>{contract.profitWinrakPercent}%</Text><Text style={{ color: '#888', fontSize: 12 }}>WinRak</Text></View>
-                </View>
-                <Text style={{ color: '#bbb', fontSize: 13 }}>{t('winrakBears')}: <Text style={{ color: C.accent, fontWeight: '800' }}>{contract.lossWinrakPercent}%</Text> — {t('maxLoss')}: {contract.monthlyLossCap?.toLocaleString()} {t('da')}</Text>
-              </View>
-            )}
-            <TouchableOpacity style={[dr.smallBtn, { backgroundColor: C.error, marginTop: 4 }]} onPress={onLogout}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('mSignOut')}</Text></TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -1254,6 +1364,15 @@ const rs = StyleSheet.create({
   statSm: { color: '#888', fontSize: 12 },
   finishWrap: { flex: 1, backgroundColor: '#0D0D0D', justifyContent: 'center', alignItems: 'center', padding: 40 },
   finishCard: { backgroundColor: '#fff', borderRadius: 20, paddingVertical: 60, paddingHorizontal: 50, alignItems: 'center', width: '100%' },
+});
+
+// أنماط شاشة الحساب (Account)
+const dr2 = StyleSheet.create({
+  acctHeader: { paddingHorizontal: 18, paddingTop: 6, paddingBottom: 26, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
+  wallet: { backgroundColor: '#111', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 6, alignItems: 'center' },
+  acctAvatar: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#111' },
+  pencil: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: YELLOW, borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' },
+  acctRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#171717', borderRadius: 14, padding: 16, marginBottom: 10 },
 });
 
 // أنماط واجهة الراكب (booking)

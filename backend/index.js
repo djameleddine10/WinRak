@@ -190,6 +190,49 @@ app.get('/api/v1/drivers/me/trips', (req, res) => {
   res.json({ success: true, trips });
 });
 
+// ملف السائق الكامل (للحساب)
+app.get('/api/v1/drivers/me', (req, res) => {
+  const u = userFromToken(req);
+  res.json({ success: true, user: u || null, driver: DB.drivers[u?.id] || null });
+});
+
+// تحديث الملف الشخصي
+app.patch('/api/v1/drivers/me/profile', (req, res) => {
+  const u = userFromToken(req);
+  if (!u) return res.json({ success: false });
+  const { fullName, email, city, phone } = req.body;
+  if (fullName) u.fullName = fullName;
+  if (email !== undefined) u.email = email;
+  if (city !== undefined) u.city = city;
+  if (phone) u.phone = phone;
+  res.json({ success: true, user: u });
+});
+
+// تحديث بيانات المركبة
+app.patch('/api/v1/drivers/me/vehicle', (req, res) => {
+  const u = userFromToken(req);
+  const drv = DB.drivers[u?.id];
+  if (!drv) return res.json({ success: false });
+  const { brand, model, year, plate } = req.body;
+  if (brand !== undefined) drv.carBrand = brand;
+  if (model !== undefined) drv.carModel = model;
+  if (year !== undefined) drv.carYear = year;
+  if (plate !== undefined) drv.carPlate = plate;
+  res.json({ success: true, driver: drv });
+});
+
+// تحديث ملف الراكب (مشترك)
+app.patch('/api/v1/users/me/profile', (req, res) => {
+  const u = userFromToken(req);
+  if (!u) return res.json({ success: false });
+  const { fullName, email, city, phone } = req.body;
+  if (fullName) u.fullName = fullName;
+  if (email !== undefined) u.email = email;
+  if (city !== undefined) u.city = city;
+  if (phone) u.phone = phone;
+  res.json({ success: true, user: u });
+});
+
 app.patch('/api/v1/drivers/status', (req, res) => {
   const u = userFromToken(req);
   const drv = DB.drivers[u?.id];
