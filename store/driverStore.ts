@@ -62,6 +62,17 @@ interface DriverStore {
   rejectRide:         () => void
   startRide:          () => void
   completeRide:       () => void
+  clearRequestTimer:  () => void
+}
+
+// A single shared handle for the request countdown. Keeping it module-scoped (not
+// in state) guarantees only ONE timer can ever run: every start clears the previous
+// one, so repeated "simulate" taps or fast screen exits can't stack intervals.
+let requestTimer: ReturnType<typeof setInterval> | null = null
+let autoRequeue:  ReturnType<typeof setTimeout>  | null = null
+function stopRequestTimer() {
+  if (requestTimer) { clearInterval(requestTimer); requestTimer = null }
+  if (autoRequeue)  { clearTimeout(autoRequeue);   autoRequeue  = null }
 }
 
 // Only the WinRak SHE service flag persists (it's a registration preference). Live
@@ -96,15 +107,18 @@ export const useDriverStore = create<DriverStore>()(
       setOfferId:         (id)  => set({ currentOfferId: id }),
       setRouteWaypoints:  (pts) => set({ routeWaypoints: pts }),
       setIncomingRide: (ride) => {
+        stopRequestTimer()
         set({ status: 'has_request', incomingRide: ride, timerSeconds: 20 })
         let t = 20
-        const iv = setInterval(() => {
+        requestTimer = setInterval(() => {
           t -= 1
-          set({ timerSeconds: t })
+          set({ timerSeconds: Math.max(0, t) })
           if (t <= 0 || get().status !== 'has_request') {
-            clearInterval(iv)
+            stopRequestTimer()
+            // Only auto-expire if the driver is still staring at the request.
+            // If they accepted/rejected, status already changed — leave it alone.
             if (get().status === 'has_request') {
-              set({ status: 'online', incomingRide: null, realTripId: null })
+              set({ status: 'online', incomingRide: null, realTripId: null, currentOfferId: null })
             }
           }
         }, 1000)
@@ -131,36 +145,54 @@ export const useDriverStore = create<DriverStore>()(
       approveRegistration: () => set({ registrationStatus: 'approved', status: 'offline' }),
 
       goOnline: () => {
+        stopRequestTimer()
         set({ status: 'online' })
-        setTimeout(() => get().simulateRequest(), 4000)
+        autoRequeue = setTimeout(() => get().simulateRequest(), 4000)
       },
-      goOffline: () => set({ status: 'offline', incomingRide: null, routeWaypoints: null }),
+      goOffline: () => {
+        stopRequestTimer()
+        set({ status: 'offline', incomingRide: null, routeWaypoints: null })
+      },
+
+      clearRequestTimer: () => stopRequestTimer(),
 
       simulateRequest: () => {
+        // Guard: never stack a request on top of an existing one.
         if (get().status !== 'online') return
+        stopRequestTimer()
         set({ status: 'has_request', incomingRide: mockRides[0], timerSeconds: 20 })
         let t = 20
-        const iv = setInterval(() => {
+        requestTimer = setInterval(() => {
           t -= 1
-          set({ timerSeconds: t })
+          set({ timerSeconds: Math.max(0, t) })
           if (t <= 0 || get().status !== 'has_request') {
-            clearInterval(iv)
+            stopRequestTimer()
             if (get().status === 'has_request') {
               set({ status: 'online', incomingRide: null })
-              setTimeout(() => get().simulateRequest(), 5000)
+              // No auto-requeue loop here — a mock requeue every few seconds
+              // is what caused phantom navigation. The driver re-triggers manually.
             }
           }
         }, 1000)
       },
 
-      acceptRide: () => set((s) => ({
-        status: 'going_to_pickup',
-        activeRide: s.incomingRide,
-        incomingRide: null,
-      })),
-      rejectRide:   () => set({ status: 'online', incomingRide: null }),
+      acceptRide: () => {
+        stopRequestTimer()
+        set((s) => ({
+          status: 'going_to_pickup',
+          activeRide: s.incomingRide,
+          incomingRide: null,
+        }))
+      },
+      rejectRide: () => {
+        stopRequestTimer()
+        set({ status: 'online', incomingRide: null })
+      },
       startRide:    () => set({ status: 'on_ride' }),
-      completeRide: () => set({ status: 'online', activeRide: null, routeWaypoints: null }),
+      completeRide: () => {
+        stopRequestTimer()
+        set({ status: 'online', activeRide: null, routeWaypoints: null })
+      },
     }),
     {
       name: 'winrak-driver',

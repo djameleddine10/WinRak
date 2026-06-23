@@ -45,10 +45,18 @@ export default function DriverHome() {
   const t = useT()
 
   const online = status !== 'offline'
+  const requestOpen = useRef(false)
 
-  // The radar is the live link to passengers: when a request lands, jump to it.
+  // The radar is the live link to passengers: when a request lands, open the
+  // request modal exactly once. The guard prevents stacking duplicate modals if
+  // the status briefly re-emits 'has_request' (the old phantom-navigation bug).
   useEffect(() => {
-    if (status === 'has_request') router.push('/(driver)/incoming-request')
+    if (status === 'has_request' && !requestOpen.current) {
+      requestOpen.current = true
+      router.push('/(driver)/incoming-request')
+    } else if (status !== 'has_request') {
+      requestOpen.current = false
+    }
   }, [status])
 
   // Register push token once when the driver's profile is available.

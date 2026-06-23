@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Pressable, StyleSheet, TextInput, View } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -24,28 +24,51 @@ export function PriceInput({
   const Colors = useColors()
   const t = useT()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
-  const clamp = (v: number) => Math.max(min, Math.min(max, v))
+
+  const clamp = useCallback((v: number) => Math.max(min, Math.min(max, v)), [min, max])
+  const dec = useCallback(() => onChange(clamp(value - step)), [onChange, clamp, value, step])
+  const inc = useCallback(() => onChange(clamp(value + step)), [onChange, clamp, value, step])
+  const onText = useCallback(
+    (text: string) => onChange(clamp(parseInt(text.replace(/[^0-9]/g, '') || '0', 10))),
+    [onChange, clamp],
+  )
+
+  const atMin = value <= min
+  const atMax = value >= max
 
   return (
     <View style={styles.wrap}>
       <View style={styles.amountRow}>
-        <Pressable onPress={() => onChange(clamp(value - step))} style={styles.stepper}>
-          <Icon name="minus" size={20} color={Colors.gold} />
+        <Pressable
+          onPress={dec}
+          disabled={atMin}
+          hitSlop={10}
+          accessibilityRole="button"
+          style={[styles.stepper, atMin && styles.stepperDisabled]}
+        >
+          <Icon name="minus" size={20} color={atMin ? Colors.muted : Colors.gold} />
         </Pressable>
 
         <View style={styles.amount}>
           <TextInput
             style={[styles.input, { fontSize: compact ? 24 : Typography.sizes.hero }]}
             value={String(value)}
-            onChangeText={(text) => onChange(clamp(parseInt(text.replace(/[^0-9]/g, '') || '0', 10)))}
+            onChangeText={onText}
             keyboardType="number-pad"
             textAlign="center"
+            maxLength={5}
           />
           <Txt size={14} color={Colors.muted}>{t('common.currency')}</Txt>
         </View>
 
-        <Pressable onPress={() => onChange(clamp(value + step))} style={styles.stepper}>
-          <Icon name="plus" size={20} color={Colors.gold} />
+        <Pressable
+          onPress={inc}
+          disabled={atMax}
+          hitSlop={10}
+          accessibilityRole="button"
+          style={[styles.stepper, atMax && styles.stepperDisabled]}
+        >
+          <Icon name="plus" size={20} color={atMax ? Colors.muted : Colors.gold} />
         </Pressable>
       </View>
 
@@ -57,6 +80,7 @@ export function PriceInput({
               <Pressable
                 key={p}
                 onPress={() => onChange(clamp(p))}
+                hitSlop={6}
                 style={[styles.chip, active && styles.chipActive]}
               >
                 <Txt size={13} color={active ? Colors.gold : Colors.muted}>{p.toLocaleString('en-US')}</Txt>
@@ -77,6 +101,7 @@ function makeStyles(Colors: Palette) {
       width: 44, height: 44, borderRadius: 22,
       backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center',
     },
+    stepperDisabled: { opacity: 0.4 },
     amount: { flexDirection: 'row-reverse', alignItems: 'baseline', gap: 6 },
     input: {
       fontFamily: Typography.fonts.black,

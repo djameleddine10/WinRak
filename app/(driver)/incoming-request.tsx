@@ -35,23 +35,41 @@ export default function IncomingRequest() {
   const setOfferId      = useDriverStore((s) => s.setOfferId)
   const profile         = useUserStore((s) => s.profile)
   const passengerName   = usePassengerName()
-  const didAdvance      = useRef(false)
+  const didExpire       = useRef(false)
+  const didLeave        = useRef(false)
 
-  const [counter, setCounter] = useState(ride?.price ?? 800)
-
-  // When timer expires, advance to the next nearest driver
+  // Start the counter at the passenger's offered price. Once a ride arrives we
+  // sync it (the first render can land before incomingRide is populated).
+  const [counter, setCounter] = useState(ride?.price ?? 0)
   useEffect(() => {
-    if (timer > 0 || didAdvance.current) return
-    didAdvance.current = true
+    if (ride?.price) setCounter(ride.price)
+  }, [ride?.price])
+
+  // Safe one-shot dismissal back to the driver home. Guarded so a stray timer
+  // tick or double-tap can never fire two navigations (the old bug).
+  function leave() {
+    if (didLeave.current) return
+    didLeave.current = true
+    router.back()
+  }
+
+  // When the countdown hits zero, release the offer and dismiss the modal exactly
+  // once. router.back() pops this transparentModal off the driver stack — it never
+  // crosses into passenger mode.
+  useEffect(() => {
+    if (timer > 0 || didExpire.current) return
+    didExpire.current = true
     if (currentOfferId) {
       advanceTripOffer(currentOfferId, 'expired').catch(console.warn)
       setOfferId(null)
     }
-    const navTimeout = setTimeout(() => router.replace('/(driver)/home'), 400)
+    const navTimeout = setTimeout(leave, 400)
     return () => clearTimeout(navTimeout)
   }, [timer])
 
   function accept() {
+    if (didLeave.current) return
+    didLeave.current = true
     if (realTripId && profile?.id) {
       acceptTrip(realTripId, profile.id).catch((e) => console.warn('[WinRak] acceptTrip:', e))
     }
@@ -66,7 +84,7 @@ export default function IncomingRequest() {
       setOfferId(null)
     }
     rejectRide()
-    router.back()
+    leave()
   }
 
   if (!ride) {
@@ -74,7 +92,7 @@ export default function IncomingRequest() {
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.lg }]}>
           <Txt center color={Colors.muted}>{t('driver.noRequest')}</Txt>
-          <Button label={t('common.close')} variant="ghost" onPress={() => router.back()} />
+          <Button label={t('common.close')} variant="ghost" onPress={leave} />
         </View>
       </View>
     )
