@@ -1,4 +1,6 @@
-const KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? ''
+import { GOOGLE_MAPS_KEY } from '../constants/config'
+
+const KEY = GOOGLE_MAPS_KEY
 
 export interface GeoPlace {
   id:      string

@@ -1,6 +1,10 @@
 import { supabase, TripStatus, VehicleType, PaymentMethod } from '../lib/supabase'
 
 // ─── CRÉER UNE COURSE (passager) ─────────────────────────────────────────────
+// SÉCURITÉ : le prix proposé (price) est borné côté serveur à ±30% du tarif
+// équitable, et la commission + part chauffeur sont calculées par le trigger
+// `trip_pricing_guard` (voir migration 20260623_secure_pricing.sql).
+// On n'envoie donc PLUS commission / driver_earnings depuis le client.
 export async function createTrip(params: {
   passengerId:   string
   fromAddress:   string
@@ -15,9 +19,6 @@ export async function createTrip(params: {
   distanceKm:    number
   durationMin:   number
 }) {
-  const commission     = Math.round(params.price * 0.12)
-  const driverEarnings = params.price - commission
-
   const { data, error } = await supabase
     .from('trips')
     .insert({
@@ -30,9 +31,7 @@ export async function createTrip(params: {
       to_lng:          params.toLng,
       vehicle_type:    params.vehicleType,
       payment_method:  params.paymentMethod,
-      price:           params.price,
-      commission,
-      driver_earnings: driverEarnings,
+      price:           params.price,   // proposé par le passager — borné côté serveur
       distance_km:     params.distanceKm,
       duration_min:    params.durationMin,
       status:          'pending' as TripStatus,

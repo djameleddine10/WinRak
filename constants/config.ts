@@ -1,11 +1,13 @@
 // ─────────────────────────────────────────────────────────────
-// مفتاح خرائط Google (JavaScript API)
-// الصق مفتاحك المجاني هنا بين علامتي التنصيص.
-// كيف تحصل عليه: console.cloud.google.com → فعّل "Maps JavaScript API" → أنشئ API key
+// مفتاح خرائط Google
+// يُقرأ من متغير البيئة EXPO_PUBLIC_GOOGLE_MAPS_KEY في ملف .env.local
+// (نفس المفتاح المستعمل في services/geocoding.service.ts — مصدر واحد موحّد)
+// كيف تحصل عليه: console.cloud.google.com → فعّل "Maps JavaScript API"
+//                و "Places API" → أنشئ API key
 // ─────────────────────────────────────────────────────────────
-export const GOOGLE_MAPS_JS_KEY = 'PASTE_YOUR_KEY_HERE'
+export const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? ''
 
-export const hasMapsKey = GOOGLE_MAPS_JS_KEY.length > 10 && !GOOGLE_MAPS_JS_KEY.startsWith('PASTE')
+export const hasMapsKey = GOOGLE_MAPS_KEY.length > 10
 
 // ─────────────────────────────────────────────────────────────
 // Auth dev bypass
