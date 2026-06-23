@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { View } from 'react-native'
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps'
-import Svg, { Circle, Rect, Path, Line } from 'react-native-svg'
+import Svg, { Circle, Rect, Path, Ellipse } from 'react-native-svg'
 import { type Palette } from '../../constants/colors'
 import { useColors, useResolvedScheme } from '../../hooks/useColors'
 import { ALGIERS_CENTER, type LatLng } from '../../mock/map'
@@ -135,61 +135,92 @@ function MarkerIcon({ m, Colors }: { m: MapMarker; Colors: Palette }) {
 }
 
 function PickupPin({ dark }: { dark: string }) {
+  // Clean teardrop location pin with a concentric ring — no figure, just an
+  // elegant "pickup point" marker (Uber/Google style). Drawn dark on a white
+  // disc so it reads on both light and dark map tiles.
   return (
-    <Svg width={44} height={56} viewBox="0 0 44 56">
-      <Rect x="2" y="2" width="40" height="40" rx="11" fill="white" />
-      <Circle cx="22" cy="13" r="5.5" fill={dark} />
+    <Svg width={40} height={52} viewBox="0 0 40 52">
+      {/* soft ground shadow */}
+      <Ellipse cx="20" cy="49" rx="6" ry="2.2" fill="rgba(0,0,0,0.18)" />
+      {/* teardrop body */}
       <Path
-        d="M17 20Q13 27 15 35L19 35L22 28L25 35L29 35Q31 27 27 20Q25 18 22 18Q19 18 17 20Z"
-        fill={dark}
+        d="M20 1 C10.6 1 3 8.6 3 18 C3 30 20 46 20 46 C20 46 37 30 37 18 C37 8.6 29.4 1 20 1 Z"
+        fill="white"
+        stroke="rgba(0,0,0,0.10)"
+        strokeWidth="1"
       />
-      <Line x1="25" y1="22" x2="34" y2="14" stroke={dark} strokeWidth="3.2" strokeLinecap="round" />
-      <Line x1="19" y1="24" x2="11" y2="28" stroke={dark} strokeWidth="3.2" strokeLinecap="round" />
-      <Path d="M19 42L22 55L25 42Z" fill="white" />
+      {/* concentric mark */}
+      <Circle cx="20" cy="18" r="9" fill={dark} />
+      <Circle cx="20" cy="18" r="3.4" fill="white" />
     </Svg>
   )
 }
 
 function DropoffPin({ gold }: { gold: string }) {
+  // Matching teardrop in brand gold for the destination.
   return (
-    <Svg width={44} height={54} viewBox="0 0 44 54">
-      <Rect x="2" y="2" width="40" height="40" rx="11" fill={gold} />
-      <Circle cx="22" cy="13" r="5.5" fill="white" />
+    <Svg width={40} height={52} viewBox="0 0 40 52">
+      <Ellipse cx="20" cy="49" rx="6" ry="2.2" fill="rgba(0,0,0,0.18)" />
       <Path
-        d="M17 20Q13 27 15 35L19 35L22 28L25 35L29 35Q31 27 27 20Q25 18 22 18Q19 18 17 20Z"
-        fill="white"
+        d="M20 1 C10.6 1 3 8.6 3 18 C3 30 20 46 20 46 C20 46 37 30 37 18 C37 8.6 29.4 1 20 1 Z"
+        fill={gold}
+        stroke="rgba(0,0,0,0.10)"
+        strokeWidth="1"
       />
-      <Line x1="25" y1="22" x2="34" y2="14" stroke="white" strokeWidth="3.2" strokeLinecap="round" />
-      <Line x1="19" y1="24" x2="11" y2="28" stroke="white" strokeWidth="3.2" strokeLinecap="round" />
-      <Circle cx="22" cy="50" r="4.5" fill={gold} />
-      <Circle cx="22" cy="50" r="2" fill="rgba(255,255,255,0.45)" />
+      <Circle cx="20" cy="18" r="9" fill="white" />
+      <Circle cx="20" cy="18" r="3.4" fill={gold} />
     </Svg>
   )
 }
 
 function CarIcon({ heading, color }: { heading: number; color: string }) {
+  // Professional top-down car: rounded body, front & rear windshields, four
+  // wheels and a center seam. The nose points up (toward heading 0) so the
+  // rotation reads correctly as the car drives along the route.
   return (
     <Svg
-      width={34}
-      height={34}
-      viewBox="-17 -17 34 34"
+      width={40}
+      height={40}
+      viewBox="-20 -20 40 40"
       style={{ transform: [{ rotate: `${heading}deg` }] }}
     >
-      <Rect x="-8" y="-13" width="16" height="26" rx="5" fill={color} />
-      <Rect x="-5.5" y="-9" width="11" height="7" rx="2" fill="#22272b" />
-      <Rect x="-5.5" y="1"  width="11" height="6" rx="2" fill="#22272b" />
+      {/* drop shadow */}
+      <Ellipse cx="0" cy="1.5" rx="11" ry="16" fill="rgba(0,0,0,0.20)" />
+      {/* wheels */}
+      <Rect x="-11" y="-9" width="3.2" height="7" rx="1.6" fill="#1b1f24" />
+      <Rect x="7.8"  y="-9" width="3.2" height="7" rx="1.6" fill="#1b1f24" />
+      <Rect x="-11" y="3"  width="3.2" height="7" rx="1.6" fill="#1b1f24" />
+      <Rect x="7.8"  y="3"  width="3.2" height="7" rx="1.6" fill="#1b1f24" />
+      {/* body */}
+      <Path
+        d="M-8 -14 C-8 -16.5 8 -16.5 8 -14 L8 14 C8 16.5 -8 16.5 -8 14 Z"
+        fill={color}
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth="0.8"
+      />
+      {/* front windshield (nose) */}
+      <Path d="M-5.5 -11 C-2 -13 2 -13 5.5 -11 L4 -6 L-4 -6 Z" fill="#1c2733" />
+      {/* rear windshield */}
+      <Path d="M-4.5 11 C-2 12.5 2 12.5 4.5 11 L3.5 6.5 L-3.5 6.5 Z" fill="#22303d" />
+      {/* roof seam */}
+      <Rect x="-4" y="-4.5" width="8" height="10" rx="2" fill="rgba(255,255,255,0.14)" />
     </Svg>
   )
 }
 
 function PinIcon({ color }: { color: string }) {
+  // Elegant teardrop pin matching the pickup/dropoff family, with a soft ground
+  // shadow and a clean white center dot.
   return (
-    <Svg width={30} height={40} viewBox="0 0 30 40">
+    <Svg width={36} height={48} viewBox="0 0 40 52">
+      <Ellipse cx="20" cy="49" rx="6" ry="2.2" fill="rgba(0,0,0,0.18)" />
       <Path
-        d="M15 0 C6.7 0 0 6.7 0 15 C0 26 15 40 15 40 C15 40 30 26 30 15 C30 6.7 23.3 0 15 0 Z"
+        d="M20 1 C10.6 1 3 8.6 3 18 C3 30 20 46 20 46 C20 46 37 30 37 18 C37 8.6 29.4 1 20 1 Z"
         fill={color}
+        stroke="rgba(0,0,0,0.10)"
+        strokeWidth="1"
       />
-      <Circle cx="15" cy="15" r="6" fill="#22272b" />
+      <Circle cx="20" cy="18" r="6" fill="white" />
     </Svg>
   )
 }
