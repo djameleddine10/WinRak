@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { View } from 'react-native'
+import { Image, View } from 'react-native'
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps'
-import Svg, { Circle, Rect, Path, Ellipse, Defs, LinearGradient, Stop } from 'react-native-svg'
+import Svg, { Circle, Path, Ellipse } from 'react-native-svg'
+
+// Top-down car PNGs: dark silhouette for light maps, gold for dark maps.
+const CAR_DARK = require('../../assets/markers/car-dark.png')
+const CAR_GOLD = require('../../assets/markers/car-gold.png')
 import { type Palette } from '../../constants/colors'
 import { useColors, useResolvedScheme } from '../../hooks/useColors'
 import { ALGIERS_CENTER, type LatLng } from '../../mock/map'
@@ -114,7 +118,7 @@ export function WebMap({
             anchor={m.type === 'car' ? { x: 0.5, y: 0.5 } : { x: 0.5, y: 1 }}
             tracksViewChanges={false}
           >
-            <MarkerIcon m={m} Colors={Colors} />
+            <MarkerIcon m={m} Colors={Colors} dark={dark} />
           </Marker>
         ))}
       </MapView>
@@ -124,14 +128,14 @@ export function WebMap({
 
 // ─── Marker icons ─────────────────────────────────────────────────────────────
 
-function MarkerIcon({ m, Colors }: { m: MapMarker; Colors: Palette }) {
-  const { type, heading, color } = m
+function MarkerIcon({ m, Colors, dark }: { m: MapMarker; Colors: Palette; dark: boolean }) {
+  const { type, heading } = m
   if (type === 'pickup')  return <PickupPin  dark={Colors.dark1} />
   if (type === 'dropoff') return <DropoffPin gold={Colors.gold}  />
-  if (type === 'car')     return <CarIcon    heading={heading ?? 0} color={color ?? Colors.gold} />
-  if (type === 'pin')     return <PinIcon    color={color ?? Colors.gold}    />
-  if (type === 'dest')    return <PinIcon    color={color ?? Colors.success} />
-  return <CarIcon heading={heading ?? 0} color={color ?? Colors.gold} />
+  if (type === 'car')     return <CarIcon    heading={heading ?? 0} dark={dark} />
+  if (type === 'pin')     return <PinIcon    color={Colors.gold}    />
+  if (type === 'dest')    return <PinIcon    color={Colors.success} />
+  return <CarIcon heading={heading ?? 0} dark={dark} />
 }
 
 function PickupPin({ dark }: { dark: string }) {
@@ -173,77 +177,16 @@ function DropoffPin({ gold }: { gold: string }) {
   )
 }
 
-function CarIcon({ heading, color }: { heading: number; color: string }) {
-  // Realistic top-down grey sedan matching the reference exactly: dark tyres at
-  // the four corners, glossy tinted front & rear windshields with a light
-  // reflection (gradient), a bright reflection band across the roof, wing
-  // mirrors and a soft ground shadow. Nose points up (heading 0). The `color`
-  // prop is intentionally ignored here — the design keeps its own grey palette
-  // and light reflections as requested.
-  void color
+function CarIcon({ heading, dark }: { heading: number; dark: boolean }) {
+  // Top-down car PNG, themed: a dark silhouette on light maps, brand gold on
+  // dark maps. The asset's nose points up (heading 0), so we just rotate it by
+  // the live heading as the car drives along the route.
   return (
-    <Svg
-      width={30}
-      height={48}
-      viewBox="0 0 30 48"
-      style={{ transform: [{ rotate: `${heading}deg` }] }}
-    >
-      <Defs>
-        {/* windshield reflection — light at top fading to near-black */}
-        <LinearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0"   stopColor="#5a5f66" />
-          <Stop offset="0.4" stopColor="#2b2e33" />
-          <Stop offset="1"   stopColor="#0c0d0f" />
-        </LinearGradient>
-        {/* body shading — subtle top-down sheen */}
-        <LinearGradient id="body" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0"    stopColor="#6f747b" />
-          <Stop offset="0.5"  stopColor="#8c9197" />
-          <Stop offset="1"    stopColor="#6f747b" />
-        </LinearGradient>
-        {/* bright roof reflection band */}
-        <LinearGradient id="band" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0"   stopColor="#b9bdc2" />
-          <Stop offset="0.5" stopColor="#d7dade" />
-          <Stop offset="1"   stopColor="#b9bdc2" />
-        </LinearGradient>
-      </Defs>
-
-      {/* ground shadow */}
-      <Ellipse cx="15.5" cy="24.5" rx="11.5" ry="22" fill="rgba(0,0,0,0.18)" />
-
-      {/* dark chassis / bumpers underneath */}
-      <Path
-        d="M15 1 C20 1 24 4 25.5 9 C26.5 13 26.7 35 25.5 39 C24 44 20 47 15 47 C10 47 6 44 4.5 39 C3.3 35 3.5 13 4.5 9 C6 4 10 1 15 1 Z"
-        fill="#3a3d42"
-      />
-
-      {/* tyres (four corners) */}
-      <Rect x="4.6"  y="5.5"  width="3.2" height="5.5" rx="1.4" fill="#1b1d20" />
-      <Rect x="22.2" y="5.5"  width="3.2" height="5.5" rx="1.4" fill="#1b1d20" />
-      <Rect x="4.6"  y="37"   width="3.2" height="5.5" rx="1.4" fill="#1b1d20" />
-      <Rect x="22.2" y="37"   width="3.2" height="5.5" rx="1.4" fill="#1b1d20" />
-
-      {/* body */}
-      <Path
-        d="M15 3.5 C19 3.5 22 6 23.2 10.5 C24 14.5 24.2 33.5 23.2 37.5 C22 42 19 44.5 15 44.5 C11 44.5 8 42 6.8 37.5 C5.8 33.5 6 14.5 6.8 10.5 C8 6 11 3.5 15 3.5 Z"
-        fill="url(#body)"
-        stroke="rgba(0,0,0,0.25)"
-        strokeWidth="0.5"
-      />
-
-      {/* wing mirrors */}
-      <Path d="M6.4 17 L3.6 16 Q2.4 16.4 3 17.6 L6.2 18.6 Z" fill="#6f747b" />
-      <Path d="M23.6 17 L26.4 16 Q27.6 16.4 27 17.6 L23.8 18.6 Z" fill="#6f747b" />
-
-      {/* front windshield */}
-      <Path d="M9 12 Q15 10.4 21 12 L19.2 19 Q15 17.6 10.8 19 Z" fill="url(#glass)" />
-      {/* rear windshield */}
-      <Path d="M9.2 36 Q15 37.6 20.8 36 L19 28.5 Q15 30 11 28.5 Z" fill="url(#glass)" />
-
-      {/* bright roof reflection band */}
-      <Path d="M7 22.5 L23 21 L23 26 L7 27.5 Z" fill="url(#band)" opacity="0.92" />
-    </Svg>
+    <Image
+      source={dark ? CAR_GOLD : CAR_DARK}
+      style={{ width: 38, height: 38, transform: [{ rotate: `${heading}deg` }] }}
+      resizeMode="contain"
+    />
   )
 }
 
