@@ -1,44 +1,30 @@
-/* ═══════════════════════════════════════════════════════════════════
-   WinRak Dashboard — Supabase Client
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   WinRak Dashboard â€” Supabase Client
    Remplacez les valeurs par celles de votre projet Supabase :
-   Dashboard Supabase → Settings → API → Project URL + anon key
-═══════════════════════════════════════════════════════════════════ */
+   Dashboard Supabase â†’ Settings â†’ API â†’ Project URL + anon key
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const SUPABASE_URL      = 'https://ltxbzqkuoihokgysvafp.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_UFQHrQLZ4qyxgV3XaPGEKw_ql12gchC'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0eGJ6cWt1b2lob2tneXN2YWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5OTkyMDIsImV4cCI6MjA5NzU3NTIwMn0.9xflfPFLqlfG-MW2hYDXdJRlCvRRcjKc0uasWA2epUI'
 
-// Client Supabase (depuis CDN, ajouté dans index.html)
+// Client Supabase (depuis CDN, ajoutÃ© dans index.html)
 let db = null
 
 function initSupabase() {
   if (typeof window.supabase === 'undefined') {
-    console.warn('Supabase CDN non chargé — mode mock actif')
+    console.warn('Supabase CDN non chargÃ© â€” mode mock actif')
     return false
   }
   db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: true, autoRefreshToken: true }
+    auth: { persistSession: false, autoRefreshToken: false }
   })
   return true
 }
 
-/* ───────────────────────────────────────────────────────────────────
-   AUTH ADMIN
-─────────────────────────────────────────────────────────────────── */
-async function supabaseAdminLogin(email, password) {
-  if (!db) return null
-  const { data, error } = await db.auth.signInWithPassword({ email, password })
-  if (error) throw error
-  return data
-}
 
-async function supabaseAdminLogout() {
-  if (!db) return
-  await db.auth.signOut()
-}
-
-/* ───────────────────────────────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    DASHBOARD DATA
-─────────────────────────────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 async function fetchDrivers(filters) {
   if (!db) return null
   let q = db.from('drivers_full').select('*').order('total_trips', { ascending: false })
@@ -111,9 +97,9 @@ async function fetchMonthlyFinance() {
   return data
 }
 
-/* ───────────────────────────────────────────────────────────────────
-   REALTIME — Carte & Documents
-─────────────────────────────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   REALTIME â€” Carte & Documents
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function subscribeDriverLocations(onUpdate) {
   if (!db) return null
   return db.channel('dashboard-locations')

@@ -941,12 +941,6 @@ function groupDocsByDriver(rows) {
 async function loadRealData() {
   if (!initSupabase()) return;
   try {
-    await supabaseAdminLogin('admin@winrak.test', 'WinRak2025!');
-  } catch (e) {
-    console.warn('[WinRak] Supabase auth failed — mock data conservé');
-    return;
-  }
-  try {
     var results = await Promise.all([
       fetchDrivers(),
       fetchPassengers(),
