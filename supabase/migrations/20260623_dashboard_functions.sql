@@ -56,8 +56,8 @@ CREATE OR REPLACE FUNCTION public.dash_trips(
 )
 RETURNS TABLE (
   id UUID, trip_code TEXT, status TEXT, vehicle_type TEXT,
-  pickup_address TEXT, dropoff_address TEXT,
-  amount INT, commission INT, driver_amount INT,
+  from_address TEXT, to_address TEXT,
+  price INT, commission INT, driver_earnings INT,
   created_at TIMESTAMPTZ, started_at TIMESTAMPTZ, completed_at TIMESTAMPTZ,
   passenger_id UUID, driver_id UUID,
   passenger_name TEXT, passenger_phone TEXT,
@@ -67,8 +67,8 @@ RETURNS TABLE (
 LANGUAGE sql SECURITY DEFINER STABLE AS $$
   SELECT
     t.id, t.trip_code, t.status, t.vehicle_type,
-    t.pickup_address, t.dropoff_address,
-    t.amount, t.commission, t.driver_amount,
+    t.from_address, t.to_address,
+    t.price, t.commission, t.driver_earnings,
     t.created_at, t.started_at, t.completed_at,
     t.passenger_id, t.driver_id,
     pp.full_name AS passenger_name, pp.phone AS passenger_phone,

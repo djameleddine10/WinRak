@@ -868,10 +868,10 @@ function mapTrip(t) {
 function mapTxn(t) {
   var mm = { cib: 'CIB', edahabia: 'Edahabia', cash: 'Espèces' };
   return {
-    id: t.txn_code,
-    trip: t.trip ? t.trip.trip_code : '—',
-    pax: t.passenger ? t.passenger.full_name : '—',
-    drv: t.driver ? t.driver.full_name : '—',
+    id: t.txn_code || t.id,
+    trip: t.trip_code || '—',
+    pax: t.passenger_name || '—',
+    drv: t.driver_name || '—',
     total: t.amount || 0,
     commission: t.commission || 0,
     reversement: t.driver_amount || 0,
