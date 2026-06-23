@@ -43,7 +43,7 @@ export default function Otp() {
   }, [seconds])
 
   async function verify() {
-    if (code.length < 4) return
+    if (code.length < 6) return
     setLoading(true)
     try {
       await verifyOTP(phone, code)
@@ -121,7 +121,7 @@ export default function Otp() {
         <Button
           label={t('otp.verify')}
           onPress={verify}
-          disabled={code.length < 4 || loading}
+          disabled={code.length < 6 || loading}
         />
       </View>
     </View>

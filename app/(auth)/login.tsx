@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -12,7 +12,7 @@ import { Button } from '../../components/ui/Button'
 import { Divider } from '../../components/ui/Divider'
 import { useT } from '../../hooks/useT'
 import { useUserStore } from '../../store/userStore'
-import { sendOTP } from '../../services/auth.service'
+import { sendOTP, useGoogleAuth, signInWithGoogle, getMyProfile } from '../../services/auth.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
 
 const Skyline = (Colors: Palette) => (
@@ -34,6 +34,46 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const t = useT()
   const setStorePhone = useUserStore((s) => s.setPhone)
+  const login      = useUserStore((s) => s.login)
+  const setProfile = useUserStore((s) => s.setProfile)
+  const setMode    = useUserStore((s) => s.setMode)
+
+  const { request, response, promptAsync } = useGoogleAuth()
+
+  // Handle the Google OAuth result: exchange the id_token for a Supabase
+  // session, then route by profile/role — mirrors the OTP flow (new users
+  // land on profile-setup, existing users go to their role's home).
+  useEffect(() => {
+    if (response?.type !== 'success') return
+    const idToken = response.params?.id_token
+    if (!idToken) return
+    ;(async () => {
+      setLoading(true)
+      try {
+        await signInWithGoogle(idToken)
+        const profile = await getMyProfile()
+        login()
+        if (profile) {
+          setProfile(profile)
+          if (profile.role === 'driver') {
+            setMode('driver')
+            router.replace('/(driver)/home')
+          } else {
+            setMode('passenger')
+            router.replace('/(passenger)/(tabs)/home')
+          }
+        } else {
+          setMode('passenger')
+          router.replace('/(passenger)/profile-setup')
+        }
+      } catch (e: any) {
+        Alert.alert(t('otp.errorTitle'), e.message)
+      } finally {
+        setLoading(false)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [response])
 
   function formatPhone(raw: string): string {
     const digits = raw.replace(/\D/g, '')
@@ -91,7 +131,7 @@ export default function Login() {
 
         <Divider label={t('login.or')} />
 
-        <Button label={t('login.google')} variant="outline" icon="google" onPress={() => router.push('/(auth)/otp')} />
+        <Button label={t('login.google')} variant="outline" icon="google" onPress={() => promptAsync()} disabled={!request || loading} />
 
         <Txt size={12} color={Colors.muted} center style={{ marginTop: Spacing.xl }}>
           {t('login.termsPrefix')} <Txt size={12} color={Colors.gold}>{t('login.terms')}</Txt> {t('login.and')}{' '}

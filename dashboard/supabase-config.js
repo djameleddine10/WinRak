@@ -17,6 +17,8 @@ function initSupabase() {
   db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false }
   })
+  // Expose the client for any inline dashboard code that needs it directly.
+  window._supabase = db
   return true
 }
 

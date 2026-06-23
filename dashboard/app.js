@@ -1070,6 +1070,8 @@ async function loadRealData() {
     subscribeDriverLocations(function (loc) {
       var d = DRIVERS.find(function (x) { return x.id === loc.driver_id; });
       if (d) { d.lat = loc.lat; d.lng = loc.lng; }
+      // Re-draw live markers + KPIs when the map is open so positions move in real time.
+      if (_gmap) { mapRefresh(); updateMapKpis(); }
     });
     subscribeNewDocuments(function () {
       fetchPendingDocs().then(function (data) {

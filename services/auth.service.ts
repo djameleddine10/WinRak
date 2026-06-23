@@ -1,4 +1,32 @@
+import * as Google from 'expo-auth-session/providers/google'
+import * as WebBrowser from 'expo-web-browser'
 import { supabase, UserRole } from '../lib/supabase'
+
+// Finalise any pending OAuth session when the app returns from the browser.
+WebBrowser.maybeCompleteAuthSession()
+
+// ─── GOOGLE AUTH ──────────────────────────────────────────────────────────────
+// Hook used inside login.tsx: returns the request/response/prompt triple.
+// Client IDs come from Google Cloud Console (.env.local). When they are empty
+// the request stays null → the Google button is disabled (no fake flow).
+export function useGoogleAuth() {
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    webClientId:     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  })
+  return { request, response, promptAsync }
+}
+
+// Exchanges the Google id_token for a real Supabase session.
+export async function signInWithGoogle(idToken: string) {
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: 'google',
+    token:    idToken,
+  })
+  if (error) throw error
+  return data
+}
 
 // ─── OTP SMS ──────────────────────────────────────────────────────────────────
 export async function sendOTP(phone: string) {

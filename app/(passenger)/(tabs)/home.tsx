@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import * as Location from 'expo-location'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
@@ -20,12 +20,14 @@ import { useT } from '../../../hooks/useT'
 import { usePassengerName } from '../../../i18n/locale'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { useDriverAnimation } from '../../../hooks/useDriverAnimation'
+import { registerPushToken } from '../../../services/notifications.service'
 
 export default function Home() {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const displayName = usePassengerName()
   const photoStatus = useUserStore((s) => s.photoStatus)
+  const profile = useUserStore((s) => s.profile)
   const setRideMode = useUserStore((s) => s.setRideMode)
   const setSheMode = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
@@ -56,6 +58,11 @@ export default function Home() {
   }
   const { errorMsg } = useLocation()
   const t = useT()
+
+  // Register this device for push notifications once the passenger is known.
+  useEffect(() => {
+    if (profile?.id) registerPushToken(profile.id).catch(console.warn)
+  }, [profile?.id])
 
   // Animate mock drivers on the home map so it feels alive
   useDriverAnimation()
