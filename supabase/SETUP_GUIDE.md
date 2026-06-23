@@ -25,6 +25,11 @@ Dans le dashboard Supabase :
   1. Contenu de `supabase/schema.sql`
   2. Contenu de `supabase/rls.sql`
   3. Contenu de `supabase/seed.sql` (données de test)
+  4. Migrations (dans l'ordre, après les 3 fichiers ci-dessus) :
+     - `supabase/migrations/20260621_critical_fixes.sql`
+     - `supabase/migrations/20260622_dispatch_system.sql`
+     - `supabase/migrations/20260623_secure_pricing.sql`
+     - `supabase/migrations/20260623_secure_transactions.sql`
 
 ## Étape 4 — Créer le bucket de stockage
 

@@ -81,19 +81,12 @@ export async function completeTrip(tripId: string) {
 
   if (error) throw error
 
-  // Créer la transaction automatiquement
-  if (data) {
-    await supabase.from('transactions').insert({
-      trip_id:        data.id,
-      passenger_id:   data.passenger_id,
-      driver_id:      data.driver_id,
-      amount:         data.price,
-      commission:     data.commission,
-      driver_amount:  data.driver_earnings,
-      payment_method: data.payment_method,
-      status:         'completed',
-    })
-  }
+  // SÉCURITÉ : la transaction est créée AUTOMATIQUEMENT côté serveur par le
+  // trigger zz_create_transaction (migration 20260623_secure_transactions.sql)
+  // dès que status passe à 'completed'. Les montants viennent de la course,
+  // déjà sécurisés par trip_pricing_guard. Le client n'insère plus rien :
+  //  - évite le conflit RLS (txn_insert_system = admin uniquement)
+  //  - empêche la falsification des montants depuis le client.
 
   return data
 }
