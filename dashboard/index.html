@@ -1,0 +1,970 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WinRak — Centre de Contrôle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-config.js" defer></script>
+<style>
+:root {
+  --bg:#07090f;--surface:#0e1119;--surface2:#141720;--surface3:#1b1f2e;--surface4:#222740;
+  --border:rgba(255,255,255,0.065);--border-hi:rgba(255,255,255,0.12);
+  --gold:#F5C842;--gold-dim:rgba(245,200,66,.13);--gold-glow:rgba(245,200,66,.28);
+  --success:#3DB87A;--success-dim:rgba(61,184,122,.13);
+  --danger:#E05555;--danger-dim:rgba(224,85,85,.13);
+  --blue:#4FA0E0;--blue-dim:rgba(79,160,224,.13);
+  --purple:#A855F7;--purple-dim:rgba(168,85,247,.13);
+  --orange:#F59842;--orange-dim:rgba(245,152,66,.13);
+  --teal:#2DD4BF;--teal-dim:rgba(45,212,191,.13);
+  --text:#dde2f0;--text-muted:#6b7591;--text-faint:#3a4260;
+  --sw:240px;--sw-c:68px;
+  --r:8px;--rm:12px;--rl:16px;--rx:24px;
+  --sh:0 4px 28px rgba(0,0,0,.55);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface4);border-radius:2px}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit}
+
+/* ── LOGIN ──────────────────────────────────── */
+#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(ellipse 900px 600px at 60% 40%,rgba(245,200,66,.04) 0%,transparent 70%),var(--bg)}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;opacity:.12}
+.orb-1{width:500px;height:500px;background:var(--gold);top:-180px;left:-180px}
+.orb-2{width:600px;height:600px;background:var(--purple);bottom:-200px;right:-200px}
+.orb-3{width:350px;height:350px;background:var(--blue);top:50%;left:55%;transform:translate(-50%,-50%)}
+.login-card{position:relative;width:430px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rx);padding:44px 40px 36px;box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.04);animation:slideUp .45s cubic-bezier(.4,0,.2,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.login-brand{display:flex;align-items:center;gap:14px;margin-bottom:36px}
+.login-brand-icon{width:50px;height:50px;background:var(--gold-dim);border:1px solid rgba(245,200,66,.3);border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 24px var(--gold-dim)}
+.login-brand-text h1{font-size:22px;font-weight:900;letter-spacing:-.5px;color:#fff}
+.login-brand-text p{font-size:10px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:3px}
+.login-heading{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px;line-height:1.5}
+.field{margin-bottom:14px}
+.field-label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+.field-wrap{position:relative}
+.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:14px;pointer-events:none;transition:color .2s}
+.field-wrap:focus-within .field-icon{color:var(--gold)}
+.field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rm);padding:12px 42px 12px 42px;font-size:14px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s}
+.field-input:focus{border-color:rgba(245,200,66,.45);box-shadow:0 0 0 3px var(--gold-dim)}
+.field-input::placeholder{color:var(--text-faint)}
+.pw-toggle{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:14px;padding:4px;transition:color .2s}
+.pw-toggle:hover{color:var(--gold)}
+.security-strip{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--success-dim);border:1px solid rgba(61,184,122,.2);border-radius:var(--r);margin-bottom:22px}
+.security-strip i{color:var(--success);font-size:12px}
+.security-strip span{font-size:12px;color:var(--success);font-weight:500}
+.login-error{display:none;background:var(--danger-dim);border:1px solid rgba(224,85,85,.3);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--danger);margin-bottom:14px;animation:shake .3s}
+.login-error.show{display:flex;align-items:center;gap:8px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.btn-login{width:100%;padding:14px;background:var(--gold);border:none;border-radius:var(--rm);font-size:15px;font-weight:800;color:#07090f;cursor:pointer;transition:opacity .2s,box-shadow .2s,transform .1s;box-shadow:0 4px 24px rgba(245,200,66,.32);letter-spacing:.2px}
+.btn-login:hover:not(:disabled){opacity:.91;box-shadow:0 6px 32px rgba(245,200,66,.45)}
+.btn-login:active:not(:disabled){transform:scale(.99)}
+.btn-login:disabled{opacity:.4;cursor:not-allowed}
+.login-hint{margin-top:22px;text-align:center;font-size:11.5px;color:var(--text-faint);line-height:1.7}
+.login-hint code{background:var(--surface2);padding:2px 7px;border-radius:4px;color:var(--gold);font-size:11px;letter-spacing:.3px}
+.attempt-bar{margin-top:12px;display:none}
+.attempt-bar .label{font-size:11px;color:var(--text-muted);margin-bottom:5px}
+.attempt-bar .bar{height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.attempt-bar .fill{height:100%;background:var(--danger);border-radius:2px;transition:width .3s}
+
+/* ── APP LAYOUT ─────────────────────────────── */
+#app{display:none;min-height:100vh}
+#app.show{display:flex}
+
+/* ── SIDEBAR ─────────────────────────────────── */
+#sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;transition:width .28s cubic-bezier(.4,0,.2,1);overflow:hidden}
+#sidebar.col{width:var(--sw-c)}
+.sb-head{padding:18px 16px 15px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);min-height:66px;flex-shrink:0}
+.sb-logo-icon{width:34px;height:34px;min-width:34px;background:var(--gold-dim);border:1px solid rgba(245,200,66,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-logo-text{overflow:hidden;white-space:nowrap;transition:opacity .2s}
+.sb-logo-text h2{font-size:16px;font-weight:900;color:#fff;letter-spacing:-.3px}
+.sb-logo-text p{font-size:10px;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-top:2px}
+#sidebar.col .sb-logo-text{opacity:0;pointer-events:none}
+.nav-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 10px 0}
+.nav-sec{padding-top:14px;padding-bottom:4px}
+.nav-sec-label{font-size:10px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:1px;padding:0 8px;margin-bottom:5px;white-space:nowrap;transition:opacity .2s}
+#sidebar.col .nav-sec-label{opacity:0}
+.nav-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:var(--r);cursor:pointer;color:var(--text-muted);white-space:nowrap;position:relative;margin-bottom:1px;transition:background .15s,color .15s;overflow:hidden}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--gold-dim);color:var(--gold)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:25%;width:3px;height:50%;background:var(--gold);border-radius:0 2px 2px 0}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-label{font-size:13px;font-weight:500;transition:opacity .2s}
+#sidebar.col .nav-label{opacity:0}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center;flex-shrink:0;transition:opacity .2s}
+#sidebar.col .nav-badge{opacity:0}
+.sb-foot{padding:10px;border-top:1px solid var(--border);flex-shrink:0}
+.admin-row{display:flex;align-items:center;gap:10px;padding:9px;background:var(--surface2);border-radius:var(--r);overflow:hidden}
+.admin-av{width:32px;height:32px;min-width:32px;background:linear-gradient(135deg,var(--gold) 0%,#d4a017 100%);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#07090f}
+.admin-text{overflow:hidden;white-space:nowrap;transition:opacity .2s;flex:1}
+.admin-text .name{font-size:13px;font-weight:600;color:var(--text)}
+.admin-text .role{font-size:11px;color:var(--text-muted)}
+#sidebar.col .admin-text{opacity:0}
+.logout-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:6px;border-radius:6px;transition:color .2s,background .2s;flex-shrink:0}
+.logout-btn:hover{color:var(--danger);background:var(--danger-dim)}
+#sidebar.col .logout-btn{opacity:0;pointer-events:none}
+
+/* ── MAIN ──────────────────────────────────── */
+#main{flex:1;margin-left:var(--sw);transition:margin-left .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;min-height:100vh}
+#main.col{margin-left:var(--sw-c)}
+
+/* ── HEADER ─────────────────────────────────── */
+#topbar{height:66px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:12px;position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
+.menu-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:17px;padding:8px;border-radius:var(--r);transition:color .2s,background .2s;display:flex;align-items:center}
+.menu-btn:hover{color:var(--text);background:var(--surface2)}
+.topbar-title{font-size:16px;font-weight:700;color:#fff;flex:1}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.topbar-search{position:relative}
+.topbar-search input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rm);padding:8px 14px 8px 34px;font-size:13px;color:var(--text);outline:none;width:190px;transition:border-color .2s,width .3s;font-family:inherit}
+.topbar-search input:focus{border-color:rgba(245,200,66,.35);width:240px}
+.topbar-search input::placeholder{color:var(--text-faint)}
+.topbar-search i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:13px;pointer-events:none}
+.icon-btn{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:14px;transition:all .15s;position:relative}
+.icon-btn:hover{color:var(--text);border-color:var(--border-hi);background:var(--surface3)}
+.notif-dot{position:absolute;top:5px;right:6px;width:7px;height:7px;background:var(--danger);border-radius:50%;border:1.5px solid var(--surface)}
+.live-pill{display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);font-size:12px;color:var(--text-muted)}
+.live-dot{width:7px;height:7px;background:var(--success);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+#session-time{font-weight:600;color:var(--text)}
+
+/* ── CONTENT ────────────────────────────────── */
+#content{flex:1;padding:22px;overflow-y:auto}
+.sec{display:none}
+.sec.active{display:block;animation:fadeSlide .3s ease}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SECTION HEADER ─────────────────────────── */
+.sec-head{margin-bottom:20px}
+.sec-head h2{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.sec-head p{font-size:13px;color:var(--text-muted);margin-top:4px}
+
+/* ── CARDS ──────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px}
+.card-action{font-size:12px;color:var(--gold);cursor:pointer;font-weight:500;transition:opacity .2s}
+.card-action:hover{opacity:.75}
+
+/* ── KPI GRID ───────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s,box-shadow .2s;cursor:default}
+.kpi:hover{border-color:var(--border-hi);transform:translateY(-2px);box-shadow:var(--sh)}
+.kpi::after{content:'';position:absolute;width:100px;height:100px;border-radius:50%;top:-20px;right:-20px;opacity:.07;filter:blur(24px)}
+.kpi.gold::after{background:var(--gold)}
+.kpi.green::after{background:var(--success)}
+.kpi.blue::after{background:var(--blue)}
+.kpi.purple::after{background:var(--purple)}
+.kpi.teal::after{background:var(--teal)}
+.kpi.orange::after{background:var(--orange)}
+.kpi-icon{width:38px;height:38px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px}
+.kpi.gold .kpi-icon{background:var(--gold-dim);color:var(--gold)}
+.kpi.green .kpi-icon{background:var(--success-dim);color:var(--success)}
+.kpi.blue .kpi-icon{background:var(--blue-dim);color:var(--blue)}
+.kpi.purple .kpi-icon{background:var(--purple-dim);color:var(--purple)}
+.kpi.teal .kpi-icon{background:var(--teal-dim);color:var(--teal)}
+.kpi.orange .kpi-icon{background:var(--orange-dim);color:var(--orange)}
+.kpi-val{font-size:26px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:3px;line-height:1}
+.kpi-lbl{font-size:12px;color:var(--text-muted);margin-bottom:10px}
+.trend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+.trend.up{background:var(--success-dim);color:var(--success)}
+.trend.dn{background:var(--danger-dim);color:var(--danger)}
+
+/* ── GRID LAYOUTS ───────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.g31{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.g13{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:20px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+
+/* ── TABLES ─────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;margin-top:2px}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+.td-name{display:flex;align-items:center;gap:10px}
+.av{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.av-name{font-size:13px;font-weight:600;color:var(--text)}
+.av-sub{font-size:11px;color:var(--text-muted)}
+
+/* ── BADGE/STATUS ───────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.b-online{background:var(--success-dim);color:var(--success)}.b-online .badge-dot{background:var(--success)}
+.b-offline{background:var(--surface3);color:var(--text-muted)}.b-offline .badge-dot{background:var(--text-muted)}
+.b-trip{background:var(--blue-dim);color:var(--blue)}.b-trip .badge-dot{background:var(--blue)}
+.b-done{background:var(--success-dim);color:var(--success)}
+.b-cancel{background:var(--danger-dim);color:var(--danger)}
+.b-pending{background:var(--orange-dim);color:var(--orange)}
+.b-she{background:var(--purple-dim);color:var(--purple)}
+
+/* ── STARS ──────────────────────────────────── */
+.stars{color:var(--gold);font-size:12px;display:inline-flex;align-items:center;gap:1px}
+
+/* ── TOOLBAR ────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.s-wrap{position:relative}
+.s-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:13px;pointer-events:none}
+.s-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rm);padding:9px 14px 9px 34px;font-size:13px;color:var(--text);outline:none;font-family:inherit;transition:border-color .2s;width:200px}
+.s-input:focus{border-color:rgba(245,200,66,.35)}
+.s-input::placeholder{color:var(--text-faint)}
+select.s-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rm);padding:9px 14px;font-size:13px;color:var(--text);outline:none;font-family:inherit;cursor:pointer;transition:border-color .2s;-webkit-appearance:none}
+select.s-select:focus{border-color:rgba(245,200,66,.35)}
+.spacer{flex:1}
+.btn-p{background:var(--gold);border:none;border-radius:var(--rm);padding:9px 16px;font-size:13px;font-weight:700;color:#07090f;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:opacity .2s,box-shadow .2s}
+.btn-p:hover{opacity:.9;box-shadow:0 4px 18px rgba(245,200,66,.3)}
+.btn-o{background:none;border:1px solid var(--border);border-radius:var(--rm);padding:9px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+.btn-o:hover{border-color:var(--border-hi);color:var(--text);background:var(--surface2)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-danger{background:var(--danger-dim);border:1px solid rgba(224,85,85,.25);border-radius:var(--r);padding:7px 12px;font-size:12px;font-weight:600;color:var(--danger);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-danger:hover{background:rgba(224,85,85,.2)}
+
+/* ── ACTION BTNS ────────────────────────────── */
+.act-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;font-size:13px;color:var(--text-muted);transition:color .2s,background .2s}
+.act-btn:hover{color:var(--text);background:var(--surface2)}
+.act-btn.red:hover{color:var(--danger);background:var(--danger-dim)}
+.act-btn.grn:hover{color:var(--success);background:var(--success-dim)}
+
+/* ── CHARTS ─────────────────────────────────── */
+.chart-box{position:relative;height:220px}
+.chart-foot{display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── MAP ─────────────────────────────────────── */
+#map-el{height:440px;border-radius:var(--rm);overflow:hidden;border:1px solid var(--border)}
+.leaflet-tile{filter:brightness(.55) saturate(.4) hue-rotate(200deg)}
+.leaflet-container{background:var(--bg)}
+
+/* ── EVENT LOG ──────────────────────────────── */
+.ev-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.ev-row:last-child{border-bottom:none}
+.ev-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ev-icon.ok{background:var(--success-dim);color:var(--success)}
+.ev-icon.err{background:var(--danger-dim);color:var(--danger)}
+.ev-icon.warn{background:var(--orange-dim);color:var(--orange)}
+.ev-icon.info{background:var(--blue-dim);color:var(--blue)}
+.ev-text .t{font-size:13px;font-weight:500;color:var(--text)}
+.ev-text .s{font-size:11px;color:var(--text-muted);margin-top:2px}
+.ev-time{margin-left:auto;font-size:11px;color:var(--text-faint);flex-shrink:0}
+
+/* ── SETTINGS ───────────────────────────────── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-lbl .t{font-size:13px;font-weight:500;color:var(--text)}
+.setting-lbl .s{font-size:11px;color:var(--text-muted);margin-top:2px}
+.tog{width:42px;height:23px;background:var(--surface3);border-radius:12px;position:relative;cursor:pointer;border:none;transition:background .2s;flex-shrink:0}
+.tog.on{background:var(--success)}
+.tog::after{content:'';position:absolute;width:17px;height:17px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tog.on::after{transform:translateX(19px)}
+
+/* ── PROGRESS BAR ───────────────────────────── */
+.pbar{height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:6px}
+.pfill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* ── PAGINATION ─────────────────────────────── */
+.pager{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:14px}
+.page-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border);background:none;cursor:pointer;font-size:12px;color:var(--text-muted);font-family:inherit;transition:all .15s}
+.page-btn:hover{background:var(--surface2);color:var(--text)}
+.page-btn.cur{background:var(--gold-dim);border-color:rgba(245,200,66,.3);color:var(--gold);font-weight:700}
+
+/* ── TOAST ──────────────────────────────────── */
+#toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rm);padding:12px 18px;font-size:13px;color:var(--text);box-shadow:var(--sh);display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:999}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* ── SESSION WARN ───────────────────────────── */
+#sess-warn{display:none;position:fixed;top:76px;right:22px;background:var(--surface);border:1px solid rgba(245,152,66,.35);border-radius:var(--rm);padding:12px 18px;font-size:13px;color:var(--orange);z-index:200;display:none;gap:10px;align-items:center;box-shadow:var(--sh)}
+#sess-warn.show{display:flex}
+
+/* ── CONFIRM MODAL ──────────────────────────── */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center;animation:fadeIn .2s}
+#modal-overlay.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rx);padding:32px;width:380px;box-shadow:var(--sh)}
+.modal-icon{width:52px;height:52px;border-radius:var(--rm);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 16px}
+.modal-box h3{font-size:17px;font-weight:800;color:#fff;text-align:center;margin-bottom:8px}
+.modal-box p{font-size:13px;color:var(--text-muted);text-align:center;line-height:1.6;margin-bottom:22px}
+.modal-btns{display:flex;gap:10px}
+.modal-btns button{flex:1;padding:11px;border-radius:var(--rm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.modal-cancel{background:var(--surface2);border:1px solid var(--border);color:var(--text-muted)}
+.modal-confirm{background:var(--danger);border:none;color:#fff;box-shadow:0 4px 18px rgba(224,85,85,.3)}
+
+/* ── DOCUMENT VERIFICATION ─────────────────── */
+.doc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px;transition:.2s;position:relative}
+.doc-card:hover{border-color:var(--border-hi);transform:translateY(-1px)}
+.doc-card.pending{border-left:3px solid var(--orange)}
+.doc-card.approved{border-left:3px solid var(--success)}
+.doc-card.rejected{border-left:3px solid var(--danger)}
+.doc-card-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.doc-av{width:44px;height:44px;border-radius:12px;background:var(--gold-dim);color:var(--gold);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-info .name{font-size:14px;font-weight:700;color:var(--text)}
+.doc-info .sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+.doc-grid-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.doc-thumb-mini{aspect-ratio:4/3;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.2s;position:relative;overflow:hidden;cursor:pointer}
+.doc-thumb-mini:hover{border-color:var(--gold);background:var(--gold-dim)}
+.doc-thumb-mini i{font-size:18px;color:var(--text-faint)}
+.doc-thumb-mini .tlbl{font-size:9px;color:var(--text-faint);font-weight:600;text-align:center;padding:0 4px;letter-spacing:.3px;text-transform:uppercase}
+.doc-thumb-mini .doc-ok-badge{position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center}
+.doc-thumb-mini .doc-ok-badge i{font-size:7px;color:#fff}
+.doc-card-foot{display:flex;align-items:center;gap:8px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--border)}
+.doc-submitted{font-size:11px;color:var(--text-faint);margin-right:auto;display:flex;align-items:center;gap:5px}
+/* doc review modal */
+#doc-modal{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;animation:fadeIn .2s}
+#doc-modal.show{display:flex}
+.doc-modal-box{background:var(--surface);border:1px solid var(--border-hi);border-radius:var(--rx);width:min(820px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.75)}
+.doc-modal-head{display:flex;align-items:center;gap:16px;padding:24px 28px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.doc-modal-body{padding:24px 28px}
+.doc-modal-foot{padding:18px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;align-items:center;position:sticky;bottom:0;background:var(--surface)}
+.doc-modal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}
+.doc-preview-card{border:1px solid var(--border);border-radius:var(--rm);overflow:hidden;background:var(--surface2)}
+.doc-preview-img{aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;background:linear-gradient(135deg,var(--surface3),var(--surface2))}
+.doc-preview-img i{font-size:40px;color:var(--text-faint);opacity:.6}
+.doc-preview-img .check-badge{position:absolute;top:12px;right:12px;background:var(--success);color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px}
+.doc-preview-meta{padding:10px 14px;border-top:1px solid var(--border)}
+.doc-preview-meta .doc-type{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted)}
+.doc-preview-meta .doc-fname{font-size:12px;color:var(--text);margin-top:3px;display:flex;align-items:center;gap:6px}
+.doc-preview-meta .doc-date{font-size:10px;color:var(--text-faint);margin-top:2px}
+.vehicle-info-row{background:var(--surface2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+.dm-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600}
+#dm-reason{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:10px 14px;font-family:inherit;font-size:13px;resize:vertical;min-height:72px;display:none;transition:.2s}
+#dm-reason.show{display:block;animation:slideUp .2s}
+.btn-gold{background:var(--gold);border:none;border-radius:var(--rm);padding:9px 18px;font-size:13px;font-weight:700;color:#07090f;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:opacity .2s,box-shadow .2s}
+.btn-gold:hover{opacity:.9;box-shadow:0 4px 20px rgba(245,200,66,.35)}
+.btn-gold:disabled,.btn-danger:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── MISC ───────────────────────────────────── */
+.sep{height:1px;background:var(--border);margin:16px 0}
+.text-gold{color:var(--gold)}.text-success{color:var(--success)}.text-danger{color:var(--danger)}.text-muted{color:var(--text-muted)}
+.fw7{font-weight:700}.fw8{font-weight:800}
+.mb16{margin-bottom:16px}.mb20{margin-bottom:20px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--text-muted)}
+
+@media(max-width:1280px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.g2,.g31,.g13{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ LOGIN ═══════════════════════════════ -->
+<div id="login-page">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-brand-icon">🚖</div>
+      <div class="login-brand-text">
+        <h1>WinRak</h1>
+        <p>Centre de Contrôle</p>
+      </div>
+    </div>
+    <h2 class="login-heading">Connexion Administrateur</h2>
+    <p class="login-sub">Accès réservé au personnel autorisé. Toutes les sessions sont enregistrées.</p>
+    <div class="security-strip">
+      <i class="fa fa-shield-halved"></i>
+      <span>Connexion sécurisée · TLS 1.3 · Chiffrement AES-256</span>
+    </div>
+    <div id="login-error" class="login-error">
+      <i class="fa fa-triangle-exclamation"></i>
+      <span id="login-error-msg">Identifiants incorrects.</span>
+    </div>
+    <div class="field">
+      <label class="field-label">Nom d'utilisateur</label>
+      <div class="field-wrap">
+        <i class="fa fa-user field-icon"></i>
+        <input class="field-input" id="inp-user" type="text" placeholder="admin" autocomplete="username" spellcheck="false">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Mot de passe</label>
+      <div class="field-wrap">
+        <i class="fa fa-lock field-icon"></i>
+        <input class="field-input" id="inp-pass" type="password" placeholder="••••••••••" autocomplete="current-password">
+        <button class="pw-toggle" id="pw-eye" type="button" tabindex="-1"><i class="fa fa-eye"></i></button>
+      </div>
+    </div>
+    <div class="attempt-bar" id="attempt-bar">
+      <div class="label" id="attempt-label"></div>
+      <div class="bar"><div class="fill" id="attempt-fill"></div></div>
+    </div>
+    <button class="btn-login" id="btn-login">
+      <i class="fa fa-right-to-bracket"></i> &nbsp;Se connecter
+    </button>
+    <div class="login-hint">
+      Utilisateur : <code>admin</code> &nbsp;·&nbsp; Mot de passe : <code>WinRak2025</code><br>
+      <span style="font-size:10px;color:var(--text-faint)">⚠ Pas d'espace · Pas de majuscule au début</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ APP ════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo-icon">🚖</div>
+      <div class="sb-logo-text">
+        <h2>WinRak</h2>
+        <p>Administrateur</p>
+      </div>
+    </div>
+    <nav class="nav-scroll">
+      <div class="nav-sec">
+        <div class="nav-sec-label">Général</div>
+        <div class="nav-item active" data-sec="dashboard"><span class="nav-icon"><i class="fa fa-chart-pie"></i></span><span class="nav-label">Tableau de bord</span></div>
+        <div class="nav-item" data-sec="map"><span class="nav-icon"><i class="fa fa-map-location-dot"></i></span><span class="nav-label">Carte en direct</span><span class="nav-badge" id="badge-online">4</span></div>
+      </div>
+      <div class="nav-sec">
+        <div class="nav-sec-label">Gestion</div>
+        <div class="nav-item" data-sec="passengers"><span class="nav-icon"><i class="fa fa-users"></i></span><span class="nav-label">Passagers</span></div>
+        <div class="nav-item" data-sec="drivers"><span class="nav-icon"><i class="fa fa-car"></i></span><span class="nav-label">Chauffeurs</span></div>
+        <div class="nav-item" data-sec="trips"><span class="nav-icon"><i class="fa fa-route"></i></span><span class="nav-label">Trajets</span></div>
+        <div class="nav-item" data-sec="docs"><span class="nav-icon"><i class="fa fa-folder-open"></i></span><span class="nav-label">Vérif. documents</span><span class="nav-badge" id="badge-docs" style="background:var(--orange);color:#07090f">3</span></div>
+      </div>
+      <div class="nav-sec">
+        <div class="nav-sec-label">Finance</div>
+        <div class="nav-item" data-sec="finance"><span class="nav-icon"><i class="fa fa-coins"></i></span><span class="nav-label">Finances</span></div>
+      </div>
+      <div class="nav-sec">
+        <div class="nav-sec-label">Système</div>
+        <div class="nav-item" data-sec="security"><span class="nav-icon"><i class="fa fa-shield-halved"></i></span><span class="nav-label">Cyber-sécurité</span><span class="nav-badge" id="badge-alerts">3</span></div>
+        <div class="nav-item" data-sec="settings"><span class="nav-icon"><i class="fa fa-sliders"></i></span><span class="nav-label">Paramètres</span></div>
+      </div>
+    </nav>
+    <div class="sb-foot">
+      <div class="admin-row">
+        <div class="admin-av">A</div>
+        <div class="admin-text">
+          <div class="name">Administrateur</div>
+          <div class="role">Super Admin · DZ</div>
+        </div>
+        <button class="logout-btn" id="logout-btn" title="Déconnexion"><i class="fa fa-right-from-bracket"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main">
+    <header id="topbar">
+      <button class="menu-btn" id="toggle-sb"><i class="fa fa-bars-staggered"></i></button>
+      <span class="topbar-title" id="topbar-title">Tableau de bord</span>
+      <div class="topbar-right">
+        <div class="topbar-search">
+          <i class="fa fa-magnifying-glass"></i>
+          <input type="text" placeholder="Rechercher..." id="global-search">
+        </div>
+        <div class="icon-btn" title="Notifications">
+          <i class="fa fa-bell"></i>
+          <span class="notif-dot"></span>
+        </div>
+        <div class="icon-btn" title="Actualiser" id="refresh-btn"><i class="fa fa-rotate-right"></i></div>
+        <div class="live-pill">
+          <span class="live-dot"></span>
+          <span id="session-time">29:58</span>
+        </div>
+      </div>
+    </header>
+
+    <div id="content">
+
+      <!-- ─── DASHBOARD ─────────────────────── -->
+      <section class="sec active" id="sec-dashboard">
+        <div class="sec-head">
+          <h2>Tableau de bord</h2>
+          <p>Vue d'ensemble en temps réel — <span id="dash-date"></span></p>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi gold">
+            <div class="kpi-icon"><i class="fa fa-route"></i></div>
+            <div class="kpi-val" id="k-trips">1 284</div>
+            <div class="kpi-lbl">Trajets ce mois</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +12.4%</span>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-icon"><i class="fa fa-car"></i></div>
+            <div class="kpi-val" id="k-drivers">23</div>
+            <div class="kpi-lbl">Chauffeurs en ligne</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +3</span>
+          </div>
+          <div class="kpi blue">
+            <div class="kpi-icon"><i class="fa fa-coins"></i></div>
+            <div class="kpi-val" id="k-rev">87 500</div>
+            <div class="kpi-lbl">Revenus aujourd'hui (DZD)</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +8.2%</span>
+          </div>
+          <div class="kpi purple">
+            <div class="kpi-icon"><i class="fa fa-star"></i></div>
+            <div class="kpi-val">4.8</div>
+            <div class="kpi-lbl">Note moyenne globale</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +0.1</span>
+          </div>
+        </div>
+
+        <div class="g31">
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Trajets — 7 derniers jours</span>
+              <span class="card-action">Voir tout</span>
+            </div>
+            <div class="chart-box"><canvas id="chart-trips"></canvas></div>
+            <div class="chart-foot">
+              <div class="leg"><div class="leg-dot" style="background:var(--gold)"></div>Trajets</div>
+              <div class="leg"><div class="leg-dot" style="background:var(--success)"></div>Complétés</div>
+              <div class="leg"><div class="leg-dot" style="background:var(--danger)"></div>Annulés</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Types de trajet</span></div>
+            <div class="chart-box"><canvas id="chart-types"></canvas></div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Revenus hebdomadaires (DZD)</span>
+              <span class="card-action">Exporter</span>
+            </div>
+            <div class="chart-box"><canvas id="chart-rev"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Derniers trajets</span><span class="card-action" onclick="nav('trips')">Voir tout →</span></div>
+            <div class="tbl-wrap">
+              <table id="tbl-recent"></table>
+            </div>
+          </div>
+        </div>
+
+        <div class="g3">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Chauffeurs actifs</span></div>
+            <div id="driver-cards"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Performance du réseau</span></div>
+            <div id="kpi-extra"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Alertes système</span></div>
+            <div id="alerts-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── MAP ───────────────────────────── -->
+      <section class="sec" id="sec-map">
+        <div class="sec-head"><h2>Carte en direct</h2><p>Position en temps réel des chauffeurs et des courses actives</p></div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          <div class="kpi green" style="padding:14px 18px">
+            <div class="kpi-val" style="font-size:22px">4</div><div class="kpi-lbl">En ligne</div>
+          </div>
+          <div class="kpi blue" style="padding:14px 18px">
+            <div class="kpi-val" style="font-size:22px">2</div><div class="kpi-lbl">En course</div>
+          </div>
+          <div class="kpi gold" style="padding:14px 18px">
+            <div class="kpi-val" style="font-size:22px">7</div><div class="kpi-lbl">Courses actives</div>
+          </div>
+          <div class="kpi" style="padding:14px 18px">
+            <div class="kpi-val" style="font-size:22px">3</div><div class="kpi-lbl">Hors ligne</div>
+          </div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div id="map-el"></div>
+          <div class="chart-foot" style="margin-top:14px">
+            <div class="leg"><div class="leg-dot" style="background:var(--success)"></div>En ligne</div>
+            <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div>En course</div>
+            <div class="leg"><div class="leg-dot" style="background:var(--text-faint)"></div>Hors ligne</div>
+            <div class="leg"><div class="leg-dot" style="background:var(--gold)"></div>Passager</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── PASSENGERS ─────────────────────── -->
+      <section class="sec" id="sec-passengers">
+        <div class="sec-head"><h2>Passagers</h2><p>Gestion et suivi de tous les utilisateurs enregistrés</p></div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          <div class="kpi blue" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">892</div><div class="kpi-lbl">Total inscrits</div></div>
+          <div class="kpi green" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">741</div><div class="kpi-lbl">Actifs ce mois</div></div>
+          <div class="kpi gold" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">128</div><div class="kpi-lbl">Nouveaux (30j)</div></div>
+          <div class="kpi orange" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">23</div><div class="kpi-lbl">Signalements ouverts</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div class="s-wrap"><i class="fa fa-magnifying-glass"></i><input class="s-input" id="pax-search" placeholder="Rechercher un passager..."></div>
+            <select class="s-select" id="pax-filter">
+              <option value="">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+              <option value="suspended">Suspendu</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn-o btn-sm"><i class="fa fa-file-arrow-down"></i> Exporter CSV</button>
+            <button class="btn-p btn-sm"><i class="fa fa-plus"></i> Ajouter</button>
+          </div>
+          <div class="tbl-wrap"><table id="tbl-pax"></table></div>
+          <div class="pager" id="pax-pager"></div>
+        </div>
+      </section>
+
+      <!-- ─── DRIVERS ────────────────────────── -->
+      <section class="sec" id="sec-drivers">
+        <div class="sec-head"><h2>Chauffeurs</h2><p>Gestion du réseau de chauffeurs partenaires</p></div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          <div class="kpi green" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">45</div><div class="kpi-lbl">Total chauffeurs</div></div>
+          <div class="kpi blue" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">23</div><div class="kpi-lbl">En ligne</div></div>
+          <div class="kpi orange" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">3</div><div class="kpi-lbl">Dossiers en attente</div></div>
+          <div class="kpi purple" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">4.8</div><div class="kpi-lbl">Note moyenne</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div class="s-wrap"><i class="fa fa-magnifying-glass"></i><input class="s-input" id="drv-search" placeholder="Rechercher un chauffeur..."></div>
+            <select class="s-select" id="drv-filter">
+              <option value="">Tous les statuts</option>
+              <option value="online">En ligne</option>
+              <option value="on_trip">En course</option>
+              <option value="offline">Hors ligne</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn-o btn-sm"><i class="fa fa-file-arrow-down"></i> Exporter</button>
+            <button class="btn-p btn-sm"><i class="fa fa-plus"></i> Ajouter</button>
+          </div>
+          <div class="tbl-wrap"><table id="tbl-drv"></table></div>
+          <div class="pager" id="drv-pager"></div>
+        </div>
+      </section>
+
+      <!-- ─── TRIPS ──────────────────────────── -->
+      <section class="sec" id="sec-trips">
+        <div class="sec-head"><h2>Historique des trajets</h2><p>Toutes les courses effectuées sur la plateforme</p></div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          <div class="kpi gold" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">1 284</div><div class="kpi-lbl">Total ce mois</div></div>
+          <div class="kpi green" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">1 195</div><div class="kpi-lbl">Complétés</div></div>
+          <div class="kpi teal" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">22</div><div class="kpi-lbl">En cours</div></div>
+          <div class="kpi" style="padding:14px 18px"><div class="kpi-val" style="font-size:22px">67</div><div class="kpi-lbl">Annulés</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <div class="s-wrap"><i class="fa fa-magnifying-glass"></i><input class="s-input" id="trip-search" placeholder="ID trajet, passager, chauffeur..."></div>
+            <select class="s-select" id="trip-filter">
+              <option value="">Tous les statuts</option>
+              <option value="completed">Complété</option>
+              <option value="cancelled">Annulé</option>
+              <option value="active">En cours</option>
+            </select>
+            <select class="s-select" id="trip-type">
+              <option value="">Tous les types</option>
+              <option value="Confort">Confort</option>
+              <option value="Économique">Économique</option>
+              <option value="She">She</option>
+              <option value="Intercités">Intercités</option>
+            </select>
+            <div class="spacer"></div>
+            <button class="btn-o btn-sm"><i class="fa fa-file-arrow-down"></i> Exporter</button>
+          </div>
+          <div class="tbl-wrap"><table id="tbl-trips"></table></div>
+          <div class="pager" id="trip-pager"></div>
+        </div>
+      </section>
+
+      <!-- ─── FINANCE ────────────────────────── -->
+      <section class="sec" id="sec-finance">
+        <div class="sec-head"><h2>Gestion Financière</h2><p>Revenus, commissions et flux financiers de la plateforme</p></div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+          <div class="kpi gold">
+            <div class="kpi-icon"><i class="fa fa-sack-dollar"></i></div>
+            <div class="kpi-val">2 847 500</div>
+            <div class="kpi-lbl">Chiffre d'affaires ce mois (DZD)</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +15.3%</span>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-icon"><i class="fa fa-hand-holding-dollar"></i></div>
+            <div class="kpi-val">341 700</div>
+            <div class="kpi-lbl">Commission WinRak (12%) (DZD)</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +15.3%</span>
+          </div>
+          <div class="kpi blue">
+            <div class="kpi-icon"><i class="fa fa-wallet"></i></div>
+            <div class="kpi-val">2 505 800</div>
+            <div class="kpi-lbl">Reversé aux chauffeurs (DZD)</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +15.3%</span>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Revenus mensuels — 2025 (DZD)</span></div>
+            <div class="chart-box" style="height:250px"><canvas id="chart-monthly"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Répartition par type de véhicule</span></div>
+            <div class="chart-box" style="height:250px"><canvas id="chart-vtype"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Transactions récentes</span>
+            <button class="btn-o btn-sm"><i class="fa fa-file-arrow-down"></i> Exporter</button>
+          </div>
+          <div class="tbl-wrap"><table id="tbl-finance"></table></div>
+        </div>
+      </section>
+
+      <!-- ─── SECURITY ───────────────────────── -->
+      <section class="sec" id="sec-security">
+        <div class="sec-head"><h2>Cyber-Sécurité</h2><p>Surveillance, accès et journaux d'événements système</p></div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+          <div class="kpi green" style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-circle-check"></i></div><div class="kpi-val" style="font-size:22px">99.8%</div><div class="kpi-lbl">Disponibilité système</div></div>
+          <div class="kpi blue" style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-key"></i></div><div class="kpi-val" style="font-size:22px">1</div><div class="kpi-lbl">Session active</div></div>
+          <div class="kpi orange" style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-triangle-exclamation"></i></div><div class="kpi-val" style="font-size:22px">3</div><div class="kpi-lbl">Tentatives échouées (24h)</div></div>
+          <div class="kpi danger" style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-ban"></i></div><div class="kpi-val" style="font-size:22px">0</div><div class="kpi-lbl">IP bloquées</div></div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Journal d'événements (24h)</span></div>
+            <div id="ev-log"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Sessions actives</span></div>
+            <div id="sess-log"></div>
+            <div class="sep"></div>
+            <div class="card-head" style="margin-bottom:12px"><span class="card-title">Politique de sécurité</span></div>
+            <div class="setting-row" style="padding:10px 0">
+              <div class="setting-lbl"><div class="t">Authentification 2FA</div><div class="s">Vérification en deux étapes activée</div></div>
+              <button class="tog on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="setting-row" style="padding:10px 0">
+              <div class="setting-lbl"><div class="t">Blocage après 5 échecs</div><div class="s">Verrouillage temporaire 5 minutes</div></div>
+              <button class="tog on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="setting-row" style="padding:10px 0;border-bottom:none">
+              <div class="setting-lbl"><div class="t">Expiration de session</div><div class="s">Déconnexion automatique après 30 min</div></div>
+              <button class="tog on" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Historique des connexions</span><button class="btn-o btn-sm"><i class="fa fa-file-arrow-down"></i> Exporter</button></div>
+          <div class="tbl-wrap"><table id="tbl-logins"></table></div>
+        </div>
+      </section>
+
+      <!-- ─── SETTINGS ───────────────────────── -->
+      <section class="sec" id="sec-settings">
+        <div class="sec-head"><h2>Paramètres</h2><p>Configuration générale de la plateforme WinRak</p></div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Application</span></div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Maintenance programmée</div><div class="s">Désactiver temporairement l'accès public</div></div>
+              <button class="tog" onclick="this.classList.toggle('on');showToast('Paramètre mis à jour')"></button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Service She Mode</div><div class="s">Courses exclusivement femmes activées</div></div>
+              <button class="tog on" onclick="this.classList.toggle('on');showToast('Paramètre mis à jour')"></button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Mode intercités</div><div class="s">Autoriser les courses longue distance</div></div>
+              <button class="tog on" onclick="this.classList.toggle('on');showToast('Paramètre mis à jour')"></button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Notifications push</div><div class="s">Alertes système temps réel</div></div>
+              <button class="tog on" onclick="this.classList.toggle('on');showToast('Paramètre mis à jour')"></button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Tarification</span></div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Commission plateforme</div><div class="s">Pourcentage prélevé par WinRak</div></div>
+              <span class="pill text-gold fw7">12 %</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Prix de base (Économique)</div><div class="s">Tarif minimum par trajet</div></div>
+              <span class="pill">300 DZD</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Prix de base (Confort)</div><div class="s">Tarif minimum par trajet</div></div>
+              <span class="pill">500 DZD</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Majoration heure de pointe</div><div class="s">Multiplicateur en période d'affluence</div></div>
+              <span class="pill">× 1.4</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Zones de service</span></div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Alger Centre</div><div class="s">Zone principale active</div></div>
+              <span class="badge b-online"><span class="badge-dot"></span>Active</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Oran</div><div class="s">Lancement prévu Q3 2025</div></div>
+              <span class="badge b-pending">Bientôt</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Constantine</div><div class="s">En phase de test</div></div>
+              <span class="badge b-trip">Bêta</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Compte administrateur</span></div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Nom d'utilisateur</div><div class="s">Identifiant de connexion</div></div>
+              <span class="pill">admin</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Dernière connexion</div><div class="s">Heure et adresse IP</div></div>
+              <span class="pill text-muted" id="last-login">—</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-lbl"><div class="t">Changer le mot de passe</div><div class="s">Recommandé tous les 90 jours</div></div>
+              <button class="btn-o btn-sm" onclick="showToast('Fonctionnalité bientôt disponible')"><i class="fa fa-lock"></i> Modifier</button>
+            </div>
+            <div class="sep"></div>
+            <button class="btn-danger" style="width:100%;justify-content:center" onclick="doLogout()"><i class="fa fa-right-from-bracket"></i> Déconnexion</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── DOCUMENT VERIFICATION ──────────── -->
+      <section class="sec" id="sec-docs">
+        <div class="sec-head">
+          <h2>Vérification des Documents</h2>
+          <p>Contrôle et validation des dossiers d'inscription chauffeur</p>
+        </div>
+
+        <div class="kpi-grid" style="margin-bottom:24px">
+          <div class="kpi orange">
+            <div class="kpi-icon"><i class="fa fa-clock"></i></div>
+            <div class="kpi-val" id="k-docs-pending">3</div>
+            <div class="kpi-lbl">En attente de vérification</div>
+            <span class="trend" style="color:var(--orange)"><i class="fa fa-triangle-exclamation"></i> Action requise</span>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-icon"><i class="fa fa-circle-check"></i></div>
+            <div class="kpi-val">2</div>
+            <div class="kpi-lbl">Approuvés aujourd'hui</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +2 vs hier</span>
+          </div>
+          <div class="kpi" style="position:relative;overflow:hidden">
+            <div class="kpi-icon" style="background:var(--danger-dim);color:var(--danger)"><i class="fa fa-circle-xmark"></i></div>
+            <div class="kpi-val">1</div>
+            <div class="kpi-lbl">Refusés aujourd'hui</div>
+            <span class="trend" style="color:var(--text-muted)">Documents non conformes</span>
+            <div style="position:absolute;width:100px;height:100px;border-radius:50%;top:-20px;right:-20px;opacity:.07;filter:blur(24px);background:var(--danger)"></div>
+          </div>
+          <div class="kpi blue">
+            <div class="kpi-icon"><i class="fa fa-user-check"></i></div>
+            <div class="kpi-val">47</div>
+            <div class="kpi-lbl">Total chauffeurs vérifiés</div>
+            <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +12 ce mois</span>
+          </div>
+        </div>
+
+        <div class="card mb20" style="padding:14px 20px">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <div class="s-wrap" style="flex:1;min-width:220px">
+              <i class="fa fa-magnifying-glass"></i>
+              <input class="s-input" style="width:100%" type="text" placeholder="Rechercher un chauffeur..." id="docs-search">
+            </div>
+            <select class="s-select" id="docs-filter">
+              <option value="">Tous les statuts</option>
+              <option value="pending">En attente</option>
+              <option value="approved">Approuvé</option>
+              <option value="rejected">Refusé</option>
+            </select>
+            <select class="s-select" id="docs-type">
+              <option value="">Tous les types</option>
+              <option value="Économique">Économique</option>
+              <option value="Confort">Confort</option>
+              <option value="She">She</option>
+              <option value="Intercités">Intercités</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="docs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px"></div>
+        <div id="docs-empty" style="display:none;text-align:center;padding:64px 0;color:var(--text-muted)">
+          <i class="fa fa-folder-open" style="font-size:52px;opacity:.15;display:block;margin-bottom:14px"></i>
+          <div style="font-size:14px;font-weight:600">Aucun dossier ne correspond à votre filtre</div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- SESSION WARNING -->
+<div id="sess-warn"><i class="fa fa-clock"></i> Session expirant dans <strong id="warn-time"></strong></div>
+
+<!-- TOAST -->
+<div id="toast"><i class="fa fa-circle-check" id="toast-icon" style="color:var(--success)"></i><span id="toast-msg"></span></div>
+
+<!-- DOC REVIEW MODAL -->
+<div id="doc-modal">
+  <div class="doc-modal-box">
+    <div class="doc-modal-head">
+      <div class="doc-av" id="dm-av" style="width:52px;height:52px;border-radius:14px;font-size:20px;flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:17px;font-weight:800;color:#fff" id="dm-name"></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px" id="dm-sub"></div>
+      </div>
+      <div id="dm-status-badge"></div>
+      <button onclick="closeDocModal()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="doc-modal-body">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Documents soumis</div>
+      <div class="doc-modal-grid" id="dm-grid"></div>
+      <div class="vehicle-info-row">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px">Véhicule</div>
+          <div style="font-size:13px;color:var(--text);font-weight:600" id="dm-vehicle"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px">Plaque</div>
+          <div style="font-size:13px;color:var(--gold);font-weight:700" id="dm-plate"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px">Type</div>
+          <div style="font-size:13px;color:var(--blue);font-weight:600" id="dm-vtype"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px">Soumis le</div>
+          <div style="font-size:13px;color:var(--text-muted)" id="dm-submitted"></div>
+        </div>
+      </div>
+      <textarea id="dm-reason" rows="3" placeholder="Motif du refus (obligatoire avant de refuser)..."></textarea>
+    </div>
+    <div class="doc-modal-foot">
+      <button class="btn-o" style="margin-right:auto" onclick="dmRequestInfo()"><i class="fa fa-circle-info"></i> Demander infos</button>
+      <button class="btn-danger" id="dm-btn-reject" onclick="dmToggleReject()" style="padding:9px 16px;font-size:13px"><i class="fa fa-circle-xmark"></i> Refuser</button>
+      <button class="btn-gold" id="dm-btn-approve" onclick="dmApprove()"><i class="fa fa-circle-check"></i> Approuver le chauffeur</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon" style="background:var(--danger-dim);color:var(--danger)"><i class="fa fa-right-from-bracket"></i></div>
+    <h3>Déconnexion</h3>
+    <p>Voulez-vous vraiment mettre fin à votre session ? Toutes les données non sauvegardées seront perdues.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-confirm" onclick="confirmLogout()">Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>

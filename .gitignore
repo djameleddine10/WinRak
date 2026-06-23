@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+build/
+dist/
+
+*.apk
+
+apk-host/
+
+.env.local
+.env

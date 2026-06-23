@@ -1,0 +1,88 @@
+{
+  "expo": {
+    "name": "WinRak",
+    "slug": "WinRak",
+    "version": "1.0.0",
+    "scheme": "winrak",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#22272b",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-light.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "image": "./assets/splash-dark.png",
+        "backgroundColor": "#22272b"
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.winrak.app"
+    },
+    "android": {
+      "package": "com.winrak.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#22272b"
+      },
+      "notification": {
+        "icon": "./assets/android-icon-foreground.png",
+        "color": "#ffbc07"
+      },
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY"
+        }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "السماح لـ WinRak باستخدام موقعك لإيجاد الرحلات القريبة."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "السماح لـ WinRak بالوصول إلى صورك لرفع صورتك الشخصية.",
+          "cameraPermission": "السماح لـ WinRak باستخدام الكاميرا لالتقاط صورتك."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-foreground.png",
+          "color": "#ffbc07",
+          "sounds": []
+        }
+      ],
+      "expo-splash-screen"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b8e5f0cf-5331-407a-8b8e-1817e574726f"
+      }
+    }
+  }
+}
