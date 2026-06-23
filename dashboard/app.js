@@ -517,34 +517,136 @@ function renderLoginHistory() {
 }
 
 /* ═══════════════════════════════════════════════
-   MAP
+   MAP — Google Maps
 ═══════════════════════════════════════════════ */
+var _gmap       = null;
+var _gMarkers   = [];
+var _mapFilter  = 'all';
+
+var _DARK_STYLE = [
+  { elementType: 'geometry',            stylers: [{ color: '#0e1119' }] },
+  { elementType: 'labels.text.stroke',  stylers: [{ color: '#07090f' }] },
+  { elementType: 'labels.text.fill',    stylers: [{ color: '#6b7591' }] },
+  { featureType: 'road',                elementType: 'geometry',        stylers: [{ color: '#1b1f2e' }] },
+  { featureType: 'road',                elementType: 'geometry.stroke', stylers: [{ color: '#141720' }] },
+  { featureType: 'road.highway',        elementType: 'geometry',        stylers: [{ color: '#222740' }] },
+  { featureType: 'road.highway',        elementType: 'geometry.stroke', stylers: [{ color: '#1b1f2e' }] },
+  { featureType: 'water',               elementType: 'geometry',        stylers: [{ color: '#07090f' }] },
+  { featureType: 'poi',                 stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit',             stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative',      elementType: 'geometry.stroke', stylers: [{ color: '#1b1f2e' }] },
+];
+
 function initMap() {
-  var map = L.map('map-el', { zoomControl: true }).setView([36.7538, 3.0588], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 18
-  }).addTo(map);
+  if (typeof google === 'undefined' || !google.maps) {
+    var tries = 0;
+    var poll = setInterval(function () {
+      tries++;
+      if (typeof google !== 'undefined' && google.maps) { clearInterval(poll); _buildGoogleMap(); }
+      if (tries > 60) clearInterval(poll);
+    }, 100);
+    return;
+  }
+  _buildGoogleMap();
+}
+
+function _buildGoogleMap() {
+  var mapEl = document.getElementById('map-el');
+  if (!mapEl || _gmap) return;
+
+  _gmap = new google.maps.Map(mapEl, {
+    center: { lat: 36.7538, lng: 3.0588 },
+    zoom: 12,
+    styles: _DARK_STYLE,
+    mapTypeControl:    false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
+  });
+
+  updateMapKpis();
+  mapRefresh();
+}
+
+function _markerSvg(letter, color) {
+  var bg = color + '33';
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">' +
+    '<circle cx="18" cy="18" r="17" fill="' + bg + '" stroke="' + color + '" stroke-width="2"/>' +
+    '<text x="18" y="23" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="' + color + '">' + letter + '</text>' +
+    '</svg>'
+  );
+}
+
+function _paxSvg() {
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">' +
+    '<circle cx="15" cy="15" r="14" fill="#F5C84222" stroke="#F5C842" stroke-width="2"/>' +
+    '<text x="15" y="20" text-anchor="middle" font-size="14">👤</text>' +
+    '</svg>'
+  );
+}
+
+function mapRefresh() {
+  if (!_gmap) return;
+  _gMarkers.forEach(function (m) { m.setMap(null); });
+  _gMarkers = [];
 
   var colorMap = { online: '#3DB87A', on_trip: '#4FA0E0', offline: '#3a4260' };
-  DRIVERS.forEach(function (d) {
-    var col = colorMap[d.status] || '#888';
-    var icon = L.divIcon({
-      html: '<div style="width:34px;height:34px;background:' + col + '22;border:2px solid ' + col + ';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:' + col + '">' + d.name.charAt(0) + '</div>',
-      iconSize: [34, 34], iconAnchor: [17, 17], className: ''
+  var drvData  = DRIVERS.map(function (d) {
+    return { lat: d.lat, lng: d.lng, name: d.name, vehicle: d.vehicle, plate: d.plate, status: d.status, type: 'driver' };
+  });
+
+  drvData.forEach(function (d) {
+    if (_mapFilter !== 'all' && _mapFilter !== 'drivers') return;
+    var col  = colorMap[d.status] || '#888';
+    var icon = { url: _markerSvg(d.name.charAt(0).toUpperCase(), col), scaledSize: new google.maps.Size(36, 36), anchor: new google.maps.Point(18, 18) };
+    var info = '<div style="font-family:Inter,sans-serif;color:#dde2f0;min-width:160px">' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">' + d.name + '</div>' +
+      '<div style="color:#6b7591;font-size:12px">' + d.vehicle + ' · ' + d.plate + '</div>' +
+      '<div style="margin-top:6px;font-size:11px;color:' + col + '">' + (d.status === 'online' ? 'En ligne' : d.status === 'on_trip' ? 'En course' : 'Hors ligne') + '</div>' +
+    '</div>';
+    var iw = new google.maps.InfoWindow({ content: info });
+    var mk = new google.maps.Marker({ position: { lat: d.lat, lng: d.lng }, map: _gmap, icon: icon, title: d.name });
+    mk.addListener('click', function () { iw.open(_gmap, mk); });
+    _gMarkers.push(mk);
+  });
+
+  if (_mapFilter === 'all' || _mapFilter === 'passengers') {
+    [[36.762, 3.065], [36.748, 3.047]].forEach(function (c) {
+      var icon = { url: _paxSvg(), scaledSize: new google.maps.Size(30, 30), anchor: new google.maps.Point(15, 15) };
+      var mk   = new google.maps.Marker({ position: { lat: c[0], lng: c[1] }, map: _gmap, icon: icon, title: 'Passager' });
+      _gMarkers.push(mk);
     });
-    L.marker([d.lat, d.lng], { icon: icon }).addTo(map)
-      .bindPopup('<div style="font-family:Inter,sans-serif;min-width:160px"><div style="font-weight:700;margin-bottom:4px">' + d.name + '</div><div style="color:#888;font-size:12px">' + d.vehicle + ' · ' + d.plate + '</div></div>');
-  });
+  }
 
-  var paxIcon = L.divIcon({
-    html: '<div style="width:28px;height:28px;background:#F5C84222;border:2px solid #F5C842;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px">👤</div>',
-    iconSize: [28, 28], iconAnchor: [14, 14], className: ''
-  });
-  [[36.762, 3.065], [36.748, 3.047]].forEach(function (c) { L.marker(c, { icon: paxIcon }).addTo(map); });
-
-  var route = [[36.7538, 3.0588], [36.7450, 3.0650], [36.7380, 3.0720], [36.7300, 3.0870]];
-  L.polyline(route, { color: '#F5C842', weight: 3, opacity: .7, dashArray: '8 6' }).addTo(map);
+  if (_mapFilter === 'all') {
+    var route = [
+      { lat: 36.7538, lng: 3.0588 }, { lat: 36.7450, lng: 3.0650 },
+      { lat: 36.7380, lng: 3.0720 }, { lat: 36.7300, lng: 3.0870 },
+    ];
+    var poly = new google.maps.Polyline({ path: route, geodesic: true, strokeColor: '#F5C842', strokeOpacity: 0.8, strokeWeight: 3, map: _gmap });
+    _gMarkers.push(poly);
+  }
 }
+
+function mapFilter(type) {
+  _mapFilter = type || 'all';
+  mapRefresh();
+}
+
+function updateMapKpis() {
+  var online  = DRIVERS.filter(function (d) { return d.status === 'online'; }).length;
+  var on_trip = DRIVERS.filter(function (d) { return d.status === 'on_trip'; }).length;
+  var offline = DRIVERS.filter(function (d) { return d.status === 'offline'; }).length;
+  var kpis = document.querySelectorAll('#sec-map .kpi .kpi-val');
+  if (kpis[0]) kpis[0].textContent = online;
+  if (kpis[1]) kpis[1].textContent = on_trip;
+  if (kpis[2]) kpis[2].textContent = on_trip;  // active trips ≈ drivers on_trip
+  if (kpis[3]) kpis[3].textContent = offline;
+}
+
+function renderMapSidebar() { /* reserved for future real-time sidebar */ }
 
 /* ═══════════════════════════════════════════════
    PAGER

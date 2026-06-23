@@ -20,7 +20,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.winrak.app"
+      "bundleIdentifier": "com.winrak.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY"
+      }
     },
     "android": {
       "package": "com.winrak.app",

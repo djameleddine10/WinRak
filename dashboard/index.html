@@ -6,9 +6,8 @@
 <title>WinRak — Centre de Contrôle</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY&language=fr" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-config.js" defer></script>
 <style>
@@ -242,8 +241,10 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
 
 /* ── MAP ─────────────────────────────────────── */
 #map-el{height:440px;border-radius:var(--rm);overflow:hidden;border:1px solid var(--border)}
-.leaflet-tile{filter:brightness(.55) saturate(.4) hue-rotate(200deg)}
-.leaflet-container{background:var(--bg)}
+.gm-style{border-radius:var(--rm)}
+.gm-style-iw-c{background:var(--surface2)!important;border:1px solid var(--border)!important;box-shadow:var(--sh)!important;border-radius:var(--r)!important;padding:0!important}
+.gm-style-iw-d{overflow:hidden!important;padding:12px 16px!important}
+.gm-style-iw-tc::after,.gm-ui-hover-effect{display:none!important}
 
 /* ── EVENT LOG ──────────────────────────────── */
 .ev-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
