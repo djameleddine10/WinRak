@@ -29,7 +29,31 @@ export default function Home() {
   const setRideMode = useUserStore((s) => s.setRideMode)
   const setSheMode = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
+  const setTo = useRideStore((s) => s.setTo)
+  const rideHistory = useRideStore((s) => s.rideHistory)
   const mapDrivers = useMapStore((s) => s.mapDrivers)
+
+  // Unique recent destinations from past rides (most recent first)
+  const recentDestinations = useMemo(() => {
+    const seen = new Set<string>()
+    const out: { name: string; address: string; lat: number; lng: number }[] = []
+    for (const r of rideHistory) {
+      const d = r.to
+      if (!d || seen.has(d.name)) continue
+      seen.add(d.name)
+      out.push(d)
+      if (out.length >= 4) break
+    }
+    return out
+  }, [rideHistory])
+
+  function openRecent(dest: { name: string; address: string; lat: number; lng: number }) {
+    setSheMode(false)
+    setVehicleType('sedan')
+    setRideMode('city')
+    setTo(dest)
+    router.push('/(passenger)/search')
+  }
   const { errorMsg } = useLocation()
   const t = useT()
 
@@ -154,6 +178,32 @@ export default function Home() {
               </Card>
             </View>
 
+            {recentDestinations.length > 0 && (
+              <View style={styles.recent}>
+                <Txt weight="bold" size={14} color={Colors.muted} style={styles.recentTitle}>
+                  {t('home.recentTitle')}
+                </Txt>
+                {recentDestinations.map((d) => (
+                  <Pressable
+                    key={d.name}
+                    style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
+                    onPress={() => openRecent(d)}
+                  >
+                    <View style={styles.recentIcon}>
+                      <Icon name="history" size={18} color={Colors.muted} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Txt weight="bold" size={14}>{d.name}</Txt>
+                      <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 1 }}>
+                        {d.address}
+                      </Txt>
+                    </View>
+                    <DirIcon name="chevron-right" size={20} color={Colors.dark4} />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
           </ScrollView>
         </BottomSheetView>
       </BottomSheet>
@@ -211,6 +261,16 @@ function makeStyles(Colors: Palette) {
     },
     rideIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
     deliveryIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
+    recent: { marginTop: Spacing.lg },
+    recentTitle: { marginBottom: Spacing.sm, textAlign: 'right' },
+    recentRow: {
+      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    },
+    recentIcon: {
+      width: 38, height: 38, borderRadius: 19,
+      backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center',
+    },
     pressed: { opacity: 0.7 },
   })
 }
