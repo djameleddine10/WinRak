@@ -174,60 +174,63 @@ function DropoffPin({ gold }: { gold: string }) {
 }
 
 function CarIcon({ heading, color }: { heading: number; color: string }) {
-  // Modern realistic top-down car (Google-Maps style) tinted in the WinRak
-  // brand colour: smooth curved body, tinted windshields front & rear, a
-  // lighter roof highlight, side-mirror nubs, red tail-lights and a soft
-  // ground shadow. The nose points up (heading 0) and rotates along the route.
-  const dark = '#2b3440'       // glass / tyres
-  const glass = '#33415a'      // windshield tint
+  // Realistic top-down sedan modelled on the reference illustration, tinted in
+  // the WinRak brand colour. Curved body with a center glossy highlight, dark
+  // tinted front & rear windshields, side windows, door seams, wing mirrors,
+  // headlights and a soft ground shadow. Nose points up (heading 0).
+  const glass    = '#101a33'   // deep navy glass
+  const seam     = 'rgba(0,0,0,0.22)'
+  const headlight = 'rgba(255,255,255,0.85)'
   return (
     <Svg
-      width={46}
-      height={46}
-      viewBox="-23 -23 46 46"
+      width={48}
+      height={48}
+      viewBox="-24 -24 48 48"
       style={{ transform: [{ rotate: `${heading}deg` }] }}
     >
       {/* soft ground shadow */}
-      <Ellipse cx="0.5" cy="2" rx="11.5" ry="18" fill="rgba(0,0,0,0.22)" />
+      <Ellipse cx="0.5" cy="1.5" rx="11" ry="20" fill="rgba(0,0,0,0.20)" />
 
-      {/* side mirrors */}
-      <Ellipse cx="-9.5" cy="-3" rx="2" ry="1.4" fill={color} />
-      <Ellipse cx="9.5"  cy="-3" rx="2" ry="1.4" fill={color} />
+      {/* wing mirrors */}
+      <Path d="M-8.4 -5 L-11 -4 Q-12 -3.4 -11.2 -2.6 L-8.4 -3.4 Z" fill={color} />
+      <Path d="M8.4 -5 L11 -4 Q12 -3.4 11.2 -2.6 L8.4 -3.4 Z" fill={color} />
 
-      {/* tyres */}
-      <Rect x="-9.6" y="-10" width="2.6" height="6" rx="1.3" fill={dark} />
-      <Rect x="7"    y="-10" width="2.6" height="6" rx="1.3" fill={dark} />
-      <Rect x="-9.6" y="5"   width="2.6" height="6" rx="1.3" fill={dark} />
-      <Rect x="7"    y="5"   width="2.6" height="6" rx="1.3" fill={dark} />
-
-      {/* body — teardrop-ish silhouette, wider at the rear */}
+      {/* car body — smooth sedan silhouette, rounded nose & tail */}
       <Path
-        d="M0 -16
-           C5 -16 7.6 -13.5 8 -9
-           C8.4 -4 8.6 4 8.2 9.5
-           C7.9 13.5 5 16 0 16
-           C-5 16 -7.9 13.5 -8.2 9.5
-           C-8.6 4 -8.4 -4 -8 -9
-           C-7.6 -13.5 -5 -16 0 -16 Z"
+        d="M0 -19.5
+           C5.2 -19.5 8.3 -16 8.8 -10.5
+           C9.2 -5.5 9.3 6 8.9 12.5
+           C8.5 17.5 5 19.5 0 19.5
+           C-5 19.5 -8.5 17.5 -8.9 12.5
+           C-9.3 6 -9.2 -5.5 -8.8 -10.5
+           C-8.3 -16 -5.2 -19.5 0 -19.5 Z"
         fill={color}
-        stroke="rgba(0,0,0,0.20)"
-        strokeWidth="0.7"
+        stroke={seam}
+        strokeWidth="0.6"
       />
 
-      {/* subtle roof highlight (a soft brand-tinted gloss, not a big patch) */}
-      <Path
-        d="M0 -5.5 C3 -5.5 4.4 -4 4.6 0 C4.4 4 3 5.5 0 5.5 C-3 5.5 -4.4 4 -4.6 0 C-4.4 -4 -3 -5.5 0 -5.5 Z"
-        fill="rgba(255,255,255,0.12)"
-      />
+      {/* headlights (front) */}
+      <Path d="M-6.4 -16.4 Q-4.6 -17.6 -3 -16.6 L-3.6 -14.8 Q-5 -15.4 -6 -14.8 Z" fill={headlight} />
+      <Path d="M6.4 -16.4 Q4.6 -17.6 3 -16.6 L3.6 -14.8 Q5 -15.4 6 -14.8 Z" fill={headlight} />
 
-      {/* front windshield (nose) */}
-      <Path d="M-5 -12 C-2 -13.4 2 -13.4 5 -12 L3.4 -7.5 C1.2 -8.4 -1.2 -8.4 -3.4 -7.5 Z" fill={glass} />
+      {/* front windshield */}
+      <Path d="M-6 -10.5 Q0 -12 6 -10.5 L4.8 -4.5 Q0 -5.6 -4.8 -4.5 Z" fill={glass} />
+      {/* roof glossy highlight */}
+      <Rect x="-5.6" y="-4" width="11.2" height="9.5" rx="2.4" fill="rgba(255,255,255,0.14)" />
       {/* rear windshield */}
-      <Path d="M-4.6 12 C-2 13.2 2 13.2 4.6 12 L3.2 8 C1.1 8.8 -1.1 8.8 -3.2 8 Z" fill={glass} />
+      <Path d="M-5.8 12 Q0 13.2 5.8 12 L4.6 6.5 Q0 7.6 -4.6 6.5 Z" fill={glass} />
 
-      {/* tail-lights */}
-      <Rect x="-6.2" y="13.4" width="3.6" height="1.8" rx="0.9" fill="#d23b2e" />
-      <Rect x="2.6"  y="13.4" width="3.6" height="1.8" rx="0.9" fill="#d23b2e" />
+      {/* side windows */}
+      <Path d="M-8 -9.5 L-6.2 -9 L-6.2 5.5 L-8 6 Z" fill={glass} />
+      <Path d="M8 -9.5 L6.2 -9 L6.2 5.5 L8 6 Z" fill={glass} />
+
+      {/* door seams */}
+      <Rect x="-8.6" y="-0.4" width="17.2" height="0.7" rx="0.35" fill={seam} />
+      {/* door handles */}
+      <Rect x="-7.6" y="-3.4" width="1.4" height="2.6" rx="0.7" fill={seam} />
+      <Rect x="6.2"  y="-3.4" width="1.4" height="2.6" rx="0.7" fill={seam} />
+      <Rect x="-7.6" y="1"   width="1.4" height="2.6" rx="0.7" fill={seam} />
+      <Rect x="6.2"  y="1"   width="1.4" height="2.6" rx="0.7" fill={seam} />
     </Svg>
   )
 }
