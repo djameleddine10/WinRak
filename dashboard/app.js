@@ -223,8 +223,6 @@ var TITLES = {
   trips: 'Historique des trajets', docs: 'Vérification des Documents',
   finance: 'Gestion Financière', security: 'Cyber-Sécurité', settings: 'Paramètres'
 };
-var mapInited = false;
-
 function nav(id) {
   document.querySelectorAll('.nav-item').forEach(function (el) {
     el.classList.toggle('active', el.dataset.sec === id);
@@ -233,7 +231,7 @@ function nav(id) {
     el.classList.toggle('active', el.id === 'sec-' + id);
   });
   document.getElementById('topbar-title').textContent = TITLES[id] || id;
-  if (id === 'map' && !mapInited) { setTimeout(initMap, 100); mapInited = true; }
+  if (id === 'map') { setTimeout(initMap, 100); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -538,6 +536,10 @@ var _DARK_STYLE = [
 ];
 
 function initMap() {
+  if (_gmap) {
+    if (typeof google !== 'undefined' && google.maps) google.maps.event.trigger(_gmap, 'resize');
+    return;
+  }
   if (typeof google === 'undefined' || !google.maps) {
     var tries = 0;
     var poll = setInterval(function () {
@@ -639,11 +641,14 @@ function updateMapKpis() {
   var online  = DRIVERS.filter(function (d) { return d.status === 'online'; }).length;
   var on_trip = DRIVERS.filter(function (d) { return d.status === 'on_trip'; }).length;
   var offline = DRIVERS.filter(function (d) { return d.status === 'offline'; }).length;
-  var kpis = document.querySelectorAll('#sec-map .kpi .kpi-val');
-  if (kpis[0]) kpis[0].textContent = online;
-  if (kpis[1]) kpis[1].textContent = on_trip;
-  if (kpis[2]) kpis[2].textContent = on_trip;  // active trips ≈ drivers on_trip
-  if (kpis[3]) kpis[3].textContent = offline;
+  var e1 = document.getElementById('map-kpi-online');
+  var e2 = document.getElementById('map-kpi-trip');
+  var e3 = document.getElementById('map-kpi-active');
+  var e4 = document.getElementById('map-kpi-offline');
+  if (e1) e1.textContent = online;
+  if (e2) e2.textContent = on_trip;
+  if (e3) e3.textContent = on_trip;
+  if (e4) e4.textContent = offline;
 }
 
 function renderMapSidebar() { /* reserved for future real-time sidebar */ }

@@ -7,7 +7,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY&language=fr" defer></script>
+<script>
+window.gm_authFailure = function() {
+  console.error('[WinRak] Google Maps auth failed — check API key restrictions in Google Cloud Console');
+  var el = document.getElementById('map-el');
+  if (el) el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#e94560;font-family:Inter,sans-serif;font-size:14px;gap:8px"><i class="fa fa-triangle-exclamation" style="margin-left:6px"></i>خطأ في تحميل الخريطة — تحقق من إعدادات API key</div>';
+};
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY&callback=initMap&loading=async&language=fr"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-config.js" defer></script>
 <style>
@@ -568,16 +575,16 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
         <div class="sec-head"><h2>Carte en direct</h2><p>Position en temps réel des chauffeurs et des courses actives</p></div>
         <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
           <div class="kpi green" style="padding:14px 18px">
-            <div class="kpi-val" style="font-size:22px">4</div><div class="kpi-lbl">En ligne</div>
+            <div class="kpi-val" id="map-kpi-online" style="font-size:22px">—</div><div class="kpi-lbl">En ligne</div>
           </div>
           <div class="kpi blue" style="padding:14px 18px">
-            <div class="kpi-val" style="font-size:22px">2</div><div class="kpi-lbl">En course</div>
+            <div class="kpi-val" id="map-kpi-trip" style="font-size:22px">—</div><div class="kpi-lbl">En course</div>
           </div>
           <div class="kpi gold" style="padding:14px 18px">
-            <div class="kpi-val" style="font-size:22px">7</div><div class="kpi-lbl">Courses actives</div>
+            <div class="kpi-val" id="map-kpi-active" style="font-size:22px">—</div><div class="kpi-lbl">Courses actives</div>
           </div>
           <div class="kpi" style="padding:14px 18px">
-            <div class="kpi-val" style="font-size:22px">3</div><div class="kpi-lbl">Hors ligne</div>
+            <div class="kpi-val" id="map-kpi-offline" style="font-size:22px">—</div><div class="kpi-lbl">Hors ligne</div>
           </div>
         </div>
         <div class="card" style="padding:14px">
