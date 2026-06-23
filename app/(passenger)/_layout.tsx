@@ -1,10 +1,16 @@
 import { Stack } from 'expo-router'
 import { useColors } from '../../hooks/useColors'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function PassengerLayout() {
   const Colors = useColors()
+  const isRTL = useIsRTL()
+  // Forward navigation must slide IN from the natural "forward" edge of the
+  // reading direction: from the LEFT in Arabic (RTL), from the RIGHT in FR/EN.
+  // Without this the push animation feels reversed/unnatural for Arabic users.
+  const animation = isRTL ? 'slide_from_left' : 'slide_from_right'
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.dark1 } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.dark1 }, animation }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="search" />
       <Stack.Screen name="vehicle-select" />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { Animated, Dimensions, Easing, I18nManager, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Animated, Dimensions, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -21,7 +21,9 @@ interface SideDrawerProps {
 }
 
 const { width: SCREEN_W } = Dimensions.get('window')
-const DRAWER_W = SCREEN_W * 0.8
+// Professional drawer width: ~85% but capped so it never feels oversized on
+// tablets. Leaves a thin sliver of the underlying screen, like Uber/Yassir.
+const DRAWER_W = Math.min(SCREEN_W * 0.85, 340)
 
 interface DrawerItem {
   icon: string
@@ -48,21 +50,20 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
 
   // ── Drawer side — bulletproof against the RTL/LTR mismatch ──────────────────
   // `syncDirection` (i18n/locale.ts) flips the language instantly via useIsRTL but only
-  // calls forceRTL for the NEXT cold start — it never reloads. So the native flag below
-  // can disagree with the live language for the whole session.
+  // calls forceRTL for the NEXT cold start — it never reloads. So the native flag can
+  // disagree with the live language for the whole session, which used to push the panel
+  // to the WRONG edge (e.g. drawer opening from the right in French — see screenshots).
   //
-  // RN swaps physical `left`/`right` under a native-RTL layout (default behaviour). To PIN
-  // the panel to the physical edge the live language wants, we pick the style property that
-  // RESOLVES to that edge given the current native flag, then slide with a raw translateX
-  // (transforms are never swapped). Read inside the component so it stays correct across
-  // Fast Refresh — a module-level const would go stale.
-  const nativeRTL = I18nManager.isRTL
-  const wantRight = isRTL                         // AR → physical right · FR/EN → physical left
-  const edgeStyle = wantRight
-    ? (nativeRTL ? { left: 0 } : { right: 0 })    // resolves to physical right
-    : (nativeRTL ? { right: 0 } : { left: 0 })    // resolves to physical left
-  const OPEN_X    = 0
-  const CLOSED_X  = wantRight ? DRAWER_W : -DRAWER_W   // slide off that same physical edge
+  // FIX: we DON'T rely on `left`/`right` (RN swaps them under native-RTL). Instead the
+  // panel is pinned to the LEFT edge with `left: 0` AND `direction: 'ltr'` on the panel,
+  // which neutralises the native RTL swap so `left: 0` always means physical-left. We then
+  // place it on the desired physical edge purely with translateX:
+  //   • AR  → physical RIGHT : rest offset = (SCREEN_W − DRAWER_W), slide in from the right
+  //   • FR/EN → physical LEFT : rest offset = 0, slide in from the left
+  // Transforms are never swapped, so this is correct in all launch×language combinations.
+  const wantRight = isRTL                              // AR → physical right · FR/EN → physical left
+  const OPEN_X    = wantRight ? SCREEN_W - DRAWER_W : 0 // resting position (panel fully visible)
+  const CLOSED_X  = wantRight ? SCREEN_W : -DRAWER_W    // fully off the matching physical edge
 
   const translateX      = useRef(new Animated.Value(CLOSED_X)).current
   const backdropOpacity = useRef(new Animated.Value(0)).current
@@ -74,14 +75,15 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
       Animated.parallel([
         Animated.spring(translateX, {
           toValue:   OPEN_X,
-          tension:   70,
-          friction:  13,
+          stiffness: 220,
+          damping:   26,
+          mass:      0.9,
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
           toValue:  1,
-          duration: 220,
-          easing:   Easing.out(Easing.ease),
+          duration: 240,
+          easing:   Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]).start()
@@ -89,14 +91,14 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
       Animated.parallel([
         Animated.timing(translateX, {
           toValue:  CLOSED_X,
-          duration: 210,
-          easing:   Easing.in(Easing.ease),
+          duration: 230,
+          easing:   Easing.in(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
           toValue:  0,
-          duration: 180,
-          easing:   Easing.in(Easing.ease),
+          duration: 200,
+          easing:   Easing.in(Easing.cubic),
           useNativeDriver: true,
         }),
       ]).start()
@@ -139,11 +141,10 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
       <Animated.View
         style={[
           styles.drawer,
-          // edgeStyle pins the panel to the physical edge of the live language; translateX
-          // (raw, never swapped) slides it on/off that edge. Correct in all 4 launch×language
-          // combinations even while the native RTL flag disagrees with the language.
-          edgeStyle,
-          { width: DRAWER_W, paddingTop: insets.top + Spacing.lg, transform: [{ translateX }] },
+          // `left: 0` + `direction: 'ltr'` neutralise the native RTL left/right swap, so the
+          // panel always anchors to physical-left; translateX (never swapped) then slides it
+          // to the correct physical edge. Correct in all launch×language combinations.
+          { left: 0, direction: 'ltr', width: DRAWER_W, paddingTop: insets.top + Spacing.lg, transform: [{ translateX }] },
         ]}
       >
         {/* Mode chip — shows clearly which mode is active */}
@@ -236,6 +237,13 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       backgroundColor: Colors.dark2,
       paddingHorizontal: Spacing.lg,
       paddingBottom: Spacing.xl,
+      // Strong shadow so the panel reads as floating ABOVE the screen — fixes the
+      // "drawer looks merged with the background" issue from the screenshots.
+      shadowColor: '#000',
+      shadowOffset: { width: isRTL ? -8 : 8, height: 0 },
+      shadowOpacity: 0.45,
+      shadowRadius: 24,
+      elevation: 40,
     },
     modeChip: {
       flexDirection: dir, alignItems: 'center', gap: 5,
