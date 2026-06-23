@@ -174,36 +174,60 @@ function DropoffPin({ gold }: { gold: string }) {
 }
 
 function CarIcon({ heading, color }: { heading: number; color: string }) {
-  // Professional top-down car: rounded body, front & rear windshields, four
-  // wheels and a center seam. The nose points up (toward heading 0) so the
-  // rotation reads correctly as the car drives along the route.
+  // Modern realistic top-down car (Google-Maps style) tinted in the WinRak
+  // brand colour: smooth curved body, tinted windshields front & rear, a
+  // lighter roof highlight, side-mirror nubs, red tail-lights and a soft
+  // ground shadow. The nose points up (heading 0) and rotates along the route.
+  const dark = '#2b3440'       // glass / tyres
+  const glass = '#33415a'      // windshield tint
   return (
     <Svg
-      width={40}
-      height={40}
-      viewBox="-20 -20 40 40"
+      width={46}
+      height={46}
+      viewBox="-23 -23 46 46"
       style={{ transform: [{ rotate: `${heading}deg` }] }}
     >
-      {/* drop shadow */}
-      <Ellipse cx="0" cy="1.5" rx="11" ry="16" fill="rgba(0,0,0,0.20)" />
-      {/* wheels */}
-      <Rect x="-11" y="-9" width="3.2" height="7" rx="1.6" fill="#1b1f24" />
-      <Rect x="7.8"  y="-9" width="3.2" height="7" rx="1.6" fill="#1b1f24" />
-      <Rect x="-11" y="3"  width="3.2" height="7" rx="1.6" fill="#1b1f24" />
-      <Rect x="7.8"  y="3"  width="3.2" height="7" rx="1.6" fill="#1b1f24" />
-      {/* body */}
+      {/* soft ground shadow */}
+      <Ellipse cx="0.5" cy="2" rx="11.5" ry="18" fill="rgba(0,0,0,0.22)" />
+
+      {/* side mirrors */}
+      <Ellipse cx="-9.5" cy="-3" rx="2" ry="1.4" fill={color} />
+      <Ellipse cx="9.5"  cy="-3" rx="2" ry="1.4" fill={color} />
+
+      {/* tyres */}
+      <Rect x="-9.6" y="-10" width="2.6" height="6" rx="1.3" fill={dark} />
+      <Rect x="7"    y="-10" width="2.6" height="6" rx="1.3" fill={dark} />
+      <Rect x="-9.6" y="5"   width="2.6" height="6" rx="1.3" fill={dark} />
+      <Rect x="7"    y="5"   width="2.6" height="6" rx="1.3" fill={dark} />
+
+      {/* body — teardrop-ish silhouette, wider at the rear */}
       <Path
-        d="M-8 -14 C-8 -16.5 8 -16.5 8 -14 L8 14 C8 16.5 -8 16.5 -8 14 Z"
+        d="M0 -16
+           C5 -16 7.6 -13.5 8 -9
+           C8.4 -4 8.6 4 8.2 9.5
+           C7.9 13.5 5 16 0 16
+           C-5 16 -7.9 13.5 -8.2 9.5
+           C-8.6 4 -8.4 -4 -8 -9
+           C-7.6 -13.5 -5 -16 0 -16 Z"
         fill={color}
-        stroke="rgba(0,0,0,0.18)"
-        strokeWidth="0.8"
+        stroke="rgba(0,0,0,0.20)"
+        strokeWidth="0.7"
       />
+
+      {/* subtle roof highlight (a soft brand-tinted gloss, not a big patch) */}
+      <Path
+        d="M0 -5.5 C3 -5.5 4.4 -4 4.6 0 C4.4 4 3 5.5 0 5.5 C-3 5.5 -4.4 4 -4.6 0 C-4.4 -4 -3 -5.5 0 -5.5 Z"
+        fill="rgba(255,255,255,0.12)"
+      />
+
       {/* front windshield (nose) */}
-      <Path d="M-5.5 -11 C-2 -13 2 -13 5.5 -11 L4 -6 L-4 -6 Z" fill="#1c2733" />
+      <Path d="M-5 -12 C-2 -13.4 2 -13.4 5 -12 L3.4 -7.5 C1.2 -8.4 -1.2 -8.4 -3.4 -7.5 Z" fill={glass} />
       {/* rear windshield */}
-      <Path d="M-4.5 11 C-2 12.5 2 12.5 4.5 11 L3.5 6.5 L-3.5 6.5 Z" fill="#22303d" />
-      {/* roof seam */}
-      <Rect x="-4" y="-4.5" width="8" height="10" rx="2" fill="rgba(255,255,255,0.14)" />
+      <Path d="M-4.6 12 C-2 13.2 2 13.2 4.6 12 L3.2 8 C1.1 8.8 -1.1 8.8 -3.2 8 Z" fill={glass} />
+
+      {/* tail-lights */}
+      <Rect x="-6.2" y="13.4" width="3.6" height="1.8" rx="0.9" fill="#d23b2e" />
+      <Rect x="2.6"  y="13.4" width="3.6" height="1.8" rx="0.9" fill="#d23b2e" />
     </Svg>
   )
 }
