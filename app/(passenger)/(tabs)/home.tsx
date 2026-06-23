@@ -49,7 +49,7 @@ export default function Home() {
     } catch { /* GPS unavailable */ }
   }
   const sheetRef = useRef<BottomSheet>(null)
-  const snapPoints = useMemo(() => ['50%', '62%'], [])
+  const snapPoints = useMemo(() => ['46%', '60%'], [])
 
   function openCity() {
     setSheMode(false)
@@ -107,7 +107,7 @@ export default function Home() {
         handleIndicatorStyle={styles.handle}
       >
         <BottomSheetView style={styles.sheetContent}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
             <Txt weight="bold" size={18}>{t('home.greeting', { name: displayName })}</Txt>
 
             {photoStatus === 'missing' && (
@@ -154,7 +154,6 @@ export default function Home() {
               </Card>
             </View>
 
-            <View style={{ height: 40 }} />
           </ScrollView>
         </BottomSheetView>
       </BottomSheet>
@@ -170,7 +169,7 @@ function makeStyles(Colors: Palette) {
     gpsBanner: { backgroundColor: '#e0a020', padding: Spacing.md, alignItems: 'center' },
     mapWrap: { flex: 1 },
     locateBtn: {
-      position: 'absolute', bottom: '55%', right: Spacing.lg,
+      position: 'absolute', bottom: '50%', right: Spacing.lg,
       width: 44, height: 44, borderRadius: 22,
       backgroundColor: Colors.white,
       alignItems: 'center', justifyContent: 'center',
@@ -182,6 +181,7 @@ function makeStyles(Colors: Palette) {
     sheetBg: { backgroundColor: Colors.dark2 },
     handle: { backgroundColor: Colors.dark4, width: 32 },
     sheetContent: { flex: 1, paddingHorizontal: Spacing.screenPadding },
+    scrollBody: { paddingBottom: Spacing.lg },
     photoWarn: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dangerAlpha10, borderRadius: Spacing.radiusMd,
@@ -193,7 +193,7 @@ function makeStyles(Colors: Palette) {
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
       height: 52, paddingHorizontal: Spacing.md, marginTop: Spacing.lg,
     },
-    services: { gap: Spacing.md, marginTop: Spacing.lg },
+    services: { gap: Spacing.lg, marginTop: Spacing.lg },
     rideCard: {
       flexDirection: 'row-reverse', alignItems: 'stretch',
       backgroundColor: Colors.dark3, borderRadius: 16, overflow: 'hidden',
