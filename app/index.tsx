@@ -25,7 +25,9 @@ export default function Index() {
         if (!p) return
         setProfile(p)
         login()
-        if (p.role === 'driver') {
+        if (p.role === 'admin') {
+          // admin stays in passenger mode internally; routing handles the rest
+        } else if (p.role === 'driver') {
           setMode('driver')
           approveDriver()
         } else {
@@ -37,6 +39,8 @@ export default function Index() {
   }, [])
 
   if (!isLoggedIn) return <Redirect href="/(auth)/splash" />
+
+  if (profile?.role === 'admin') return <Redirect href="/(admin)/home" />
 
   if (mode === 'driver') {
     if (registrationStatus === 'approved') return <Redirect href="/(driver)/home" />

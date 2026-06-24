@@ -102,7 +102,7 @@ export default function RestaurantScreen() {
               return (
                 <View key={m.id} style={styles.menuRow}>
                   <View style={{ flex: 1 }}>
-                    <Txt size={14}>{t(m.nameKey)}</Txt>
+                    <Txt size={14}>{m.name}</Txt>
                     <Txt weight="bold" size={13} color={Colors.gold} style={{ marginTop: 2 }}>{m.price} {t('common.currency')}</Txt>
                   </View>
                   {q === 0 ? (

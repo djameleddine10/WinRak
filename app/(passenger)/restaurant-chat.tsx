@@ -74,9 +74,9 @@ export default function RestaurantChat() {
         {r.menu.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickRow} contentContainerStyle={styles.quickContent}>
             {r.menu.map((m) => (
-              <Pressable key={m.id} style={styles.quickChip} onPress={() => quickOrder(t(m.nameKey), m.price)}>
+              <Pressable key={m.id} style={styles.quickChip} onPress={() => quickOrder(m.name, m.price)}>
                 <Icon name="plus" size={14} color={Colors.gold} />
-                <Txt size={12}>{t(m.nameKey)}</Txt>
+                <Txt size={12}>{m.name}</Txt>
               </Pressable>
             ))}
           </ScrollView>

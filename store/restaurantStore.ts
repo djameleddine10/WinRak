@@ -62,9 +62,9 @@ export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
   loadRestaurants: async () => {
     try {
       const list = await fetchRestaurants()
-      if (list.length > 0) set({ restaurants: list })
+      set({ restaurants: list })
     } catch (e) {
-      console.warn('[Restaurants] fetch failed — using seed data', e)
+      console.warn('[Restaurants] fetch failed', e)
     }
   },
 

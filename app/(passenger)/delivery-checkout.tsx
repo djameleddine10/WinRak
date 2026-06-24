@@ -96,7 +96,7 @@ export default function DeliveryCheckout() {
             foodCart.map((c) => (
               <View key={c.item.id} style={styles.itemRow}>
                 <Txt size={12} color={Colors.muted}>{c.qty}×</Txt>
-                <Txt size={13} style={{ flex: 1 }}>{t(c.item.nameKey)}</Txt>
+                <Txt size={13} style={{ flex: 1 }}>{c.item.name}</Txt>
                 <Txt weight="semibold" size={13}>{c.item.price * c.qty} {t('common.currency')}</Txt>
               </View>
             ))
