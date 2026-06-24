@@ -72,7 +72,7 @@ export default function Notifications() {
           {data.map((n) => {
             const ti = TYPE_ICON[n.type] ?? TYPE_ICON.info
             return (
-              <View key={n.id} style={[styles.card, !n.read && styles.unread]}>
+              <View key={n.id} style={[styles.card, !n.is_read && styles.unread]}>
                 <View style={[styles.icon, { backgroundColor: Colors.dark3 }]}>
                   <Icon name={ti.icon} size={20} color={ti.color} />
                 </View>

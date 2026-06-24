@@ -81,14 +81,14 @@ export interface AppNotification {
   type:       string
   title:      string
   body:       string | null
-  read:       boolean
+  is_read:    boolean
   created_at: string
 }
 
 export async function fetchNotifications(userId: string): Promise<AppNotification[]> {
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, title, body, read, created_at')
+    .select('id, type, title, body, is_read, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50)
