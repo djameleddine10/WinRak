@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button'
 import { Divider } from '../../components/ui/Divider'
 import { useT } from '../../hooks/useT'
 import { useUserStore } from '../../store/userStore'
+import { usePaymentStore } from '../../store/paymentStore'
 import { sendOTP, useGoogleAuth, signInWithGoogle, getMyProfile } from '../../services/auth.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
 
@@ -37,6 +38,7 @@ export default function Login() {
   const login      = useUserStore((s) => s.login)
   const setProfile = useUserStore((s) => s.setProfile)
   const setMode    = useUserStore((s) => s.setMode)
+  const loadWallet = usePaymentStore((s) => s.loadWallet)
 
   const { request, response, promptAsync } = useGoogleAuth()
 
@@ -60,6 +62,7 @@ export default function Login() {
             router.replace('/(driver)/home')
           } else {
             setMode('passenger')
+            loadWallet(profile.id)
             router.replace('/(passenger)/(tabs)/home')
           }
         } else {

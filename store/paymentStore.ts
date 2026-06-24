@@ -2,10 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { type TranslationKey } from '../i18n/translations'
-
-// WinRak electronic payment (الدفع الإلكتروني). Mock-only: no real PSP integration.
-// The wallet balance, saved BaridiMob accounts and the local transaction
-// ledger are persisted so top-ups and charges survive app restarts.
+import { supabase } from '../lib/supabase'
 
 export type PayMethodType = 'wallet' | 'baridimob' | 'cash'
 
@@ -33,6 +30,7 @@ interface PaymentStore {
   selectedId:   string
   transactions: LocalTx[]
 
+  loadWallet:   (userId: string) => Promise<void>
   selectMethod: (id: string) => void
   setDefault:   (id: string) => void
   addCard:      (last4: string) => void
@@ -51,22 +49,41 @@ const seededMethods: SavedMethod[] = [
   { id: 'pm-cash',      type: 'cash',      last4: null,   isDefault: false },
 ]
 
-const seededTx: LocalTx[] = [
-  { id: 't1', type: 'debit',  labelKey: 'wallet.tx.ride',         vars: { id: 'WR-8820' }, amount: 850,  date: '2026-06-15T14:49:00', method: 'baridimob' },
-  { id: 't2', type: 'credit', labelKey: 'wallet.tx.topup',                                 amount: 2000, date: '2026-06-14T10:00:00', method: 'baridimob' },
-  { id: 't3', type: 'debit',  labelKey: 'wallet.tx.ride',         vars: { id: 'WR-8821' }, amount: 420,  date: '2026-06-14T10:25:00', method: 'cash'      },
-  { id: 't4', type: 'credit', labelKey: 'wallet.tx.loyaltyBonus',                          amount: 200,  date: '2026-06-12T09:00:00', method: 'wallet'    },
-  { id: 't5', type: 'debit',  labelKey: 'wallet.tx.ride',         vars: { id: 'WR-8817' }, amount: 1200, date: '2026-06-13T13:30:00', method: 'baridimob' },
-]
-
 export const usePaymentStore = create<PaymentStore>()(
   persist(
     (set, get) => ({
-      balance:      2450,
-      points:       840,
+      balance:      0,
+      points:       0,
       methods:      seededMethods,
       selectedId:   'pm-baridimob',
-      transactions: seededTx,
+      transactions: [],
+
+      loadWallet: async (userId: string) => {
+        try {
+          const [walletRes, txRes] = await Promise.all([
+            supabase.rpc('get_passenger_wallet',      { p_user_id: userId }),
+            supabase.rpc('get_passenger_transactions', { p_user_id: userId }),
+          ])
+          if (!walletRes.error && walletRes.data) {
+            const w = Array.isArray(walletRes.data) ? walletRes.data[0] : walletRes.data
+            if (w) set({ balance: w.balance ?? 0, points: w.points ?? 0 })
+          }
+          if (!txRes.error && txRes.data) {
+            const rows = (txRes.data as any[]).map((r) => ({
+              id:       r.id,
+              type:     r.type as 'debit' | 'credit',
+              labelKey: r.label_key as TranslationKey,
+              vars:     r.vars ?? undefined,
+              amount:   r.amount,
+              date:     r.created_at,
+              method:   r.method as any,
+            }))
+            set({ transactions: rows })
+          }
+        } catch (e) {
+          console.warn('[Wallet] loadWallet failed', e)
+        }
+      },
 
       selectMethod: (id) => set({ selectedId: id }),
 
@@ -99,13 +116,19 @@ export const usePaymentStore = create<PaymentStore>()(
         return { methods, selectedId }
       }),
 
-      topUp: (amount) => set((s) => ({
-        balance: s.balance + amount,
-        transactions: [
-          { id: newId(), type: 'credit', labelKey: 'wallet.tx.topup', amount, date: new Date().toISOString(), method: 'wallet' },
-          ...s.transactions,
-        ],
-      })),
+      topUp: (amount) => {
+        set((s) => ({
+          balance: s.balance + amount,
+          transactions: [
+            { id: newId(), type: 'credit', labelKey: 'wallet.tx.topup', amount, date: new Date().toISOString(), method: 'wallet' },
+            ...s.transactions,
+          ],
+        }))
+        // Sync to Supabase (fire-and-forget)
+        supabase.auth.getUser().then(({ data }) => {
+          if (data.user) supabase.rpc('wallet_topup', { p_user_id: data.user.id, p_amount: amount }).then(null, console.warn)
+        })
+      },
 
       charge: (amount, labelKey, vars) => {
         const s = get()
@@ -118,13 +141,30 @@ export const usePaymentStore = create<PaymentStore>()(
             ...s.transactions,
           ],
         })
+        // Sync to Supabase (fire-and-forget)
+        supabase.auth.getUser().then(({ data }) => {
+          if (data.user) supabase.rpc('wallet_charge', {
+            p_user_id:   data.user.id,
+            p_amount:    amount,
+            p_label_key: labelKey,
+            p_vars:      vars ? vars : null,
+            p_method:    method.type,
+          }).then(null, console.warn)
+        })
         return true
       },
     }),
     {
       name:    'winrak-payment',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => AsyncStorage),
+      migrate: (state: any, version: number) => {
+        if (version < 3) {
+          // Clear seeded mock balance and transactions; keep saved payment methods.
+          return { ...state, balance: 0, points: 0, transactions: [] }
+        }
+        return state
+      },
       partialize: (s) => ({
         balance:      s.balance,
         points:       s.points,

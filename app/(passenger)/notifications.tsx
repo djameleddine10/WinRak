@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import Svg, { Circle, Ellipse, Rect } from 'react-native-svg'
 import { type Palette } from '../../constants/colors'
@@ -8,25 +8,48 @@ import { Txt } from '../../components/ui/Txt'
 import { Icon } from '../../components/ui/Icon'
 import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
-import { mockNotifications, mockNotificationsFilled } from '../../mock/notifications'
-
-// Toggle this to preview the empty state.
-const USE_FILLED = true
-const data = USE_FILLED ? mockNotificationsFilled : mockNotifications
+import { useUserStore } from '../../store/userStore'
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  subscribeNotifications,
+  type AppNotification,
+} from '../../services/notifications.service'
 
 function makeTypeIcon(Colors: Palette): Record<string, { icon: string; color: string }> {
   return {
-    ride_completed: { icon: 'check-circle', color: Colors.success },
-    promo: { icon: 'fire', color: Colors.gold },
-    sos_resolved: { icon: 'shield-check', color: Colors.blue },
+    ride_completed:  { icon: 'check-circle',  color: Colors.success },
+    promo:           { icon: 'fire',           color: Colors.gold    },
+    sos_resolved:    { icon: 'shield-check',   color: Colors.blue    },
+    driver_arrived:  { icon: 'car-arrow-right',color: Colors.success },
+    info:            { icon: 'bell-outline',   color: Colors.muted   },
   }
 }
 
 export default function Notifications() {
-  const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const Colors  = useColors()
+  const styles  = useMemo(() => makeStyles(Colors), [Colors])
   const TYPE_ICON = useMemo(() => makeTypeIcon(Colors), [Colors])
-  const t = useT()
+  const t       = useT()
+  const profile = useUserStore((s) => s.profile)
+
+  const [data, setData] = useState<AppNotification[]>([])
+
+  useEffect(() => {
+    if (!profile?.id) return
+
+    fetchNotifications(profile.id)
+      .then(setData)
+      .catch(console.warn)
+
+    markAllNotificationsRead(profile.id).catch(() => {})
+
+    const ch = subscribeNotifications(profile.id, (n) =>
+      setData((prev) => [n, ...prev])
+    )
+    return () => { ch.unsubscribe() }
+  }, [profile?.id])
+
   return (
     <View style={styles.container}>
       <TopBar title={t('drawer.notifications')} showBack />
@@ -47,17 +70,17 @@ export default function Notifications() {
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
           {data.map((n) => {
-            const ti = TYPE_ICON[n.type]
+            const ti = TYPE_ICON[n.type] ?? TYPE_ICON.info
             return (
               <View key={n.id} style={[styles.card, !n.read && styles.unread]}>
                 <View style={[styles.icon, { backgroundColor: Colors.dark3 }]}>
                   <Icon name={ti.icon} size={20} color={ti.color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Txt size={14} weight="bold">{t(n.titleKey)}</Txt>
-                  <Txt size={12} color={Colors.muted}>{t(n.bodyKey)}</Txt>
+                  <Txt size={14} weight="bold">{n.title}</Txt>
+                  {n.body ? <Txt size={12} color={Colors.muted}>{n.body}</Txt> : null}
                 </View>
-                <Txt size={11} color={Colors.muted}>{n.time.slice(11, 16)}</Txt>
+                <Txt size={11} color={Colors.muted}>{n.created_at.slice(11, 16)}</Txt>
               </View>
             )
           })}
@@ -70,10 +93,10 @@ export default function Notifications() {
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
-    empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.screenPadding },
-    list: { padding: Spacing.screenPadding, gap: Spacing.sm },
-    card: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
-    unread: { borderRightWidth: 3, borderRightColor: Colors.gold, backgroundColor: Colors.dark3 },
-    icon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+    empty:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.screenPadding },
+    list:      { padding: Spacing.screenPadding, gap: Spacing.sm },
+    card:      { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
+    unread:    { borderRightWidth: 3, borderRightColor: Colors.gold, backgroundColor: Colors.dark3 },
+    icon:      { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   })
 }

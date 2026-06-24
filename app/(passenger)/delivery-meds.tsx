@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -11,8 +11,9 @@ import { Txt } from '../../components/ui/Txt'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { TopBar } from '../../components/layout/TopBar'
-import { commonMeds, medCategories, type MedCategory } from '../../mock/delivery'
+import { commonMeds as seedMeds, medCategories, type MedCategory, type Med } from '../../mock/delivery'
 import { useDeliveryStore, cartCount, cartSubtotal } from '../../store/deliveryStore'
+import { fetchMedicines } from '../../services/pharmacy.service'
 
 type Filter = 'all' | MedCategory
 
@@ -27,8 +28,16 @@ export default function DeliveryMeds() {
   const decrement = useDeliveryStore((s) => s.decrement)
   const pharmacy = useDeliveryStore((s) => s.pharmacy)
 
+  const [allMeds, setAllMeds] = useState<Med[]>(seedMeds)
+
+  useEffect(() => {
+    fetchMedicines()
+      .then((list) => { if (list.length > 0) setAllMeds(list) })
+      .catch(console.warn)
+  }, [])
+
   const [filter, setFilter] = useState<Filter>('all')
-  const meds = filter === 'all' ? commonMeds : commonMeds.filter((m) => m.category === filter)
+  const meds = filter === 'all' ? allMeds : allMeds.filter((m) => m.category === filter)
   const qtyOf = (id: string) => cart.find((c) => c.med.id === id)?.qty ?? 0
 
   const count = cartCount(cart)

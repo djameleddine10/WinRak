@@ -13,6 +13,7 @@ import { Button } from '../../components/ui/Button'
 import { useT } from '../../hooks/useT'
 import { useUserStore } from '../../store/userStore'
 import { useDriverStore } from '../../store/driverStore'
+import { usePaymentStore } from '../../store/paymentStore'
 import { verifyOTP, getMyProfile, getDriverStats } from '../../services/auth.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
 
@@ -29,6 +30,7 @@ export default function Otp() {
   const setDriverStats = useUserStore((s) => s.setDriverStats)
   const storePhone     = useUserStore((s) => s.phone)
   const approveDriver  = useDriverStore((s) => s.approveRegistration)
+  const loadWallet     = usePaymentStore((s) => s.loadWallet)
 
   const phone = paramPhone || storePhone
 
@@ -64,6 +66,7 @@ export default function Otp() {
           router.replace('/(driver)/home')
         } else {
           setMode('passenger')
+          loadWallet(profile.id)
           router.replace('/(passenger)/(tabs)/home')
         }
       } else {

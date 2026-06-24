@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -12,10 +12,11 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { PhotoUpload } from '../../components/ui/PhotoUpload'
 import { TopBar } from '../../components/layout/TopBar'
-import { pharmacies, type Pharmacy } from '../../mock/delivery'
+import { pharmacies as seedPharmacies, type Pharmacy } from '../../mock/delivery'
 import { useDeliveryStore } from '../../store/deliveryStore'
 import { useT } from '../../hooks/useT'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { fetchPharmacies } from '../../services/pharmacy.service'
 
 export default function DeliveryPharmacy() {
   const Colors = useColors()
@@ -28,8 +29,16 @@ export default function DeliveryPharmacy() {
   const setMethod = useDeliveryStore((s) => s.setMethod)
   const setPrescription = useDeliveryStore((s) => s.setPrescription)
 
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>(seedPharmacies)
+
+  useEffect(() => {
+    fetchPharmacies()
+      .then((list) => { if (list.length > 0) setPharmacies(list) })
+      .catch(console.warn)
+  }, [])
+
   const firstOpen = pharmacies.find((p) => p.openNow) ?? pharmacies[0]
-  const [selectedId, setSelectedId] = useState(firstOpen.id)
+  const [selectedId, setSelectedId] = useState(firstOpen?.id ?? '')
   const [rxUri, setRxUri] = useState<string | null>(null)
   const selected = pharmacies.find((p) => p.id === selectedId) ?? firstOpen
 

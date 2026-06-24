@@ -73,3 +73,40 @@ export function useNotificationResponseListener(
 ) {
   return Notifications.addNotificationResponseReceivedListener(onResponse)
 }
+
+// ─── IN-APP NOTIFICATION FEED (reads from public.notifications table) ─────────
+
+export interface AppNotification {
+  id:         string
+  type:       string
+  title:      string
+  body:       string | null
+  read:       boolean
+  created_at: string
+}
+
+export async function fetchNotifications(userId: string): Promise<AppNotification[]> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, type, title, body, read, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) throw error
+  return (data ?? []) as AppNotification[]
+}
+
+export async function markAllNotificationsRead(userId: string) {
+  await supabase.rpc('mark_all_notifications_read', { p_user_id: userId })
+}
+
+export function subscribeNotifications(userId: string, onNew: (n: AppNotification) => void) {
+  return supabase
+    .channel(`notif-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+      (payload) => onNew(payload.new as AppNotification),
+    )
+    .subscribe()
+}

@@ -6,8 +6,6 @@ import { Spacing } from '../../../constants/spacing'
 import { Txt } from '../../../components/ui/Txt'
 import { TopBar } from '../../../components/layout/TopBar'
 import { Icon } from '../../../components/ui/Icon'
-import { mockRides } from '../../../mock/rides'
-import type { Ride } from '../../../mock/rides'
 import { useT } from '../../../hooks/useT'
 import { type TranslationKey } from '../../../i18n/translations'
 import { useSettingsStore, type Language } from '../../../store/settingsStore'
@@ -70,7 +68,7 @@ export default function RidesHistory() {
       .catch(console.warn)
   }, [profile?.id])
 
-  const allItems: DisplayRide[] = realTrips ?? (mockRides as unknown as DisplayRide[])
+  const allItems: DisplayRide[] = realTrips ?? []
 
   const sections = useMemo(() => {
     const filtered = allItems.filter((r) => filter === 'all' || r.rideType === filter)

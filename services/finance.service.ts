@@ -2,12 +2,18 @@ import { supabase } from '../lib/supabase'
 
 // ─── PORTEFEUILLE DU CHAUFFEUR ────────────────────────────────────────────────
 export async function getDriverWallet(driverId: string) {
+  // Primary: aggregate driver_earnings from completed trips via RPC
+  try {
+    const { data, error } = await supabase.rpc('get_driver_wallet', { p_driver_id: driverId })
+    if (!error && data) return data as { wallet_balance: number }
+  } catch { /* fall through */ }
+
+  // Fallback: read wallet_balance column from drivers table (older schema)
   const { data, error } = await supabase
     .from('drivers')
     .select('wallet_balance, total_earnings, total_trips')
     .eq('id', driverId)
     .single()
-
   if (error) throw error
   return data
 }
@@ -66,13 +72,19 @@ export async function getPassengerTransactions(passengerId: string, limit = 30) 
 
 // ─── HISTORIQUE DES TRANSACTIONS DU CHAUFFEUR ────────────────────────────────
 export async function getDriverTransactions(driverId: string, limit = 30) {
+  // Primary: aggregate from trips.driver_earnings via RPC
+  try {
+    const { data, error } = await supabase.rpc('get_driver_transactions', { p_driver_id: driverId })
+    if (!error && data) return data as { driver_amount: number; created_at: string }[]
+  } catch { /* fall through */ }
+
+  // Fallback: read from transactions table (older schema)
   const { data, error } = await supabase
     .from('transactions')
     .select('*, trips(from_address, to_address, distance_km, vehicle_type)')
     .eq('driver_id', driverId)
     .order('created_at', { ascending: false })
     .limit(limit)
-
   if (error) throw error
   return data ?? []
 }

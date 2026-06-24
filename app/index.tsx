@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Redirect } from 'expo-router'
 import { useUserStore } from '../store/userStore'
 import { useDriverStore } from '../store/driverStore'
+import { usePaymentStore } from '../store/paymentStore'
 import { getSession, getMyProfile } from '../services/auth.service'
 
 export default function Index() {
@@ -13,6 +14,7 @@ export default function Index() {
   const login            = useUserStore((s) => s.login)
   const registrationStatus = useDriverStore((s) => s.registrationStatus)
   const approveDriver    = useDriverStore((s) => s.approveRegistration)
+  const loadWallet       = usePaymentStore((s) => s.loadWallet)
 
   // Sync Supabase session → store on app start
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function Index() {
           approveDriver()
         } else {
           setMode('passenger')
+          loadWallet(p.id)
         }
       }).catch(() => {})
     }).catch(() => {})
