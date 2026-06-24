@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import { mockRides } from '../mock/rides'
-import { mockDrivers } from '../mock/drivers'
+import { type Ride } from '../mock/rides'
 
 export type RideStatus =
   | 'idle' | 'searching' | 'driver_found'
@@ -22,10 +21,10 @@ interface RideStore {
   vehicleType:       VehicleType
   offeredPrice:      number
   paymentMethod:     string
-  currentRide:       typeof mockRides[0] | null
+  currentRide:       Ride | null
   currentTripId:     string | null
   routeWaypoints:    Array<{ lat: number; lng: number }> | null
-  rideHistory:       typeof mockRides
+  rideHistory:       Ride[]
   searchTimer:       number
   departureDate:     string | null
   departureTime:     string | null
@@ -43,7 +42,8 @@ interface RideStore {
   setSheMode:        (val: boolean) => void
   setStatus:         (status: RideStatus) => void
   setCurrentTripId:  (id: string | null) => void
-  setCurrentRide:    (ride: typeof mockRides[0]) => void
+  setCurrentRide:    (ride: Ride) => void
+  setRideHistory:    (rides: Ride[]) => void
   setRouteWaypoints: (pts: Array<{ lat: number; lng: number }> | null) => void
   requestRide:       () => void
   cancelRide:        () => void
@@ -63,7 +63,7 @@ export const useRideStore = create<RideStore>((set, get) => ({
   currentRide:      null,
   currentTripId:    null,
   routeWaypoints:   null,
-  rideHistory:      mockRides,
+  rideHistory:      [],
   searchTimer:      20,
   departureDate:    null,
   departureTime:    null,
@@ -82,9 +82,11 @@ export const useRideStore = create<RideStore>((set, get) => ({
   setStatus:        (status)        => set({ status }),
   setCurrentTripId:  (id)            => set({ currentTripId: id }),
   setCurrentRide:    (ride)          => set({ currentRide: ride }),
+  setRideHistory:    (rides)         => set({ rideHistory: rides }),
   setRouteWaypoints: (pts)           => set({ routeWaypoints: pts }),
 
   requestRide: () => {
+    // Dev-only fallback: real dispatch goes via createTrip() + subscribeToTripStatus()
     set({ status: 'searching', searchTimer: 20 })
     let timer = 20
     const iv = setInterval(() => {
@@ -92,27 +94,6 @@ export const useRideStore = create<RideStore>((set, get) => ({
       set({ searchTimer: timer })
       if (timer <= 0) clearInterval(iv)
     }, 1000)
-    setTimeout(() => {
-      clearInterval(iv)
-      const { from, to, offeredPrice, vehicleType, paymentMethod } = get()
-      // WinRak SHE: a female ride is matched with a female (SHE) driver.
-      const driver = vehicleType === 'she'
-        ? (mockDrivers.find((d) => d.isSheDriver) ?? mockDrivers[0])
-        : mockDrivers[0]
-      set({
-        status: 'driver_found',
-        currentRide: {
-          ...mockRides[0],
-          from:          from ?? mockRides[0].from,
-          to:            to   ?? mockRides[0].to,
-          price:         offeredPrice,
-          vehicleType:   vehicleType,
-          paymentMethod: paymentMethod as typeof mockRides[0]['paymentMethod'],
-          status:        'accepted',
-          driver,
-        },
-      })
-    }, 3000)
   },
 
   cancelRide:   () => set({ status: 'cancelled', currentRide: null, currentTripId: null }),

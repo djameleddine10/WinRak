@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { SERVICE_FEE, type Med, type Pharmacy, type ParcelType } from '../mock/delivery'
 import { type Restaurant, type MenuItem } from '../mock/restaurants'
+import { createDeliveryOrder, subscribeDeliveryOrder } from '../services/delivery.service'
 
 export type DeliveryService = 'food' | 'pharmacy' | 'parcel'
 export type PharmacyMethod = 'prescription' | 'catalog'
@@ -28,6 +29,7 @@ interface DeliveryStore {
   dropoff:         string
   note:            string
   status:          DeliveryStatus
+  currentOrderId:  string | null
 
   // Parcel vertical (الطرود)
   parcelType:      ParcelType | null
@@ -68,6 +70,7 @@ const initial = {
   dropoff:         'الموقع الحالي — الجزائر العاصمة',
   note:            '',
   status:          'idle' as DeliveryStatus,
+  currentOrderId:  null as string | null,
   parcelType:      null as ParcelType | null,
   parcelFrom:      'الموقع الحالي — الجزائر العاصمة',
   parcelTo:        '',
@@ -75,21 +78,19 @@ const initial = {
   recipientPhone:  '',
 }
 
-// In-memory order state for the delivery hub. A delivery is transient (one order at a
-// time), so nothing here is persisted. placeOrder simulates the courier lifecycle.
 export const useDeliveryStore = create<DeliveryStore>((set, get) => ({
   ...initial,
 
-  setService:       (service)   => set({ service }),
-  selectPharmacy:   (pharmacy)  => set({ pharmacy }),
+  setService:       (service)    => set({ service }),
+  selectPharmacy:   (pharmacy)   => set({ pharmacy }),
   selectRestaurant: (restaurant) => set((s) => ({
     restaurant,
     foodCart: s.restaurant?.id !== restaurant.id ? [] : s.foodCart,
   })),
-  setMethod:        (method)    => set({ method }),
-  setPrescription:  (uri)       => set({ prescriptionUri: uri }),
-  setDropoff:       (dropoff)   => set({ dropoff }),
-  setNote:          (note)      => set({ note }),
+  setMethod:        (method)     => set({ method }),
+  setPrescription:  (uri)        => set({ prescriptionUri: uri }),
+  setDropoff:       (dropoff)    => set({ dropoff }),
+  setNote:          (note)       => set({ note }),
   setParcelType:    (parcelType)    => set({ parcelType }),
   setParcelFrom:    (parcelFrom)    => set({ parcelFrom }),
   setParcelTo:      (parcelTo)      => set({ parcelTo }),
@@ -124,9 +125,47 @@ export const useDeliveryStore = create<DeliveryStore>((set, get) => ({
       .filter((c) => c.qty > 0),
   })),
 
-  // Mock lifecycle: finding → confirmed → preparing → on_the_way → auto-delivered after 25 s.
   placeOrder: () => {
     set({ status: 'finding' })
+
+    // Insert real order to Supabase & subscribe to admin status updates via Realtime.
+    ;(async () => {
+      try {
+        const s = get()
+        const foodItems = s.foodCart.map((c) => ({ id: c.item.id, qty: c.qty, price: c.item.price }))
+        const medItems  = s.cart.map((c) => ({ id: c.med.id, qty: c.qty, price: c.med.price }))
+        const isFood    = s.service === 'food'
+        const isParcel  = s.service === 'parcel'
+        const subtotal  = isFood
+          ? s.foodCart.reduce((sum, c) => sum + c.item.price * c.qty, 0)
+          : s.cart.reduce((sum, c) => sum + c.med.price * c.qty, 0)
+        const deliveryFee = isFood
+          ? (s.restaurant?.deliveryFee ?? 150)
+          : (isParcel ? 0 : 150)
+        const totalPrice = isParcel
+          ? (s.parcelType?.basePrice ?? 0) + SERVICE_FEE
+          : subtotal + deliveryFee + SERVICE_FEE
+
+        const orderId = await createDeliveryOrder({
+          serviceType:  s.service ?? 'food',
+          restaurantId: s.restaurant?.id ?? null,
+          pharmacyId:   s.pharmacy?.id ?? null,
+          items:        isFood ? foodItems : medItems,
+          dropoffAddr:  s.dropoff,
+          note:         s.note,
+          totalPrice,
+          deliveryFee,
+        })
+
+        set({ currentOrderId: orderId })
+        subscribeDeliveryOrder(orderId, (status) => set({ status }))
+      } catch (e) {
+        console.warn('[Delivery] DB insert failed — running mock lifecycle', e)
+      }
+    })()
+
+    // Mock lifecycle: runs in parallel as UX fallback until real courier system is live.
+    // Admin can override by updating delivery_orders.status via dashboard → Realtime fires.
     setTimeout(() => { if (get().status === 'finding')    set({ status: 'confirmed' })  }, 1500)
     setTimeout(() => { if (get().status === 'confirmed')  set({ status: 'preparing' })  }, 3200)
     setTimeout(() => { if (get().status === 'preparing')  set({ status: 'on_the_way' }) }, 5200)

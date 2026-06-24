@@ -21,6 +21,7 @@ import { usePassengerName } from '../../../i18n/locale'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { useDriverAnimation } from '../../../hooks/useDriverAnimation'
 import { registerPushToken } from '../../../services/notifications.service'
+import { getMyTrips } from '../../../services/trips.service'
 
 export default function Home() {
   const Colors = useColors()
@@ -32,8 +33,9 @@ export default function Home() {
   const setSheMode = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
   const setTo = useRideStore((s) => s.setTo)
-  const rideHistory = useRideStore((s) => s.rideHistory)
-  const mapDrivers = useMapStore((s) => s.mapDrivers)
+  const rideHistory    = useRideStore((s) => s.rideHistory)
+  const setRideHistory = useRideStore((s) => s.setRideHistory)
+  const mapDrivers     = useMapStore((s) => s.mapDrivers)
 
   // Unique recent destinations from past rides (most recent first)
   const recentDestinations = useMemo(() => {
@@ -62,6 +64,40 @@ export default function Home() {
   // Register this device for push notifications once the passenger is known.
   useEffect(() => {
     if (profile?.id) registerPushToken(profile.id).catch(console.warn)
+  }, [profile?.id])
+
+  // Load real ride history for recent destinations
+  useEffect(() => {
+    if (!profile?.id) return
+    getMyTrips(profile.id, 'passenger', 20)
+      .then((trips) => {
+        const rides = trips.map((t: any) => ({
+          id:            t.id,
+          rideType:      'city' as const,
+          from:          { name: t.from_address ?? '', address: t.from_address ?? '', lat: t.from_lat ?? 0, lng: t.from_lng ?? 0 },
+          to:            { name: t.to_address   ?? '', address: t.to_address   ?? '', lat: t.to_lat   ?? 0, lng: t.to_lng   ?? 0 },
+          price:         t.price         ?? 0,
+          suggestedPrice: t.price        ?? 0,
+          distance:      t.distance_km   ?? 0,
+          duration:      t.duration_min  ?? 0,
+          status:        t.status        ?? 'completed',
+          vehicleType:   t.vehicle_type  ?? 'sedan',
+          paymentMethod: t.payment_method ?? 'cash',
+          createdAt:     t.created_at,
+          startedAt:     t.started_at    ?? null,
+          completedAt:   t.completed_at  ?? null,
+          rating:        null,
+          driverEta:     null,
+          cancelReason:  t.cancel_reason ?? null,
+          departureDate: null,
+          departureTime: null,
+          luggageAllowed: false,
+          passenger:     { id: t.passenger_id ?? '', name: '', nameLatin: '', firstName: '', lastName: '', avatar: '', phone: '', phoneMasked: '', email: '', rating: 5, totalRides: 0, gender: 'male', birthDate: '', city: '', photoStatus: 'missing', registrationStep: 1, savedPlaces: { home: null, work: null }, wallet: { balance: 0, points: 0 }, paymentMethods: [], emergencyContacts: [] },
+          driver:        { id: t.driver_id ?? '', name: '', nameLatin: '', avatar: '', phone: '', rating: 0, totalRides: 0, isVerified: true, isSheDriver: false, registrationStatus: 'approved', driverType: 'city', level: 'standard', vehicle: { type: 'sedan', brand: '', model: '', modelKey: 'veh.m301', color: '', colorKey: 'veh.colorWhite', plate: '', year: 0, seats: 4 }, documents: { licenseNumber: '', licenseExpiry: '', grayCardNumber: '', birthPlace: '' }, location: { lat: 0, lng: 0 }, heading: 0, isOnline: false, earnings: { today: 0, week: 0, month: 0 } },
+        }))
+        setRideHistory(rides as any)
+      })
+      .catch(console.warn)
   }, [profile?.id])
 
   // Animate mock drivers on the home map so it feels alive

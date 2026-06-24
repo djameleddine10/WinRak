@@ -147,7 +147,6 @@ export const useDriverStore = create<DriverStore>()(
       goOnline: () => {
         stopRequestTimer()
         set({ status: 'online' })
-        autoRequeue = setTimeout(() => get().simulateRequest(), 4000)
       },
       goOffline: () => {
         stopRequestTimer()

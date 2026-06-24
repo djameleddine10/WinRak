@@ -4,15 +4,16 @@ import {
   type Restaurant, type Cuisine,
 } from '../mock/restaurants'
 import { type TranslationKey } from '../i18n/translations'
+import { fetchRestaurants } from '../services/restaurants.service'
 
 export type RegStatus = 'idle' | 'pending' | 'approved'
 
 export interface ChatMessage {
   id:   string
   from: 'me' | 'reception'
-  text: string                          // plain text for user messages
-  key?: TranslationKey                  // i18n key for reception messages
-  vars?: Record<string, string>         // interpolation vars for reception messages
+  text: string
+  key?: TranslationKey
+  vars?: Record<string, string>
   time: string
 }
 
@@ -28,11 +29,13 @@ interface RegForm {
 const emptyForm: RegForm = { name: '', cuisine: '', area: '', phone: '', reception: '', logoUri: null }
 
 interface RestaurantStore {
-  registered: Restaurant[]                    // restaurants the user signed up this session
-  regStatus:  RegStatus
-  form:       RegForm
-  chats:      Record<string, ChatMessage[]>   // keyed by restaurant id
+  restaurants: Restaurant[]              // fetched from Supabase
+  registered:  Restaurant[]             // registered by user this session
+  regStatus:   RegStatus
+  form:        RegForm
+  chats:       Record<string, ChatMessage[]>
 
+  loadRestaurants:     () => Promise<void>
   updateForm:          (field: keyof RegForm, value: string) => void
   setLogo:             (uri: string) => void
   submitRegistration:  () => void
@@ -47,27 +50,35 @@ function now() {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
 }
 
-const id = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
 export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
-  registered: [],
-  regStatus:  'idle',
-  form:       { ...emptyForm },
-  chats:      {},
+  restaurants: mockRestaurants, // optimistic seed — replaced by Supabase on load
+  registered:  [],
+  regStatus:   'idle',
+  form:        { ...emptyForm },
+  chats:       {},
+
+  loadRestaurants: async () => {
+    try {
+      const list = await fetchRestaurants()
+      if (list.length > 0) set({ restaurants: list })
+    } catch (e) {
+      console.warn('[Restaurants] fetch failed — using seed data', e)
+    }
+  },
 
   updateForm: (field, value) => set((s) => ({ form: { ...s.form, [field]: value } })),
   setLogo:    (uri) => set((s) => ({ form: { ...s.form, logoUri: uri } })),
 
   submitRegistration: () => set({ regStatus: 'pending' }),
 
-  // Mock approval (skips the real review): turns the form into a live restaurant that
-  // shows up in the app, then clears the form.
   approveRegistration: () => {
     const f = get().form
     const cuisine = (f.cuisine || 'fastfood') as Cuisine
     const meta = cuisineMeta(cuisine)
     const restaurant: Restaurant = {
-      id:              `usr-${id()}`,
+      id:              `usr-${uid()}`,
       name:            f.name || 'مطعمي',
       cuisine,
       cuisineLabelKey: meta.labelKey,
@@ -92,7 +103,7 @@ export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
       chats: {
         ...s.chats,
         [r.id]: [{
-          id:   id(),
+          id:   uid(),
           from: 'reception',
           text: '',
           key:  receptionGreetingKey,
@@ -109,10 +120,10 @@ export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
     set((s) => ({
       chats: {
         ...s.chats,
-        [restaurantId]: [...(s.chats[restaurantId] ?? []), { id: id(), from: 'me', text: trimmed, time: now() }],
+        [restaurantId]: [...(s.chats[restaurantId] ?? []), { id: uid(), from: 'me', text: trimmed, time: now() }],
       },
     }))
-    // Reception replies shortly after (mock).
+    // Reception auto-reply (mock — no real restaurant portal yet).
     setTimeout(() => {
       set((s) => {
         const thread = s.chats[restaurantId] ?? []
@@ -121,7 +132,7 @@ export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
         return {
           chats: {
             ...s.chats,
-            [restaurantId]: [...thread, { id: id(), from: 'reception', text: '', key: replyKey, time: now() }],
+            [restaurantId]: [...thread, { id: uid(), from: 'reception', text: '', key: replyKey, time: now() }],
           },
         }
       })
@@ -129,7 +140,7 @@ export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
   },
 }))
 
-// Visible list = user-registered restaurants first, then the seeded ones.
-export function allRestaurants(registered: Restaurant[]) {
-  return [...registered, ...mockRestaurants]
+// Visible list = user-registered restaurants first, then Supabase-fetched ones.
+export function allRestaurants(registered: Restaurant[], seeded: Restaurant[]) {
+  return [...registered, ...seeded]
 }

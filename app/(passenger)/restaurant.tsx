@@ -19,8 +19,9 @@ export default function RestaurantScreen() {
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
-  const registered = useRestaurantStore((s) => s.registered)
-  const r = allRestaurants(registered).find((x) => x.id === id)
+  const registered  = useRestaurantStore((s) => s.registered)
+  const restaurants = useRestaurantStore((s) => s.restaurants)
+  const r = allRestaurants(registered, restaurants).find((x) => x.id === id)
 
   const foodCart        = useDeliveryStore((s) => s.foodCart)
   const selectRestaurant = useDeliveryStore((s) => s.selectRestaurant)

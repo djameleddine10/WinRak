@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase'
 import { setDriverStatus, updateDriverLocation, subscribeToMyTripOffer } from '../../services/realtime.service'
 import { registerPushToken } from '../../services/notifications.service'
 import { mockRides } from '../../mock/rides'
+import { mockPassengers } from '../../mock/passengers'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
 
 const { width: SCREEN_W } = Dimensions.get('window')
@@ -118,21 +119,33 @@ export default function DriverHome() {
 
           setOfferId(offer.id)
           setRealTripId(trip.id)
-          setIncomingRide({
+          setIncomingRide(({
             ...mockRides[0],
-            id:       trip.trip_code ?? trip.id,
-            from:     { ...mockRides[0].from, address: trip.from_address, lat: trip.from_lat,  lng: trip.from_lng,  name: trip.from_address },
-            to:       { ...mockRides[0].to,   address: trip.to_address,   lat: trip.to_lat,    lng: trip.to_lng,    name: trip.to_address },
-            distance: trip.distance_km  ?? 0,
-            duration: trip.duration_min ?? 0,
-            price:    trip.price        ?? 0,
+            id:            trip.trip_code ?? trip.id,
+            rideType:      'city',
+            from:          { name: trip.from_address, address: trip.from_address, lat: trip.from_lat,  lng: trip.from_lng  },
+            to:            { name: trip.to_address,   address: trip.to_address,   lat: trip.to_lat,    lng: trip.to_lng    },
+            distance:      trip.distance_km  ?? 0,
+            duration:      trip.duration_min ?? 0,
+            price:         trip.price        ?? 0,
+            suggestedPrice: trip.price       ?? 0,
+            vehicleType:   trip.vehicle_type ?? 'sedan',
+            status:        'pending',
+            createdAt:     trip.created_at ?? new Date().toISOString(),
+            startedAt:     null as string | null,
+            completedAt:   null as string | null,
+            rating:        null as number | null,
+            driverEta:     null as number | null,
+            cancelReason:  null as string | null,
             passenger: {
-              ...mockRides[0].passenger,
+              ...mockPassengers[0],
+              id:        trip.passenger_id,
+              name:      passengerProfile?.full_name ?? 'راكب',
+              nameLatin: passengerProfile?.full_name ?? 'Passager',
               rating:    4.8,
-              name:      passengerProfile?.full_name ?? mockRides[0].passenger.name,
-              nameLatin: passengerProfile?.full_name ?? mockRides[0].passenger.nameLatin,
+              phone:     '',
             },
-          })
+          }) as any)
         })
       } else {
         goOnline()

@@ -88,6 +88,50 @@ async function fetchMonthlyFinance() {
   return data
 }
 
+async function fetchKpis() {
+  if (!db) return null
+  const { data, error } = await db.rpc('dash_kpis')
+  if (error) throw error
+  return data
+}
+
+async function fetchDispatch() {
+  if (!db) return { offers: [], active: [] }
+  const [offersRes, activeRes] = await Promise.all([
+    db.rpc('dash_dispatch'),
+    db.rpc('dash_active_trips'),
+  ])
+  if (offersRes.error) console.warn('[Dispatch] offers error', offersRes.error)
+  if (activeRes.error) console.warn('[Dispatch] active error', activeRes.error)
+  return {
+    offers: offersRes.data ?? [],
+    active: activeRes.data ?? [],
+  }
+}
+
+async function fetchSecurityEvents(limit = 50) {
+  if (!db) return null
+  const { data, error } = await db.rpc('dash_security_events', { p_limit: limit })
+  if (error) throw error
+  return data
+}
+
+async function logSecurityEvent(type, icon, title, detail, ip, userAgent) {
+  if (!db) return
+  try {
+    await db.rpc('dash_log_event', {
+      p_type:       type,
+      p_icon:       icon,
+      p_title:      title,
+      p_detail:     detail     || null,
+      p_ip:         ip         || null,
+      p_user_agent: userAgent  || null,
+    })
+  } catch (e) {
+    console.warn('[Security] log error', e)
+  }
+}
+
 /* ─── REALTIME — Carte & Documents ───────────────────────────────────
    Les souscriptions Realtime utilisent le canal postgres_changes.
    driver_locations a une policy SELECT USING (TRUE) → accessible à anon.

@@ -149,7 +149,7 @@ function doLogin() {
     document.getElementById('attempt-bar').style.display = 'block';
     document.getElementById('attempt-label').textContent = 'Tentative ' + attempts + '/' + MAX_ATT;
     document.getElementById('attempt-fill').style.width = (attempts / MAX_ATT * 100) + '%';
-    logEvent('err', 'fa-triangle-exclamation', 'Tentative échouée', 'Mot de passe incorrect · ' + fakeIP(), now());
+    logEvent('err', 'fa-triangle-exclamation', 'Tentative échouée', 'Mot de passe incorrect · ' + (_realIp || '—'), now());
   }
 }
 
@@ -158,7 +158,7 @@ function lockAccount() {
   document.getElementById('btn-login').disabled = true;
   showError('Compte verrouillé après 5 échecs. Réessayez dans 5 minutes.');
   document.getElementById('attempt-fill').style.width = '100%';
-  logEvent('err', 'fa-shield-halved', 'Compte verrouillé', 'Trop de tentatives · ' + fakeIP(), now());
+  logEvent('err', 'fa-shield-halved', 'Compte verrouillé', 'Trop de tentatives · ' + (_realIp || '—'), now());
   lockTimer = setTimeout(function () {
     locked = false; attempts = 0;
     document.getElementById('btn-login').disabled = false;
@@ -170,12 +170,17 @@ function lockAccount() {
 function loginSuccess() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').classList.add('show');
+  detectIp();
   initDashboard();
   startSession();
   loadRealData();
   var loginTime = new Date().toLocaleString('fr-FR');
-  document.getElementById('last-login').textContent = loginTime + ' · 105.235.88.42';
-  logEvent('ok', 'fa-right-to-bracket', 'Connexion réussie', 'admin depuis 105.235.88.42 (Alger)', now());
+  // Update last-login display once IP is resolved (give detectIp ~1s)
+  setTimeout(function () {
+    var ip = _realIp || '—';
+    document.getElementById('last-login').textContent = loginTime + ' · ' + ip;
+    logEvent('ok', 'fa-right-to-bracket', 'Connexion réussie', 'admin depuis ' + ip + ' (Algérie)', now());
+  }, 1200);
 }
 
 function showError(msg) {
@@ -220,8 +225,9 @@ function refreshSession() {
 var TITLES = {
   dashboard: 'Tableau de bord', map: 'Carte en direct',
   passengers: 'Passagers', drivers: 'Chauffeurs',
-  trips: 'Historique des trajets', docs: 'Vérification des Documents',
-  finance: 'Gestion Financière', security: 'Cyber-Sécurité', settings: 'Paramètres'
+  trips: 'Historique des trajets', dispatch: 'Répartition en direct', docs: 'Vérification des Documents',
+  finance: 'Gestion Financière', pricing: 'التسعير — Tarification',
+  security: 'Cyber-Sécurité', settings: 'Paramètres'
 };
 function nav(id) {
   document.querySelectorAll('.nav-item').forEach(function (el) {
@@ -231,7 +237,10 @@ function nav(id) {
     el.classList.toggle('active', el.id === 'sec-' + id);
   });
   document.getElementById('topbar-title').textContent = TITLES[id] || id;
-  if (id === 'map') { setTimeout(initMap, 100); }
+  if (id === 'map')      { setTimeout(initMap, 100); }
+  if (id === 'pricing')  { loadPricingSection(); }
+  if (id === 'security') { loadSecuritySection(); }
+  if (id === 'dispatch') { loadDispatchSection(); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -268,13 +277,17 @@ function showToast(msg, type) {
 /* ═══════════════════════════════════════════════
    CHARTS
 ═══════════════════════════════════════════════ */
+
+// Chart instance refs — needed to update data after Supabase responds
+var _chartTrips, _chartTypes, _chartRev, _chartMonthly, _chartVtype;
+
 function initDashboard() {
   renderDateHeader();
-  initTripsChart();
-  initTypesChart();
-  initRevChart();
-  initMonthlyChart();
-  initVTypeChart();
+  _chartTrips   = initTripsChart();
+  _chartTypes   = initTypesChart();
+  _chartRev     = initRevChart();
+  _chartMonthly = initMonthlyChart();
+  _chartVtype   = initVTypeChart();
   renderRecentTable();
   renderDriverCards();
   renderKpiExtra();
@@ -289,6 +302,80 @@ function initDashboard() {
   renderLoginHistory();
 }
 
+/* ─── Apply real KPIs from dash_kpis() ─────────────────────────────────── */
+function fmt(n) {
+  return Math.round(n || 0).toLocaleString('fr');
+}
+
+function applyKpis(kpi) {
+  if (!kpi) return;
+
+  // Main dashboard KPIs
+  var el = function (id) { return document.getElementById(id); };
+  if (el('k-trips'))   el('k-trips').textContent   = fmt(kpi.trips_this_month);
+  if (el('k-drivers')) el('k-drivers').textContent = fmt(kpi.drivers_online);
+  if (el('k-rev'))     el('k-rev').textContent     = fmt(kpi.revenue_today);
+  if (el('k-rating'))  el('k-rating').textContent  = kpi.avg_rating || '—';
+
+  // Badge docs pending
+  if (el('badge-docs')) el('badge-docs').textContent = kpi.docs_pending || '';
+
+  // Finance KPIs
+  if (el('k-fin-ca'))          el('k-fin-ca').textContent          = fmt(kpi.revenue_this_month);
+  if (el('k-fin-commission'))  el('k-fin-commission').textContent  = fmt(kpi.commission_this_month);
+  if (el('k-fin-reversement')) el('k-fin-reversement').textContent = fmt(kpi.driver_earnings_this_month);
+}
+
+/* ─── Update Chart.js instances with real data ──────────────────────────── */
+function updateCharts(kpi) {
+  if (!kpi) return;
+
+  // Trips 7d line chart
+  if (_chartTrips && Array.isArray(kpi.trips_7d) && kpi.trips_7d.length) {
+    _chartTrips.data.labels                  = kpi.trips_7d.map(function (d) { return d.day; });
+    _chartTrips.data.datasets[0].data        = kpi.trips_7d.map(function (d) { return d.total; });
+    _chartTrips.data.datasets[1].data        = kpi.trips_7d.map(function (d) { return d.completed; });
+    _chartTrips.data.datasets[2].data        = kpi.trips_7d.map(function (d) { return d.cancelled; });
+    _chartTrips.update();
+  }
+
+  // Revenue 7d bar chart
+  if (_chartRev && Array.isArray(kpi.revenue_7d) && kpi.revenue_7d.length) {
+    _chartRev.data.labels            = kpi.revenue_7d.map(function (d) { return d.day; });
+    _chartRev.data.datasets[0].data  = kpi.revenue_7d.map(function (d) { return d.revenue; });
+    _chartRev.update();
+  }
+
+  // Types doughnut (main dashboard)
+  if (_chartTypes && kpi.trips_by_type && Object.keys(kpi.trips_by_type).length) {
+    var typeMap = { ride: 'Économique', confort: 'Confort', women: 'She', intercites: 'Intercités', delivery: 'Livraison', medicine: 'Médecine', food: 'Restauration' };
+    var typeColors = { ride: '#4FA0E0', confort: '#F5C842', women: '#A855F7', intercites: '#2DD4BF', delivery: '#3DB87A', medicine: '#E05555', food: '#F59842' };
+    var keys   = Object.keys(kpi.trips_by_type);
+    _chartTypes.data.labels              = keys.map(function (k) { return typeMap[k] || k; });
+    _chartTypes.data.datasets[0].data   = keys.map(function (k) { return kpi.trips_by_type[k]; });
+    _chartTypes.data.datasets[0].backgroundColor = keys.map(function (k) { return typeColors[k] || '#888'; });
+    _chartTypes.update();
+  }
+
+  // Same types doughnut in Finance section
+  if (_chartVtype && kpi.trips_by_type && Object.keys(kpi.trips_by_type).length) {
+    var typeMap2 = { ride: 'Économique', confort: 'Confort', women: 'She', intercites: 'Intercités', delivery: 'Livraison', medicine: 'Médecine', food: 'Restauration' };
+    var typeColors2 = { ride: '#4FA0E0', confort: '#F5C842', women: '#A855F7', intercites: '#2DD4BF', delivery: '#3DB87A', medicine: '#E05555', food: '#F59842' };
+    var keys2   = Object.keys(kpi.trips_by_type);
+    _chartVtype.data.labels              = keys2.map(function (k) { return typeMap2[k] || k; });
+    _chartVtype.data.datasets[0].data   = keys2.map(function (k) { return kpi.trips_by_type[k]; });
+    _chartVtype.data.datasets[0].backgroundColor = keys2.map(function (k) { return typeColors2[k] || '#888'; });
+    _chartVtype.update();
+  }
+
+  // Monthly revenue (Finance section)
+  if (_chartMonthly && Array.isArray(kpi.revenue_monthly) && kpi.revenue_monthly.length) {
+    _chartMonthly.data.labels             = kpi.revenue_monthly.map(function (d) { return d.month; });
+    _chartMonthly.data.datasets[0].data   = kpi.revenue_monthly.map(function (d) { return d.revenue; });
+    _chartMonthly.update();
+  }
+}
+
 function renderDateHeader() {
   var d = new Date();
   document.getElementById('dash-date').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -297,7 +384,7 @@ function renderDateHeader() {
 var DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
 function initTripsChart() {
-  new Chart(document.getElementById('chart-trips'), {
+  return new Chart(document.getElementById('chart-trips'), {
     type: 'line',
     data: {
       labels: DAYS,
@@ -312,7 +399,7 @@ function initTripsChart() {
 }
 
 function initTypesChart() {
-  new Chart(document.getElementById('chart-types'), {
+  return new Chart(document.getElementById('chart-types'), {
     type: 'doughnut',
     data: {
       labels: ['Économique', 'Confort', 'She', 'Intercités'],
@@ -323,7 +410,7 @@ function initTypesChart() {
 }
 
 function initRevChart() {
-  new Chart(document.getElementById('chart-rev'), {
+  return new Chart(document.getElementById('chart-rev'), {
     type: 'bar',
     data: {
       labels: DAYS,
@@ -335,7 +422,7 @@ function initRevChart() {
 
 function initMonthlyChart() {
   var months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
-  new Chart(document.getElementById('chart-monthly'), {
+  return new Chart(document.getElementById('chart-monthly'), {
     type: 'line',
     data: {
       labels: months,
@@ -346,7 +433,7 @@ function initMonthlyChart() {
 }
 
 function initVTypeChart() {
-  new Chart(document.getElementById('chart-vtype'), {
+  return new Chart(document.getElementById('chart-vtype'), {
     type: 'doughnut',
     data: {
       labels: ['Économique', 'Confort', 'She', 'Intercités'],
@@ -490,28 +577,241 @@ function renderFinanceTable() {
 }
 
 /* ═══════════════════════════════════════════════
+   DISPATCH EN DIRECT
+═══════════════════════════════════════════════ */
+
+var _dispatchRefreshTimer = null;
+
+async function loadDispatchSection() {
+  // Stop any previous auto-refresh
+  if (_dispatchRefreshTimer) { clearInterval(_dispatchRefreshTimer); _dispatchRefreshTimer = null; }
+
+  await _renderDispatch();
+
+  // Auto-refresh every 15 s while the section is open
+  _dispatchRefreshTimer = setInterval(function () {
+    var active = document.querySelector('.sec.active');
+    if (!active || active.id !== 'sec-dispatch') {
+      clearInterval(_dispatchRefreshTimer);
+      _dispatchRefreshTimer = null;
+      return;
+    }
+    _renderDispatch();
+  }, 15000);
+}
+
+async function _renderDispatch() {
+  var timeEl = document.getElementById('k-disp-time');
+  if (timeEl) timeEl.textContent = 'Chargement…';
+
+  var data = { offers: [], active: [] };
+  try {
+    data = await fetchDispatch();
+  } catch (e) {
+    console.warn('[Dispatch] fetch error', e);
+  }
+
+  var offers = data.offers || [];
+  var active = data.active || [];
+
+  // KPIs
+  var kPend = document.getElementById('k-disp-pending');
+  var kAct  = document.getElementById('k-disp-active');
+  if (kPend) kPend.textContent = offers.length;
+  if (kAct)  kAct.textContent  = active.length;
+
+  // Badge nav
+  var badge = document.getElementById('badge-dispatch');
+  if (badge) {
+    var total = offers.length + active.length;
+    badge.textContent = total;
+    badge.style.display = total > 0 ? '' : 'none';
+  }
+
+  // Timestamp
+  if (timeEl) timeEl.textContent = 'Mis à jour ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  // Tableau offres
+  var offersEl  = document.getElementById('tbl-dispatch-offers');
+  var offersEmp = document.getElementById('disp-offers-empty');
+  if (offersEl) {
+    if (offers.length === 0) {
+      offersEl.innerHTML = '';
+      if (offersEmp) offersEmp.style.display = '';
+    } else {
+      if (offersEmp) offersEmp.style.display = 'none';
+      var oRows = offers.map(function (o) {
+        var age = Math.round((Date.now() - new Date(o.offered_at).getTime()) / 1000);
+        var ageStr = age < 60 ? age + 's' : Math.round(age / 60) + ' min';
+        return '<tr>' +
+          '<td class="fw7">' + (o.trip_code || o.trip_id.slice(0, 8)) + '</td>' +
+          '<td>' + (o.passenger_name || '—') + '</td>' +
+          '<td>' + (o.driver_name || '—') + '</td>' +
+          '<td style="font-size:11px;color:var(--text-muted)">' + (o.from_address || '').slice(0, 30) + '…</td>' +
+          '<td>' + Math.round(o.price || 0).toLocaleString('fr') + ' DA</td>' +
+          '<td><span class="badge" style="background:var(--blue-dim);color:var(--blue)">Rang ' + (o.offer_rank || 1) + '</span></td>' +
+          '<td style="color:var(--text-muted)">' + Math.round((o.distance_m || 0) / 1000 * 10) / 10 + ' km</td>' +
+          '<td style="color:var(--gold)">' + ageStr + '</td>' +
+        '</tr>';
+      }).join('');
+      offersEl.innerHTML = '<thead><tr><th>ID Course</th><th>Passager</th><th>Chauffeur proposé</th><th>Départ</th><th>Prix</th><th>Rang</th><th>Distance</th><th>Âge</th></tr></thead><tbody>' + oRows + '</tbody>';
+    }
+  }
+
+  // Tableau courses actives
+  var activeEl  = document.getElementById('tbl-dispatch-active');
+  var activeEmp = document.getElementById('disp-active-empty');
+  if (activeEl) {
+    if (active.length === 0) {
+      activeEl.innerHTML = '';
+      if (activeEmp) activeEmp.style.display = '';
+    } else {
+      if (activeEmp) activeEmp.style.display = 'none';
+      var aRows = active.map(function (t) {
+        var statusBadge = t.status === 'in_progress'
+          ? '<span class="badge b-trip"><span class="badge-dot"></span>En course</span>'
+          : '<span class="badge b-online"><span class="badge-dot"></span>Acceptée</span>';
+        var elapsed = t.started_at
+          ? Math.round((Date.now() - new Date(t.started_at).getTime()) / 60000) + ' min'
+          : '—';
+        return '<tr>' +
+          '<td class="fw7">' + (t.trip_code || t.trip_id.slice(0, 8)) + '</td>' +
+          '<td>' + (t.passenger_name || '—') + '</td>' +
+          '<td>' + (t.driver_name || '—') + '</td>' +
+          '<td style="font-size:11px;color:var(--text-muted)">' + (t.to_address || '').slice(0, 30) + '…</td>' +
+          '<td>' + Math.round(t.price || 0).toLocaleString('fr') + ' DA</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td style="color:var(--text-muted)">' + elapsed + '</td>' +
+        '</tr>';
+      }).join('');
+      activeEl.innerHTML = '<thead><tr><th>ID Course</th><th>Passager</th><th>Chauffeur</th><th>Destination</th><th>Prix</th><th>Statut</th><th>Durée</th></tr></thead><tbody>' + aRows + '</tbody>';
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════
    SECURITY LOGS
 ═══════════════════════════════════════════════ */
-var _evLog = [];
-function logEvent(type, icon, t, s, time) { _evLog.unshift({ type: type, icon: icon, t: t, s: s, time: time }); if (document.getElementById('ev-log')) renderEvLog(); }
+
+var _evLog     = [];   // session-local events (always shown first)
+var _realIp    = null; // fetched once on login
+var _userAgent = navigator.userAgent;
+
+// Detect real IP once — non-blocking
+function detectIp() {
+  fetch('https://api.ipify.org?format=json')
+    .then(function (r) { return r.json(); })
+    .then(function (d) { _realIp = d.ip; })
+    .catch(function () { _realIp = null; });
+}
+
+// Detect browser name from UA
+function browserName() {
+  var ua = navigator.userAgent;
+  if (ua.indexOf('Edg') > -1)    return 'Edge';
+  if (ua.indexOf('Chrome') > -1) return 'Chrome';
+  if (ua.indexOf('Firefox') > -1)return 'Firefox';
+  if (ua.indexOf('Safari') > -1) return 'Safari';
+  return 'Navigateur';
+}
+
+// logEvent : écrit en local + persisté dans Supabase
+function logEvent(type, icon, t, s, time) {
+  _evLog.unshift({ type: type, icon: icon, t: t, s: s, time: time });
+  if (document.getElementById('ev-log')) renderEvLog();
+  // Persist to Supabase (non-blocking)
+  logSecurityEvent(type, icon, t, s, _realIp, _userAgent);
+}
+
+// Render event log : session events + real DB events
+var _dbEvents = [];   // loaded from Supabase
 
 function renderEvLog() {
-  var items = _evLog.concat(SEC_EVENTS).slice(0, 8);
-  document.getElementById('ev-log').innerHTML = items.map(function (e) {
+  var el = document.getElementById('ev-log');
+  if (!el) return;
+  // Merge: session events first, then DB (deduplicated by title+time)
+  var combined = _evLog.slice();
+  _dbEvents.forEach(function (e) {
+    combined.push({
+      type: e.event_type,
+      icon: e.icon,
+      t:    e.title,
+      s:    e.detail || '',
+      time: new Date(e.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    });
+  });
+  var items = combined.slice(0, 12);
+  if (items.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-muted);padding:16px;font-size:13px">Aucun événement enregistré</div>';
+    return;
+  }
+  el.innerHTML = items.map(function (e) {
     var cls = e.type === 'ok' ? 'ok' : e.type === 'err' ? 'err' : e.type === 'warn' ? 'warn' : 'info';
-    return '<div class="ev-row"><div class="ev-icon ' + cls + '"><i class="fa ' + e.icon + '"></i></div><div class="ev-text"><div class="t">' + e.t + '</div><div class="s">' + e.s + '</div></div><div class="ev-time">' + e.time + '</div></div>';
+    return '<div class="ev-row"><div class="ev-icon ' + cls + '"><i class="fa ' + e.icon + '"></i></div>' +
+      '<div class="ev-text"><div class="t">' + e.t + '</div><div class="s">' + (e.s || '') + '</div></div>' +
+      '<div class="ev-time">' + e.time + '</div></div>';
   }).join('');
 }
 
+// Render session info with real browser + IP
 function renderSessLog() {
-  document.getElementById('sess-log').innerHTML = '<div class="ev-row"><div class="ev-icon ok"><i class="fa fa-desktop"></i></div><div class="ev-text"><div class="t">Session active — Chrome 126</div><div class="s">105.235.88.42 · Alger, Algérie · Maintenant</div></div><span class="badge b-online" style="flex-shrink:0"><span class="badge-dot"></span>Active</span></div>';
+  var ip      = _realIp || '—';
+  var browser = browserName();
+  var el = document.getElementById('sess-log');
+  if (!el) return;
+  el.innerHTML = '<div class="ev-row">' +
+    '<div class="ev-icon ok"><i class="fa fa-desktop"></i></div>' +
+    '<div class="ev-text">' +
+      '<div class="t">Session active — ' + browser + '</div>' +
+      '<div class="s">' + ip + ' · Algérie · Maintenant</div>' +
+    '</div>' +
+    '<span class="badge b-online" style="flex-shrink:0"><span class="badge-dot"></span>Active</span>' +
+  '</div>';
 }
 
+// Render login history from real DB events
 function renderLoginHistory() {
-  var rows = LOGIN_HISTORY.map(function (l) {
-    return '<tr><td class="fw7">' + l.user + '</td><td>' + l.ip + '</td><td>' + l.location + '</td><td>' + l.browser + '</td><td>' + loginStatusBadge(l.status) + '</td><td style="color:var(--text-muted)">' + l.date + '</td></tr>';
+  var el = document.getElementById('tbl-logins');
+  if (!el) return;
+  var loginEvents = _dbEvents.filter(function (e) {
+    return e.title.indexOf('Connexion') > -1 || e.title.indexOf('Tentative') > -1 || e.title.indexOf('verrouillé') > -1;
+  });
+  if (loginEvents.length === 0) {
+    // Fallback to static mock while DB is empty
+    var rows = LOGIN_HISTORY.map(function (l) {
+      return '<tr><td class="fw7">' + l.user + '</td><td>' + l.ip + '</td><td>' + l.location + '</td><td>' + l.browser + '</td><td>' + loginStatusBadge(l.status) + '</td><td style="color:var(--text-muted)">' + l.date + '</td></tr>';
+    }).join('');
+    el.innerHTML = '<thead><tr><th>Utilisateur</th><th>IP</th><th>Localisation</th><th>Navigateur</th><th>Résultat</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody>';
+    return;
+  }
+  var rows = loginEvents.slice(0, 20).map(function (e) {
+    var isOk  = e.event_type === 'ok';
+    var isErr = e.event_type === 'err';
+    var status = isOk ? 'success' : isErr ? 'fail' : 'blocked';
+    return '<tr>' +
+      '<td class="fw7">admin</td>' +
+      '<td>' + (e.ip_address || '—') + '</td>' +
+      '<td>Algérie</td>' +
+      '<td>' + browserName() + '</td>' +
+      '<td>' + loginStatusBadge(status) + '</td>' +
+      '<td style="color:var(--text-muted)">' + new Date(e.created_at).toLocaleString('fr-FR') + '</td>' +
+    '</tr>';
   }).join('');
-  document.getElementById('tbl-logins').innerHTML = '<thead><tr><th>Utilisateur</th><th>Adresse IP</th><th>Localisation</th><th>Navigateur</th><th>Résultat</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody>';
+  el.innerHTML = '<thead><tr><th>Utilisateur</th><th>IP</th><th>Localisation</th><th>Navigateur</th><th>Résultat</th><th>Date</th></tr></thead><tbody>' + rows + '</tbody>';
+}
+
+// Load real events from Supabase when security section opens
+async function loadSecuritySection() {
+  try {
+    var data = await fetchSecurityEvents(50);
+    if (data && data.length > 0) {
+      _dbEvents = data;
+      renderEvLog();
+      renderLoginHistory();
+    }
+  } catch (e) {
+    console.warn('[Security] load error', e);
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -1053,19 +1353,22 @@ async function loadRealData() {
       fetchPassengers(),
       fetchTrips(),
       fetchTransactions(),
-      fetchPendingDocs()
+      fetchPendingDocs(),
+      fetchKpis()
     ]);
     var driversData    = results[0];
     var passengersData = results[1];
     var tripsData      = results[2];
     var txnsData       = results[3];
     var docsData       = results[4];
+    var kpiData        = results[5];
 
     if (driversData    && driversData.length    > 0) { DRIVERS    = driversData.map(mapDriver);       renderDriverCards(); renderDrvTable(); }
     if (passengersData && passengersData.length  > 0) { PASSENGERS = passengersData.map(mapPassenger); renderPaxTable(); }
     if (tripsData      && tripsData.length       > 0) { TRIPS      = tripsData.map(mapTrip);           renderRecentTable(); renderTripsTable(); }
     if (txnsData       && txnsData.length        > 0) { FINANCE_TXN = txnsData.map(mapTxn);            renderFinanceTable(); }
     if (docsData       && docsData.length        > 0) { _docsData  = groupDocsByDriver(docsData);      renderDocsSection(); }
+    if (kpiData)                                      { applyKpis(kpiData); updateCharts(kpiData); }
 
     subscribeDriverLocations(function (loc) {
       var d = DRIVERS.find(function (x) { return x.id === loc.driver_id; });
@@ -1082,6 +1385,377 @@ async function loadRealData() {
     showToast('Données Supabase chargées ✓');
   } catch (e) {
     console.warn('[WinRak] Erreur chargement données Supabase:', e);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PRICING ENGINE
+═══════════════════════════════════════════════ */
+
+var _pricingData   = [];   // all rows from pricing_config
+var _surgeData     = [];   // all rows from surge_config
+var _currentSvc    = 'ride';
+
+// Built-in seed — mirrors 20260624_pricing_engine.sql (shown when Supabase unavailable)
+var PRICING_SEED = [
+  {tier:'A',service_type:'ride',     base_fare:250,short_km_limit:2,per_km_rate:32,per_min_rate:3,  women_premium_pct:15, speed_multipliers:{normal:1,fast:1,   urgent:1   }},
+  {tier:'A',service_type:'women',    base_fare:250,short_km_limit:2,per_km_rate:32,per_min_rate:3,  women_premium_pct:15, speed_multipliers:{normal:1,fast:1,   urgent:1   }},
+  {tier:'A',service_type:'delivery', base_fare:250,short_km_limit:3,per_km_rate:30,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.25,urgent:1.50}},
+  {tier:'A',service_type:'medicine', base_fare:300,short_km_limit:3,per_km_rate:30,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.35,urgent:1.70}},
+  {tier:'A',service_type:'food',     base_fare:250,short_km_limit:3,per_km_rate:30,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.25,urgent:1.50}},
+  {tier:'B',service_type:'ride',     base_fare:220,short_km_limit:2,per_km_rate:28,per_min_rate:3,  women_premium_pct:15, speed_multipliers:{normal:1,fast:1,   urgent:1   }},
+  {tier:'B',service_type:'women',    base_fare:220,short_km_limit:2,per_km_rate:28,per_min_rate:3,  women_premium_pct:15, speed_multipliers:{normal:1,fast:1,   urgent:1   }},
+  {tier:'B',service_type:'delivery', base_fare:220,short_km_limit:3,per_km_rate:27,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.25,urgent:1.50}},
+  {tier:'B',service_type:'medicine', base_fare:270,short_km_limit:3,per_km_rate:27,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.35,urgent:1.70}},
+  {tier:'B',service_type:'food',     base_fare:220,short_km_limit:3,per_km_rate:27,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.25,urgent:1.50}},
+  {tier:'C',service_type:'ride',     base_fare:200,short_km_limit:2,per_km_rate:25,per_min_rate:3,  women_premium_pct:15, speed_multipliers:{normal:1,fast:1,   urgent:1   }},
+  {tier:'C',service_type:'women',    base_fare:200,short_km_limit:2,per_km_rate:25,per_min_rate:3,  women_premium_pct:15, speed_multipliers:{normal:1,fast:1,   urgent:1   }},
+  {tier:'C',service_type:'delivery', base_fare:200,short_km_limit:3,per_km_rate:24,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.25,urgent:1.50}},
+  {tier:'C',service_type:'medicine', base_fare:250,short_km_limit:3,per_km_rate:24,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.35,urgent:1.70}},
+  {tier:'C',service_type:'food',     base_fare:200,short_km_limit:3,per_km_rate:24,per_min_rate:0,  women_premium_pct:0,  speed_multipliers:{normal:1,fast:1.25,urgent:1.50}},
+];
+var SURGE_SEED = [
+  {trigger_type:'morning_peak',label_ar:'ذروة الصباح',       label_fr:'Pointe matin',        multiplier:1.20,is_auto:true, start_hour:7, end_hour:9, is_calendar:false,is_enabled:true},
+  {trigger_type:'evening_peak',label_ar:'ذروة المساء',       label_fr:'Pointe soir',         multiplier:1.20,is_auto:true, start_hour:17,end_hour:20,is_calendar:false,is_enabled:true},
+  {trigger_type:'night',       label_ar:'الليل المتأخر',     label_fr:'Nuit tardive',        multiplier:1.30,is_auto:true, start_hour:22,end_hour:5, is_calendar:false,is_enabled:true},
+  {trigger_type:'ramadan',     label_ar:'رمضان بعد الإفطار', label_fr:'Ramadan post-ftour',  multiplier:1.35,is_auto:true, start_hour:null,end_hour:null,is_calendar:true,is_enabled:true},
+  {trigger_type:'holiday',     label_ar:'أعياد ومناسبات',   label_fr:'Fêtes et événements', multiplier:1.40,is_auto:true, start_hour:null,end_hour:null,is_calendar:true,is_enabled:true},
+  {trigger_type:'rain',        label_ar:'طقس سيئ / مطر',    label_fr:'Mauvais temps',       multiplier:1.25,is_auto:false,start_hour:null,end_hour:null,is_calendar:false,is_enabled:true},
+  {trigger_type:'event',       label_ar:'حدث استثنائي',     label_fr:'Événement spécial',   multiplier:1.00,is_auto:false,start_hour:null,end_hour:null,is_calendar:false,is_enabled:true},
+];
+
+var SVC_LABELS = {
+  ride:     { fr: 'Trajet',        ar: 'نقل الركاب',   icon: 'fa-car',      hasTiers: false, hasWomen: false, hasDuration: true  },
+  women:    { fr: 'She',           ar: 'خدمة النساء',  icon: 'fa-venus',    hasTiers: false, hasWomen: true,  hasDuration: true  },
+  delivery: { fr: 'Livraison',     ar: 'توصيل الطلبات',icon: 'fa-box',      hasTiers: true,  hasWomen: false, hasDuration: false },
+  medicine: { fr: 'Médecine',      ar: 'توصيل الأدوية',icon: 'fa-capsules', hasTiers: true,  hasWomen: false, hasDuration: false },
+  food:     { fr: 'Restauration',  ar: 'توصيل الأكل',  icon: 'fa-utensils', hasTiers: true,  hasWomen: false, hasDuration: false },
+};
+
+var TIER_META = {
+  A: { label: 'Tier A — مرتفع', color: 'var(--gold)',    cities: 'الجزائر، وهران، تمنراست' },
+  B: { label: 'Tier B — متوسط', color: 'var(--blue)',    cities: 'عنابة، سطيف، بجاية، باتنة' },
+  C: { label: 'Tier C — منخفض', color: 'var(--success)', cities: 'قسنطينة، الجلفة، المسيلة' },
+};
+
+async function loadPricingSection() {
+  if (!window._supabase) {
+    // No Supabase — load built-in seed values so the UI is usable
+    _pricingData = PRICING_SEED;
+    _surgeData   = SURGE_SEED;
+    renderPricingGrid();
+    renderSurgeAuto();
+    renderSurgeManual();
+    loadReferralTable();
+    return;
+  }
+  try {
+    var res = await Promise.all([
+      window._supabase.rpc('rpc_get_pricing_config'),
+      window._supabase.rpc('rpc_get_surge_config'),
+    ]);
+    if (res[0].data) _pricingData = res[0].data;
+    if (res[1].data) _surgeData   = res[1].data;
+    renderPricingGrid();
+    renderSurgeAuto();
+    renderSurgeManual();
+  } catch (e) {
+    console.warn('[Pricing] RPC unavailable — using seed data', e.message);
+    _pricingData = PRICING_SEED;
+    _surgeData   = SURGE_SEED;
+    renderPricingGrid();
+    renderSurgeAuto();
+    renderSurgeManual();
+  }
+  loadReferralTable();
+}
+
+function switchPricingTab(svc) {
+  _currentSvc = svc;
+  document.querySelectorAll('.pricing-tab').forEach(function (b) {
+    var isActive = b.dataset.svc === svc;
+    b.classList.toggle('btn-gold', isActive);
+    b.classList.toggle('active-tab', isActive);
+    b.classList.toggle('btn-o', !isActive);
+  });
+  renderPricingGrid();
+}
+
+function renderPricingGrid() {
+  var grid = document.getElementById('pricing-grid');
+  if (!grid) return;
+  var rows = _pricingData.filter(function (r) { return r.service_type === _currentSvc; });
+  if (rows.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text-muted);padding:20px">Chargement…</div>';
+    return;
+  }
+  grid.innerHTML = ['A', 'B', 'C'].map(function (tier) {
+    var r = rows.find(function (x) { return x.tier === tier; });
+    if (!r) return '';
+    var meta = TIER_META[tier];
+    var svcMeta = SVC_LABELS[_currentSvc];
+    var hasSpeed = svcMeta.hasTiers;
+    var speed = (typeof r.speed_multipliers === 'object') ? r.speed_multipliers : JSON.parse(r.speed_multipliers || '{}');
+    return '<div class="card" style="border-top:3px solid ' + meta.color + '">' +
+      '<div class="card-head"><span class="card-title" style="color:' + meta.color + '">' + meta.label + '</span></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">' + meta.cities + '</div>' +
+      '<div class="setting-row">' +
+        '<div class="setting-lbl"><div class="t">الحد الأدنى (DZD)</div><div class="s">Base · 0–' + r.short_km_limit + ' km</div></div>' +
+        '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="base_fare" type="number" min="50" step="50" value="' + r.base_fare + '">' +
+      '</div>' +
+      '<div class="setting-row">' +
+        '<div class="setting-lbl"><div class="t">حد الرحلة القصيرة (km)</div><div class="s">Seuil km forfaitaire</div></div>' +
+        '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="short_km_limit" type="number" min="0.5" step="0.5" value="' + r.short_km_limit + '">' +
+      '</div>' +
+      '<div class="setting-row">' +
+        '<div class="setting-lbl"><div class="t">السعر / km (DZD)</div><div class="s">Après le seuil</div></div>' +
+        '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="per_km_rate" type="number" min="5" step="1" value="' + r.per_km_rate + '">' +
+      '</div>' +
+      (svcMeta.hasDuration ? '<div class="setting-row">' +
+        '<div class="setting-lbl"><div class="t">السعر / دقيقة (DZD)</div><div class="s">Temps de trajet</div></div>' +
+        '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="per_min_rate" type="number" min="0" step="0.5" value="' + r.per_min_rate + '">' +
+      '</div>' : '') +
+      (svcMeta.hasWomen ? '<div class="setting-row">' +
+        '<div class="setting-lbl"><div class="t">علاوة النساء (%)</div><div class="s">10% → سائقة · 5% → منصة</div></div>' +
+        '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="women_premium_pct" type="number" min="0" step="1" value="' + r.women_premium_pct + '">' +
+      '</div>' : '') +
+      (hasSpeed ? '<div style="margin-top:10px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Multiplicateurs de vitesse</div>' +
+        '<div class="setting-row">' +
+          '<div class="setting-lbl"><div class="t">عادي</div><div class="s">Normal</div></div>' +
+          '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="speed_normal" type="number" min="1" step="0.05" value="' + (speed.normal || 1.0) + '">' +
+        '</div>' +
+        '<div class="setting-row">' +
+          '<div class="setting-lbl"><div class="t">سريع</div><div class="s">Fast</div></div>' +
+          '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="speed_fast" type="number" min="1" step="0.05" value="' + (speed.fast || 1.25) + '">' +
+        '</div>' +
+        '<div class="setting-row" style="border-bottom:none">' +
+          '<div class="setting-lbl"><div class="t">عاجل</div><div class="s">Urgent</div></div>' +
+          '<input class="pill-inp" data-tier="' + tier + '" data-svc="' + _currentSvc + '" data-field="speed_urgent" type="number" min="1" step="0.05" value="' + (speed.urgent || 1.5) + '">' +
+        '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function savePricingConfig() {
+  var inputs = document.querySelectorAll('#pricing-grid .pill-inp');
+  var byKey = {};
+  inputs.forEach(function (inp) {
+    var key = inp.dataset.tier + '|' + inp.dataset.svc;
+    if (!byKey[key]) byKey[key] = { tier: inp.dataset.tier, svc: inp.dataset.svc };
+    byKey[key][inp.dataset.field] = parseFloat(inp.value);
+  });
+
+  try {
+    var promises = Object.values(byKey).map(function (row) {
+      var speedMult = {
+        normal: row['speed_normal'] || 1.0,
+        fast:   row['speed_fast']   || 1.25,
+        urgent: row['speed_urgent'] || 1.50,
+      };
+      return window._supabase.rpc('rpc_upsert_pricing_config', {
+        p_tier:              row.tier,
+        p_service_type:      row.svc,
+        p_base_fare:         Math.round(row['base_fare']        || 200),
+        p_short_km_limit:    row['short_km_limit']   || 2.0,
+        p_per_km_rate:       Math.round(row['per_km_rate']      || 25),
+        p_per_min_rate:      row['per_min_rate']     || 0,
+        p_women_premium_pct: row['women_premium_pct']|| 0,
+        p_speed_multipliers: speedMult,
+      });
+    });
+    await Promise.all(promises);
+    // Refresh local cache
+    var res = await window._supabase.rpc('rpc_get_pricing_config');
+    if (res.data) _pricingData = res.data;
+    renderPricingGrid();
+    showToast('Tarification enregistrée ✓');
+  } catch (e) {
+    console.error('[Pricing] save error', e);
+    showToast('Erreur lors de la sauvegarde', 'err');
+  }
+}
+
+function renderSurgeAuto() {
+  var wrap = document.getElementById('pricing-surge-auto');
+  if (!wrap) return;
+  var autoRows = _surgeData.filter(function (r) { return r.is_auto; });
+  wrap.innerHTML = autoRows.map(function (r) {
+    var timeLabel = (r.start_hour !== null)
+      ? r.start_hour + 'h – ' + r.end_hour + 'h'
+      : (r.is_calendar ? 'Calendrier' : '—');
+    return '<div class="card" style="padding:14px 16px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--text)">' + r.label_ar + '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted)">' + r.label_fr + ' · ' + timeLabel + '</div>' +
+        '</div>' +
+        '<button class="tog ' + (r.is_enabled ? 'on' : '') + '" data-surge-id="' + r.trigger_type + '" onclick="toggleSurgeEnabled(this,\'' + r.trigger_type + '\')"></button>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:11px;color:var(--text-muted)">×</span>' +
+        '<input class="pill-inp" data-surge-type="' + r.trigger_type + '" data-surge-field="multiplier" type="number" min="1" max="3" step="0.05" value="' + r.multiplier + '" style="width:70px">' +
+        '<span style="font-size:11px;color:var(--gold);font-weight:700">' + r.multiplier + 'x</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Live preview multiplier label
+  wrap.querySelectorAll('input[data-surge-field="multiplier"]').forEach(function (inp) {
+    inp.addEventListener('input', function () {
+      var lbl = inp.nextElementSibling;
+      if (lbl) lbl.textContent = parseFloat(inp.value).toFixed(2) + 'x';
+    });
+  });
+}
+
+function toggleSurgeEnabled(btn, triggerType) {
+  btn.classList.toggle('on');
+}
+
+async function saveSurgeConfig() {
+  var inputs = document.querySelectorAll('#pricing-surge-auto input[data-surge-type]');
+  var byType = {};
+  inputs.forEach(function (inp) {
+    if (!byType[inp.dataset.surgeType]) byType[inp.dataset.surgeType] = {};
+    byType[inp.dataset.surgeType][inp.dataset.surgeField] = parseFloat(inp.value);
+  });
+  // Read toggle state
+  document.querySelectorAll('#pricing-surge-auto .tog').forEach(function (btn) {
+    var t = btn.dataset.surgeId;
+    if (t && byType[t]) byType[t]['enabled'] = btn.classList.contains('on');
+  });
+  try {
+    var promises = Object.entries(byType).map(function (entry) {
+      var type = entry[0]; var vals = entry[1];
+      return window._supabase.rpc('rpc_upsert_surge_config', {
+        p_trigger_type: type,
+        p_multiplier:   vals['multiplier'] || 1.20,
+        p_is_enabled:   vals['enabled'] !== undefined ? vals['enabled'] : true,
+      });
+    });
+    await Promise.all(promises);
+    var res = await window._supabase.rpc('rpc_get_surge_config');
+    if (res.data) _surgeData = res.data;
+    renderSurgeAuto();
+    renderSurgeManual();
+    showToast('Surge config enregistrée ✓');
+  } catch (e) {
+    console.error('[Surge] save error', e);
+    showToast('Erreur surge config', 'err');
+  }
+}
+
+function renderSurgeManual() {
+  var wrap = document.getElementById('pricing-surge-manual');
+  var status = document.getElementById('pricing-surge-status');
+  if (!wrap) return;
+  var manualRows = _surgeData.filter(function (r) { return !r.is_auto; });
+  wrap.innerHTML = manualRows.map(function (r) {
+    var isRain  = r.trigger_type === 'rain';
+    var color   = isRain ? 'var(--blue)' : 'var(--orange)';
+    var icon    = isRain ? 'fa-cloud-rain' : 'fa-calendar-star';
+    return '<button class="btn-o btn-sm surge-manual-btn" data-trigger="' + r.trigger_type + '" data-mult="' + r.multiplier + '" ' +
+      'onclick="activateManualSurge(this)" style="gap:8px;border-color:' + color + ';color:' + color + '">' +
+      '<i class="fa ' + icon + '"></i> ' + r.label_ar +
+      ' <span style="font-size:10px;opacity:.7">× ' + r.multiplier + '</span></button>';
+  }).join('');
+  if (status) status.textContent = 'Chargé';
+}
+
+/* ── REFERRAL ───────────────────────────────────────────── */
+
+async function loadReferralTable() {
+  var tbody = document.getElementById('tbl-referrals');
+  if (!tbody) return;
+
+  if (!window._supabase) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);padding:20px;text-align:center">Connecter Supabase pour voir les données réelles</td></tr>';
+    return;
+  }
+
+  try {
+    var res = await window._supabase.rpc('rpc_dash_referrals', { p_limit: 100 });
+    var rows = res.data || [];
+
+    // KPIs
+    var total    = rows.length;
+    var rewarded = rows.filter(function (r) { return r.status === 'rewarded'; }).length;
+    var pending  = rows.filter(function (r) { return r.status === 'pending'; }).length;
+
+    // Count unique referrers with active discount (approximate via rewarded in last 30d)
+    var activeDisc = rows.filter(function (r) {
+      if (r.status !== 'rewarded' || !r.reward_at) return false;
+      return (Date.now() - new Date(r.reward_at).getTime()) < 30 * 86400000;
+    }).reduce(function (acc, r) { acc.add(r.referrer_id); return acc; }, new Set()).size;
+
+    var el = function (id) { return document.getElementById(id); };
+    if (el('ref-total'))      el('ref-total').textContent      = total;
+    if (el('ref-rewarded'))   el('ref-rewarded').textContent   = rewarded;
+    if (el('ref-pending'))    el('ref-pending').textContent    = pending;
+    if (el('ref-active-disc'))el('ref-active-disc').textContent= activeDisc;
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);padding:20px;text-align:center">Aucun parrainage enregistré</td></tr>';
+      return;
+    }
+
+    var statusBadge = function (s) {
+      if (s === 'rewarded')  return '<span class="badge b-online"><span class="badge-dot"></span>مكافأ</span>';
+      if (s === 'cancelled') return '<span class="badge b-offline">ملغى</span>';
+      return '<span class="badge b-pending">انتظار</span>';
+    };
+
+    tbody.innerHTML = '<thead><tr>' +
+      '<th>الكود</th><th>الراعي (Parrain)</th><th>الجديد (Filleul)</th>' +
+      '<th>الرحلات</th><th>الحالة</th><th>تاريخ المكافأة</th>' +
+    '</tr></thead><tbody>' +
+    rows.map(function (r) {
+      var progress = r.trips_done + ' / ' + r.trips_required;
+      var progPct  = Math.min(100, Math.round((r.trips_done / r.trips_required) * 100));
+      var progBar  = '<div style="background:var(--border);border-radius:4px;height:4px;width:80px;margin-top:4px">' +
+        '<div style="background:var(--gold);width:' + progPct + '%;height:4px;border-radius:4px"></div></div>';
+      return '<tr>' +
+        '<td><span class="pill text-gold fw7">' + (r.referral_code || '—') + '</span></td>' +
+        '<td style="font-weight:600">' + (r.referrer_name || '—') + '</td>' +
+        '<td>' + (r.referred_name || '—') + '</td>' +
+        '<td>' + progress + progBar + '</td>' +
+        '<td>' + statusBadge(r.status) + '</td>' +
+        '<td style="color:var(--text-muted);font-size:12px">' + (r.reward_at ? new Date(r.reward_at).toLocaleDateString('fr-DZ') : '—') + '</td>' +
+      '</tr>';
+    }).join('') + '</tbody>';
+  } catch (e) {
+    console.warn('[Referral] load error', e);
+    showToast('Erreur chargement parrainages', 'err');
+  }
+}
+
+async function activateManualSurge(btn) {
+  var trigger = btn.dataset.trigger;
+  var mult    = parseFloat(btn.dataset.mult) || 1.25;
+  var isActive = btn.classList.contains('surge-on');
+  try {
+    var res = await window._supabase.rpc('rpc_toggle_manual_surge', {
+      p_trigger_type: trigger,
+      p_city_id:      null,
+      p_multiplier:   mult,
+      p_reason:       btn.textContent.trim(),
+      p_ends_at:      null,
+    });
+    if (res.data) {
+      var action = res.data.action;
+      btn.classList.toggle('surge-on', action === 'activated');
+      btn.style.background = action === 'activated' ? 'var(--orange-dim,rgba(255,165,0,.15))' : '';
+      var status = document.getElementById('pricing-surge-status');
+      if (status) {
+        var active = document.querySelectorAll('.surge-on').length;
+        status.textContent = active > 0 ? active + ' surge(s) actif(s)' : 'Aucun surge manuel';
+        status.style.color = active > 0 ? 'var(--orange)' : 'var(--text-muted)';
+      }
+      showToast(action === 'activated' ? 'Surge activé ✓' : 'Surge désactivé');
+    }
+  } catch (e) {
+    console.error('[Surge] toggle error', e);
+    showToast('Erreur activation surge', 'err');
   }
 }
 

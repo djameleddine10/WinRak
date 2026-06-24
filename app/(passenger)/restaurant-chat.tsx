@@ -21,8 +21,9 @@ export default function RestaurantChat() {
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
 
-  const registered = useRestaurantStore((s) => s.registered)
-  const r = allRestaurants(registered).find((x) => x.id === id)
+  const registered  = useRestaurantStore((s) => s.registered)
+  const restaurants = useRestaurantStore((s) => s.restaurants)
+  const r = allRestaurants(registered, restaurants).find((x) => x.id === id)
   const chats = useRestaurantStore((s) => s.chats)
   const ensureChat = useRestaurantStore((s) => s.ensureChat)
   const sendMessage = useRestaurantStore((s) => s.sendMessage)

@@ -1,9 +1,10 @@
 import * as Google from 'expo-auth-session/providers/google'
 import * as WebBrowser from 'expo-web-browser'
+import { Platform } from 'react-native'
 import { supabase, UserRole } from '../lib/supabase'
 
-// Finalise any pending OAuth session when the app returns from the browser.
-WebBrowser.maybeCompleteAuthSession()
+// Only needed on web to close the OAuth popup — no-op on native.
+if (Platform.OS === 'web') WebBrowser.maybeCompleteAuthSession()
 
 // ─── GOOGLE AUTH ──────────────────────────────────────────────────────────────
 // Hook used inside login.tsx: returns the request/response/prompt triple.

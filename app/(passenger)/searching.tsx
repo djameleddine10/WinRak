@@ -9,7 +9,6 @@ import { Txt } from '../../components/ui/Txt'
 import { Button } from '../../components/ui/Button'
 import { RadarSearch } from '../../components/ui/RadarSearch'
 import { useRideStore } from '../../store/rideStore'
-import { mockRides } from '../../mock/rides'
 import { supabase } from '../../lib/supabase'
 import { subscribeToTripStatus } from '../../services/realtime.service'
 import { getTripDriverInfo } from '../../services/trips.service'
@@ -47,28 +46,59 @@ export default function Searching() {
     const channel = subscribeToTripStatus(currentTripId, async (trip) => {
       if (trip.status === 'accepted' && trip.driver_id) {
         const driverInfo = await getTripDriverInfo(trip.id).catch(() => null)
-        setCurrentRide({
-          ...mockRides[0],
-          id:       trip.trip_code ?? trip.id,
-          from:     from ?? mockRides[0].from,
-          to:       to   ?? mockRides[0].to,
-          price:    trip.price,
-          distance: trip.distance_km ?? mockRides[0].distance,
-          duration: trip.duration_min ?? mockRides[0].duration,
+        setCurrentRide(({
+          id:            trip.trip_code ?? trip.id,
+          rideType:      'city',
+          from:          from ?? { name: '', address: '', lat: 0, lng: 0 },
+          to:            to   ?? { name: '', address: '', lat: 0, lng: 0 },
+          price:         trip.price,
+          suggestedPrice: trip.price,
+          distance:      trip.distance_km  ?? 0,
+          duration:      trip.duration_min ?? 0,
+          status:        'accepted',
+          vehicleType:   'sedan',
+          paymentMethod: 'cash',
+          createdAt:     trip.created_at ?? new Date().toISOString(),
+          startedAt:     null,
+          completedAt:   null,
+          rating:        null,
+          driverEta:     null,
+          cancelReason:  null,
+          departureDate: null,
+          departureTime: null,
+          luggageAllowed: false,
+          passenger: { id: trip.passenger_id, name: '', nameLatin: '', firstName: '', lastName: '', avatar: '', phone: '', phoneMasked: '', email: '', rating: 5, totalRides: 0, gender: 'male' as const, birthDate: '', city: '', photoStatus: 'missing' as const, registrationStep: 1 as const, savedPlaces: { home: { name: '', address: '', lat: 0, lng: 0 }, work: { name: '', address: '', lat: 0, lng: 0 } }, wallet: { balance: 0, points: 0 }, paymentMethods: [], emergencyContacts: [] },
           driver: {
-            ...mockRides[0].driver,
-            id:      trip.driver_id,
-            name:    driverInfo?.full_name  ?? mockRides[0].driver.name,
-            phone:   driverInfo?.phone      ?? mockRides[0].driver.phone,
-            rating:  driverInfo?.rating     ?? mockRides[0].driver.rating,
+            id:          trip.driver_id,
+            name:        driverInfo?.full_name  ?? '',
+            nameLatin:   driverInfo?.full_name  ?? '',
+            avatar:      driverInfo?.full_name?.charAt(0) ?? '?',
+            phone:       driverInfo?.phone      ?? '',
+            rating:      driverInfo?.rating     ?? 0,
+            totalRides:  0,
+            isVerified:  true,
+            isSheDriver: false,
+            registrationStatus: 'approved' as const,
+            driverType:  'city' as const,
+            level:       'standard' as const,
             vehicle: {
-              ...mockRides[0].driver.vehicle,
-              brand: driverInfo?.vehicle_make  ?? mockRides[0].driver.vehicle.brand,
-              model: driverInfo?.vehicle_model ?? mockRides[0].driver.vehicle.model,
-              plate: driverInfo?.vehicle_plate ?? mockRides[0].driver.vehicle.plate,
+              type:     'sedan' as const,
+              brand:    driverInfo?.vehicle_make  ?? '',
+              model:    driverInfo?.vehicle_model ?? '',
+              modelKey: 'veh.m301' as const,
+              color:    driverInfo?.vehicle_color ?? '',
+              colorKey: 'veh.colorWhite' as const,
+              plate:    driverInfo?.vehicle_plate ?? '',
+              year:     0,
+              seats:    4,
             },
+            documents:  { licenseNumber: '', licenseExpiry: '', grayCardNumber: '', birthPlace: '' },
+            location:   { lat: 0, lng: 0 },
+            heading:    0,
+            isOnline:   true,
+            earnings:   { today: 0, week: 0, month: 0, platformShare: 0 },
           },
-        })
+        }) as any)
         setStatus('driver_found')
       } else if (trip.status === 'cancelled') {
         cancelRide()

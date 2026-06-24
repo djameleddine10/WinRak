@@ -357,6 +357,9 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
 .fw7{font-weight:700}.fw8{font-weight:800}
 .mb16{margin-bottom:16px}.mb20{margin-bottom:20px}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--text-muted)}
+.pill-inp{width:80px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;text-align:right;outline:none}
+.pill-inp:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(245,200,66,.15)}
+.surge-on{background:rgba(255,165,0,.15)!important;border-color:var(--orange)!important}
 
 @media(max-width:1280px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.g2,.g31,.g13{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}}
 @media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}}
@@ -439,11 +442,13 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
         <div class="nav-item" data-sec="passengers"><span class="nav-icon"><i class="fa fa-users"></i></span><span class="nav-label">Passagers</span></div>
         <div class="nav-item" data-sec="drivers"><span class="nav-icon"><i class="fa fa-car"></i></span><span class="nav-label">Chauffeurs</span></div>
         <div class="nav-item" data-sec="trips"><span class="nav-icon"><i class="fa fa-route"></i></span><span class="nav-label">Trajets</span></div>
+        <div class="nav-item" data-sec="dispatch"><span class="nav-icon"><i class="fa fa-tower-broadcast"></i></span><span class="nav-label">Répartition</span><span class="nav-badge" id="badge-dispatch" style="display:none;background:var(--blue);color:#fff">0</span></div>
         <div class="nav-item" data-sec="docs"><span class="nav-icon"><i class="fa fa-folder-open"></i></span><span class="nav-label">Vérif. documents</span><span class="nav-badge" id="badge-docs" style="background:var(--orange);color:#07090f">3</span></div>
       </div>
       <div class="nav-sec">
         <div class="nav-sec-label">Finance</div>
         <div class="nav-item" data-sec="finance"><span class="nav-icon"><i class="fa fa-coins"></i></span><span class="nav-label">Finances</span></div>
+        <div class="nav-item" data-sec="pricing"><span class="nav-icon"><i class="fa fa-tags"></i></span><span class="nav-label">التسعير</span></div>
       </div>
       <div class="nav-sec">
         <div class="nav-sec-label">Système</div>
@@ -515,7 +520,7 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
           </div>
           <div class="kpi purple">
             <div class="kpi-icon"><i class="fa fa-star"></i></div>
-            <div class="kpi-val">4.8</div>
+            <div class="kpi-val" id="k-rating">4.8</div>
             <div class="kpi-lbl">Note moyenne globale</div>
             <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +0.1</span>
           </div>
@@ -687,25 +692,71 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
         </div>
       </section>
 
+      <!-- ─── DISPATCH ──────────────────────── -->
+      <section class="sec" id="sec-dispatch">
+        <div class="sec-head"><h2>Répartition en direct</h2><p>File d'attente des offres et courses actives en temps réel</p></div>
+
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+          <div class="kpi blue" style="padding:14px 18px">
+            <div class="kpi-val" id="k-disp-pending" style="font-size:22px">—</div>
+            <div class="kpi-lbl">Offres en attente</div>
+          </div>
+          <div class="kpi green" style="padding:14px 18px">
+            <div class="kpi-val" id="k-disp-active" style="font-size:22px">—</div>
+            <div class="kpi-lbl">Courses en cours</div>
+          </div>
+          <div class="kpi gold" style="padding:14px 18px">
+            <div class="kpi-val" id="k-disp-refresh" style="font-size:13px;cursor:pointer" onclick="loadDispatchSection()">
+              <i class="fa fa-rotate"></i> Actualiser
+            </div>
+            <div class="kpi-lbl" id="k-disp-time">—</div>
+          </div>
+        </div>
+
+        <!-- Offres en attente -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <span class="card-title"><i class="fa fa-hourglass-half" style="color:var(--blue);margin-left:6px"></i> File de répartition — Offres pendantes</span>
+          </div>
+          <div class="tbl-wrap"><table id="tbl-dispatch-offers"></table></div>
+          <div id="disp-offers-empty" style="display:none;color:var(--text-muted);padding:24px;text-align:center;font-size:13px">
+            <i class="fa fa-circle-check" style="color:var(--success);font-size:28px;display:block;margin-bottom:8px"></i>
+            Aucune offre en attente — tous les chauffeurs disponibles
+          </div>
+        </div>
+
+        <!-- Courses actives -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><i class="fa fa-car-side" style="color:var(--success);margin-left:6px"></i> Courses actives</span>
+          </div>
+          <div class="tbl-wrap"><table id="tbl-dispatch-active"></table></div>
+          <div id="disp-active-empty" style="display:none;color:var(--text-muted);padding:24px;text-align:center;font-size:13px">
+            <i class="fa fa-moon" style="color:var(--text-faint);font-size:28px;display:block;margin-bottom:8px"></i>
+            Aucune course active pour le moment
+          </div>
+        </div>
+      </section>
+
       <!-- ─── FINANCE ────────────────────────── -->
       <section class="sec" id="sec-finance">
         <div class="sec-head"><h2>Gestion Financière</h2><p>Revenus, commissions et flux financiers de la plateforme</p></div>
         <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
           <div class="kpi gold">
             <div class="kpi-icon"><i class="fa fa-sack-dollar"></i></div>
-            <div class="kpi-val">2 847 500</div>
+            <div class="kpi-val" id="k-fin-ca">—</div>
             <div class="kpi-lbl">Chiffre d'affaires ce mois (DZD)</div>
             <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +15.3%</span>
           </div>
           <div class="kpi green">
             <div class="kpi-icon"><i class="fa fa-hand-holding-dollar"></i></div>
-            <div class="kpi-val">341 700</div>
-            <div class="kpi-lbl">Commission WinRak (12%) (DZD)</div>
+            <div class="kpi-val" id="k-fin-commission">—</div>
+            <div class="kpi-lbl">Commission WinRak (DZD)</div>
             <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +15.3%</span>
           </div>
           <div class="kpi blue">
             <div class="kpi-icon"><i class="fa fa-wallet"></i></div>
-            <div class="kpi-val">2 505 800</div>
+            <div class="kpi-val" id="k-fin-reversement">—</div>
             <div class="kpi-lbl">Reversé aux chauffeurs (DZD)</div>
             <span class="trend up"><i class="fa fa-arrow-trend-up"></i> +15.3%</span>
           </div>
@@ -726,6 +777,68 @@ select.s-select:focus{border-color:rgba(245,200,66,.35)}
             <button class="btn-o btn-sm"><i class="fa fa-file-arrow-down"></i> Exporter</button>
           </div>
           <div class="tbl-wrap"><table id="tbl-finance"></table></div>
+        </div>
+      </section>
+
+      <!-- ─── PRICING ENGINE ──────────────────── -->
+      <section class="sec" id="sec-pricing">
+        <div class="sec-head">
+          <h2>التسعير — Moteur de tarification</h2>
+          <p>Configure les tarifs par ville et par service · Toutes les modifications sont appliquées en temps réel</p>
+        </div>
+
+        <!-- Surge manual toggles -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <span class="card-title"><i class="fa fa-bolt" style="color:var(--gold)"></i> Surge actif — Activation manuelle</span>
+            <span id="pricing-surge-status" class="pill" style="background:var(--surface2);color:var(--text-muted);font-size:11px">Chargement…</span>
+          </div>
+          <div id="pricing-surge-manual" style="display:flex;gap:12px;flex-wrap:wrap;padding:4px 0"></div>
+        </div>
+
+        <!-- Surge auto config -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <span class="card-title"><i class="fa fa-clock" style="color:var(--blue)"></i> Surge automatique — Multiplicateurs</span>
+            <button class="btn-o btn-sm" onclick="saveSurgeConfig()"><i class="fa fa-floppy-disk"></i> Enregistrer</button>
+          </div>
+          <div id="pricing-surge-auto" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:4px 0"></div>
+        </div>
+
+        <!-- Service tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap" id="pricing-tabs">
+          <button class="btn-gold btn-sm pricing-tab active-tab" data-svc="ride"     onclick="switchPricingTab('ride')">    <i class="fa fa-car"></i> Trajet</button>
+          <button class="btn-o   btn-sm pricing-tab" data-svc="women"    onclick="switchPricingTab('women')">   <i class="fa fa-venus"></i> She</button>
+          <button class="btn-o   btn-sm pricing-tab" data-svc="delivery" onclick="switchPricingTab('delivery')"><i class="fa fa-box"></i> Livraison</button>
+          <button class="btn-o   btn-sm pricing-tab" data-svc="medicine" onclick="switchPricingTab('medicine')"><i class="fa fa-capsules"></i> Médecine</button>
+          <button class="btn-o   btn-sm pricing-tab" data-svc="food"     onclick="switchPricingTab('food')">    <i class="fa fa-utensils"></i> Restauration</button>
+        </div>
+
+        <!-- Per-service tier cards -->
+        <div id="pricing-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"></div>
+
+        <div style="margin-top:16px;display:flex;justify-content:flex-end">
+          <button class="btn-gold" onclick="savePricingConfig()"><i class="fa fa-floppy-disk"></i> Enregistrer la tarification</button>
+        </div>
+
+        <!-- Referral section -->
+        <div style="margin-top:28px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">
+            <i class="fa fa-user-plus" style="color:var(--gold)"></i> &nbsp;نظام الإحالة — Parrainage chauffeur
+          </div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="referral-kpis">
+            <div class="kpi gold"  style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-user-plus"></i></div><div class="kpi-val" id="ref-total">—</div><div class="kpi-lbl">إجمالي الإحالات</div></div>
+            <div class="kpi green" style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-circle-check"></i></div><div class="kpi-val" id="ref-rewarded">—</div><div class="kpi-lbl">مكافآت مُمنوحة</div></div>
+            <div class="kpi blue"  style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-clock"></i></div><div class="kpi-val" id="ref-pending">—</div><div class="kpi-lbl">في الانتظار</div></div>
+            <div class="kpi orange" style="padding:14px 18px"><div class="kpi-icon"><i class="fa fa-percent"></i></div><div class="kpi-val" id="ref-active-disc">—</div><div class="kpi-lbl">سائق يستفيد من خصم الآن</div></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">سجل الإحالات — Historique des parrainages</span>
+              <button class="btn-o btn-sm" onclick="loadReferralTable()"><i class="fa fa-rotate"></i> Actualiser</button>
+            </div>
+            <div class="tbl-wrap"><table id="tbl-referrals"></table></div>
+          </div>
         </div>
       </section>
 

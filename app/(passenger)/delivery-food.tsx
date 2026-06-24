@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -18,8 +18,12 @@ export default function DeliveryFood() {
   const t = useT()
 
   const styles = useMemo(() => makeStyles(Colors), [Colors])
-  const registered = useRestaurantStore((s) => s.registered)
-  const list = allRestaurants(registered)
+  const registered    = useRestaurantStore((s) => s.registered)
+  const restaurants   = useRestaurantStore((s) => s.restaurants)
+  const loadRestaurants = useRestaurantStore((s) => s.loadRestaurants)
+  const list = allRestaurants(registered, restaurants)
+
+  useEffect(() => { loadRestaurants() }, [])
 
   function open(r: Restaurant) {
     router.push({ pathname: '/(passenger)/restaurant', params: { id: r.id } })
