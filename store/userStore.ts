@@ -26,13 +26,13 @@ interface UserStore {
   phone:                   string
   profile:                 Record<string, any> | null
   currentCity:             string
-  rideMode:                'city' | 'intercity'
+  rideMode:                'city'
   photoStatus:             PhotoStatus
   photoUri:                string | null
   registrationStep:        number
   emergencyContacts:       EmergencyContact[]
   setMode:                 (mode: AppMode) => void
-  setRideMode:             (mode: 'city' | 'intercity') => void
+  setRideMode:             (mode: 'city') => void
   setCity:                 (city: string) => void
   setPhotoStatus:          (status: PhotoStatus) => void
   setPhotoUri:             (uri: string | null) => void

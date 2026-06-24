@@ -12,11 +12,10 @@ import { useSettingsStore, type Language } from '../../../store/settingsStore'
 import { useUserStore } from '../../../store/userStore'
 import { getMyTrips } from '../../../services/trips.service'
 
-type Filter = 'all' | 'city' | 'intercity'
+type Filter = 'all' | 'city'
 const FILTERS: { key: Filter; labelKey: TranslationKey }[] = [
   { key: 'all', labelKey: 'rides.filterAll' },
   { key: 'city', labelKey: 'drawer.city' },
-  { key: 'intercity', labelKey: 'drawer.intercity' },
 ]
 
 const MONTHS: Record<Language, string[]> = {
@@ -33,7 +32,7 @@ function dateLabel(iso: string, lang: Language) {
 type DisplayRide = {
   id:          string
   status:      string
-  rideType:    'city' | 'intercity'
+  rideType:    'city'
   vehicleType: string
   createdAt:   string
   to:          { name: string }
@@ -44,7 +43,7 @@ function dbToDisplay(trip: any): DisplayRide {
   return {
     id:          trip.id,
     status:      trip.status === 'cancelled' ? 'cancelled' : 'completed',
-    rideType:    trip.vehicle_type === 'intercites' ? 'intercity' : 'city',
+    rideType:    'city',
     vehicleType: trip.vehicle_type === 'she' ? 'she' : 'sedan',
     createdAt:   trip.created_at,
     to:          { name: trip.to_address ?? '' },

@@ -98,38 +98,6 @@ export const mockRides = [
     departureTime: null as string | null,
     luggageAllowed: false,
   },
-  {
-    id: 'WR-8810',
-    passenger: mockPassengers[0],
-    driver: mockDrivers[1],
-    rideType: 'intercity',
-    from: {
-      name: 'قسنطينة',
-      address: 'محطة القطار، قسنطينة',
-      lat: 36.3650, lng: 6.6147,
-    },
-    to: {
-      name: 'الجزائر العاصمة',
-      address: 'ساحة الشهداء، الجزائر',
-      lat: 36.7339, lng: 3.0508,
-    },
-    distance: 432,
-    duration: 300,
-    price: 2500,
-    suggestedPrice: 2400,
-    status: 'completed',
-    vehicleType: 'suv',
-    paymentMethod: 'cib',
-    departureDate: '2026-06-10' as string | null,
-    departureTime: '08:00' as string | null,
-    luggageAllowed: true,
-    createdAt: '2026-06-09T20:00:00',
-    startedAt: '2026-06-10T08:05:00',
-    completedAt: '2026-06-10T13:05:00',
-    rating: 4,
-    driverEta: null,
-    cancelReason: null as string | null,
-  },
 ]
 
 export type Ride = typeof mockRides[number]

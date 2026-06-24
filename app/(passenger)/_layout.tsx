@@ -14,7 +14,6 @@ export default function PassengerLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="search" />
       <Stack.Screen name="vehicle-select" />
-      <Stack.Screen name="intercity-booking" />
       <Stack.Screen name="packages" />
       <Stack.Screen name="delivery" />
       <Stack.Screen name="delivery-food" />

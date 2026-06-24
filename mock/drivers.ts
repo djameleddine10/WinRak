@@ -58,7 +58,7 @@ export const mockDrivers = [
     isVerified: true,
     isSheDriver: false,
     registrationStatus: 'approved',
-    driverType: 'intercity',
+    driverType: 'city',
     level: 'silver',
     vehicle: {
       type: 'suv',

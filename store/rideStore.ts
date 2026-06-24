@@ -7,7 +7,7 @@ export type RideStatus =
   | 'completed' | 'cancelled'
 
 export type VehicleType = 'sedan' | 'suv' | 'comfort' | 'van' | 'truck' | 'she'
-export type RideType    = 'city' | 'intercity'
+export type RideType    = 'city'
 
 export interface Location {
   name: string; address: string; lat: number; lng: number;

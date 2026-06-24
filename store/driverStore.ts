@@ -32,7 +32,7 @@ interface DriverStore {
   status:             DriverStatus
   registrationStatus: DriverRegistrationStatus
   registrationStep:   1 | 2 | 3
-  driverType:         'city' | 'intercity' | null
+  driverType:         'city' | null
   sheService:         boolean
   incomingRide:       typeof mockRides[0] | null
   activeRide:         typeof mockRides[0] | null
@@ -42,7 +42,7 @@ interface DriverStore {
   timerSeconds:       number
   formData:           DriverFormData
 
-  setDriverType:      (type: 'city' | 'intercity') => void
+  setDriverType:      (type: 'city') => void
   setSheService:      (val: boolean) => void
   setOnline:          () => void
   setRealTripId:      (id: string | null) => void

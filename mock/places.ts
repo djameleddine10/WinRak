@@ -11,15 +11,6 @@ export const mockPlaces = [
   { id: 'pl10', name: 'حديقة التجارب',           address: 'الحامة، الجزائر',       lat: 36.7280, lng: 3.0520, type: 'park'       },
 ]
 
-export const popularIntercityRoutes = [
-  { from: 'الجزائر', to: 'وهران',      distanceKm: 363, count: 22 },
-  { from: 'الجزائر', to: 'قسنطينة',    distanceKm: 432, count: 16 },
-  { from: 'الجزائر', to: 'عنابة',      distanceKm: 530, count: 11 },
-  { from: 'الجزائر', to: 'سطيف',       distanceKm: 296, count: 9  },
-  { from: 'الجزائر', to: 'بجاية',      distanceKm: 270, count: 8  },
-  { from: 'قسنطينة', to: 'عين مليلة',  distanceKm: 38,  count: 5  },
-  { from: 'قسنطينة', to: 'سكيكدة',     distanceKm: 88,  count: 5  },
-]
 
 export const recentPlaces = [mockPlaces[1], mockPlaces[0], mockPlaces[3]]
 

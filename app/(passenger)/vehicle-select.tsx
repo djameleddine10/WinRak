@@ -28,8 +28,8 @@ const DB_VEHICLE: Record<VehicleType, DbVehicleType> = {
   comfort: 'confort',
   she:     'she',
   suv:     'economique',
-  van:     'intercites',
-  truck:   'intercites',
+  van:     'economique',
+  truck:   'economique',
 }
 
 type VehicleOption = {
