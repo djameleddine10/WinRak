@@ -9,3 +9,7 @@ apk-host/
 
 .env.local
 .env
+
+# Firebase credentials — never commit
+winrak-push-firebase-adminsdk-*.json
+debug.keystore.bak
