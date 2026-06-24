@@ -14,11 +14,14 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { WebMap } from '../../components/map/WebMap'
 import { useDriverStore } from '../../store/driverStore'
+import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
 import { usePassengerName } from '../../i18n/locale'
 import { completeTrip } from '../../services/trips.service'
 import { getRouteInfo } from '../../services/route.service'
+import { updateDriverLocation } from '../../services/realtime.service'
 import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
+import * as Location from 'expo-location'
 
 export default function DriverRideActive() {
   const Colors = useColors()
@@ -30,6 +33,7 @@ export default function DriverRideActive() {
   const realTripId        = useDriverStore((s) => s.realTripId)
   const routeWaypoints    = useDriverStore((s) => s.routeWaypoints)
   const setRouteWaypoints = useDriverStore((s) => s.setRouteWaypoints)
+  const profile           = useUserStore((s) => s.profile)
   const [ended, setEnded] = useState(false)
   const [etaSec, setEtaSec] = useState<number | null>(null)
   const etaRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -38,6 +42,23 @@ export default function DriverRideActive() {
   const passengerName = usePassengerName()
 
   const { position, heading, progress } = useDriverRouteSimulator(routeWaypoints, !ended)
+
+  // Broadcast real GPS so the passenger sees live position
+  useEffect(() => {
+    if (!profile?.id || ended) return
+    let sub: Location.LocationSubscription | null = null
+    Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.Balanced, timeInterval: 4000, distanceInterval: 8 },
+      ({ coords }) => updateDriverLocation({
+        driverId: profile.id,
+        lat:      coords.latitude,
+        lng:      coords.longitude,
+        heading:  coords.heading ?? 0,
+        speed:    coords.speed   ?? 0,
+      }).catch(console.warn),
+    ).then((s) => { sub = s }).catch(console.warn)
+    return () => { sub?.remove() }
+  }, [profile?.id, ended])
 
   // Compute route from pickup to destination when ride starts
   useEffect(() => {

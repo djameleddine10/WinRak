@@ -12,8 +12,7 @@ import { Button } from '../../components/ui/Button'
 import { ActionRow } from '../../components/ride/ActionRow'
 import { WebMap } from '../../components/map/WebMap'
 import { useRideStore } from '../../store/rideStore'
-import { useRideSimulator } from '../../hooks/useRideSimulator'
-import { mockRoutePoints } from '../../mock/map'
+import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
 import { supabase } from '../../lib/supabase'
 import { subscribeToTripStatus, subscribeToDriverLocation } from '../../services/realtime.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
@@ -27,8 +26,9 @@ export default function RideActive() {
   const completeRide   = useRideStore((s) => s.completeRide)
   const currentTripId  = useRideStore((s) => s.currentTripId)
   const routeWaypoints = useRideStore((s) => s.routeWaypoints)
-  const { currentPoint, progress } = useRideSimulator(true)
   const [realDriverPos, setRealDriverPos] = useState<{ lat: number; lng: number; heading: number } | null>(null)
+  // Fallback: animate along the real OSRM route when no live GPS yet
+  const { position: simPos, heading: simHeading, progress } = useDriverRouteSimulator(routeWaypoints, !realDriverPos)
 
   // Real mode: subscribe to trip status — driver completing → navigate
   useEffect(() => {
@@ -42,10 +42,10 @@ export default function RideActive() {
     return () => { supabase.removeChannel(channel) }
   }, [currentTripId])
 
-  // Real mode: subscribe to driver's live position
+  // Subscribe to driver's live GPS position
   useEffect(() => {
     const driverId = ride?.driver?.id
-    if (!driverId || driverId === 'd001') return
+    if (!driverId) return
     const channel = subscribeToDriverLocation(driverId, (lat, lng, heading) => {
       setRealDriverPos({ lat, lng, heading })
     })
@@ -61,7 +61,7 @@ export default function RideActive() {
     }
   }, [progress, currentTripId])
 
-  const carPos = realDriverPos ?? { lat: currentPoint.lat, lng: currentPoint.lng, heading: 60 }
+  const carPos = realDriverPos ?? { lat: simPos.lat, lng: simPos.lng, heading: simHeading }
 
   if (!ride) return null
 
@@ -69,7 +69,7 @@ export default function RideActive() {
     <View style={styles.container}>
       <View style={styles.map}>
         <WebMap
-          route={routeWaypoints ?? mockRoutePoints}
+          route={routeWaypoints ?? []}
           markers={[
             { lat: carPos.lat, lng: carPos.lng, heading: carPos.heading, type: 'car' },
             { lat: ride.to.lat, lng: ride.to.lng, type: 'dest' },

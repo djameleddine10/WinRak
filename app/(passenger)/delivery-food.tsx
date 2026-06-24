@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -18,12 +18,15 @@ export default function DeliveryFood() {
   const t = useT()
 
   const styles = useMemo(() => makeStyles(Colors), [Colors])
-  const registered    = useRestaurantStore((s) => s.registered)
-  const restaurants   = useRestaurantStore((s) => s.restaurants)
+  const registered      = useRestaurantStore((s) => s.registered)
+  const restaurants     = useRestaurantStore((s) => s.restaurants)
   const loadRestaurants = useRestaurantStore((s) => s.loadRestaurants)
-  const list = allRestaurants(registered, restaurants)
+  const list            = allRestaurants(registered, restaurants)
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadRestaurants() }, [])
+  useEffect(() => {
+    loadRestaurants().finally(() => setLoading(false))
+  }, [])
 
   function open(r: Restaurant) {
     router.push({ pathname: '/(passenger)/restaurant', params: { id: r.id } })
@@ -45,8 +48,10 @@ export default function DeliveryFood() {
 
         <Txt size={12} color={Colors.muted} style={styles.section}>{t('food.nearby')}</Txt>
 
+        {loading && <ActivityIndicator color={Colors.gold} style={{ marginTop: Spacing.xl }} />}
+
         <View style={{ gap: Spacing.md }}>
-          {list.map((r) => (
+          {!loading && list.map((r) => (
             <Pressable key={r.id} onPress={() => open(r)}>
               <View style={styles.card}>
                 <View style={styles.thumb}><Icon name={r.icon} size={32} color={Colors.gold} /></View>

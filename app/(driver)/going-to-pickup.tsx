@@ -12,10 +12,12 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { WebMap } from '../../components/map/WebMap'
 import { useDriverStore } from '../../store/driverStore'
+import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
 import { usePassengerName } from '../../i18n/locale'
 import { startTrip } from '../../services/trips.service'
 import { getRouteInfo } from '../../services/route.service'
+import { updateDriverLocation } from '../../services/realtime.service'
 import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
 import { ALGIERS_CENTER } from '../../mock/map'
 import * as Location from 'expo-location'
@@ -29,6 +31,7 @@ export default function GoingToPickup() {
   const realTripId        = useDriverStore((s) => s.realTripId)
   const routeWaypoints    = useDriverStore((s) => s.routeWaypoints)
   const setRouteWaypoints = useDriverStore((s) => s.setRouteWaypoints)
+  const profile           = useUserStore((s) => s.profile)
   const [arrived, setArrived] = useState(false)
   const [etaSec, setEtaSec]   = useState<number | null>(null)
   const etaRef                = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -36,6 +39,23 @@ export default function GoingToPickup() {
   const passengerName = usePassengerName()
 
   const { position, heading } = useDriverRouteSimulator(routeWaypoints, !arrived)
+
+  // Broadcast real GPS to driver_locations so the passenger sees live position
+  useEffect(() => {
+    if (!profile?.id) return
+    let sub: Location.LocationSubscription | null = null
+    Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.Balanced, timeInterval: 4000, distanceInterval: 8 },
+      ({ coords }) => updateDriverLocation({
+        driverId: profile.id,
+        lat:      coords.latitude,
+        lng:      coords.longitude,
+        heading:  coords.heading ?? 0,
+        speed:    coords.speed   ?? 0,
+      }).catch(console.warn),
+    ).then((s) => { sub = s }).catch(console.warn)
+    return () => { sub?.remove() }
+  }, [profile?.id])
 
   // Compute route from driver's current GPS (or Algiers center fallback) to pickup
   useEffect(() => {

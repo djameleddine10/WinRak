@@ -29,8 +29,9 @@ const DAY_KEYS: TranslationKey[] = [
 export default function Earnings() {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
-  const driver  = useUserStore((s) => s.driver)
-  const profile = useUserStore((s) => s.profile)
+  const driver      = useUserStore((s) => s.driver)
+  const driverStats = useUserStore((s) => s.driverStats)
+  const profile     = useUserStore((s) => s.profile)
   const [period, setPeriod] = useState<Period>('today')
   const t = useT()
   const cur = t('common.currency')
@@ -62,12 +63,11 @@ export default function Earnings() {
     return r
   }, [txList])
 
-  const mockTotal = driver.earnings[period]
-  const total     = realTotals[period] > 0 ? realTotals[period] : mockTotal
-  const gross         = Math.round(total / 0.88)
+  const total         = realTotals[period]
+  const gross         = total > 0 ? Math.round(total / 0.88) : 0
   const platformShare = gross - total
 
-  // 7-day bar chart from real transactions (falls back to mock if no data)
+  // 7-day bar chart — real data only
   const last7Real = useMemo(() => {
     const now = Date.now()
     const day = 86_400_000
@@ -79,15 +79,18 @@ export default function Earnings() {
     return bars
   }, [txList])
 
-  const mockBars = [2100, 3500, 1800, 4200, 2900, 3800, driver.earnings.today]
-  const hasRealData = last7Real.some((v) => v > 0)
-  const values = hasRealData ? last7Real : mockBars
-  const maxV = Math.max(...values, 1)
+  const values = last7Real
+  const maxV   = Math.max(...values, 1)
 
-  const realTripCount = txList.length
+  // Ride count for the selected period
+  const realTripCount = useMemo(() => {
+    const cutoffs = { today: 1, week: 7, month: 30 }
+    const cutoff  = Date.now() - cutoffs[period] * 86_400_000
+    return txList.filter((tx) => new Date(tx.created_at).getTime() > cutoff).length
+  }, [txList, period])
 
   async function handleWithdraw() {
-    const balance = walletBalance ?? total
+    const balance = walletBalance ?? 0
     if (balance < 500) {
       Alert.alert(t('earnings.withdrawTitle'), t('earnings.withdrawMinError'))
       return
@@ -134,8 +137,7 @@ export default function Earnings() {
 
         <Card radius={14} leftAccent={Colors.gold}>
           <Txt size={12} color={Colors.muted}>{t('earnings.totalLabel')}</Txt>
-          <Txt weight="black" size={36}>{(walletBalance ?? total).toLocaleString('en-US')} {cur}</Txt>
-          <Txt size={13} color={Colors.gold}>{t('earnings.bonus', { n: '350', currency: cur })}</Txt>
+          <Txt weight="black" size={36}>{total.toLocaleString('en-US')} {cur}</Txt>
         </Card>
 
         <Card radius={14}>
@@ -148,10 +150,10 @@ export default function Earnings() {
         </Card>
 
         <View style={styles.grid}>
-          <Stat icon="car"          value={t('earnings.statRides',  { n: String(realTripCount || driver.stats.todayRides) })} />
-          <Stat icon="star"         value={t('earnings.statRating', { n: String(driver.rating) })} />
-          <Stat icon="clock-outline" value={t('earnings.statHours', { n: String(driver.stats.hoursOnline) })} />
-          <Stat icon="fire"         value={t('earnings.statPoints', { n: String(driver.stats.points) })} />
+          <Stat icon="car"          value={t('earnings.statRides',  { n: String(realTripCount) })} />
+          <Stat icon="star"         value={t('earnings.statRating', { n: (driverStats?.rating ?? driver.rating).toFixed(1) })} />
+          <Stat icon="cash"         value={t('earnings.statGross',  { n: gross.toLocaleString('en-US'), currency: cur })} />
+          <Stat icon="percent"      value={t('earnings.statShare',  { n: platformShare.toLocaleString('en-US'), currency: cur })} />
         </View>
 
         <Card radius={14}>
@@ -171,7 +173,7 @@ export default function Earnings() {
         </Card>
 
         <Button label={t('earnings.withdraw')} onPress={handleWithdraw} />
-        <Txt size={12} color={Colors.muted} center>{t('earnings.available', { n: total.toLocaleString('en-US'), currency: cur })}</Txt>
+        <Txt size={12} color={Colors.muted} center>{t('earnings.available', { n: (walletBalance ?? 0).toLocaleString('en-US'), currency: cur })}</Txt>
         <View style={{ height: 30 }} />
       </ScrollView>
     </View>
