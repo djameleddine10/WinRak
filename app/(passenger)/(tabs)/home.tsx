@@ -8,7 +8,6 @@ import { useColors } from '../../../hooks/useColors'
 import { Spacing } from '../../../constants/spacing'
 import { Txt } from '../../../components/ui/Txt'
 import { Icon } from '../../../components/ui/Icon'
-import { Card } from '../../../components/ui/Card'
 import { TopBar } from '../../../components/layout/TopBar'
 import { SideDrawer } from '../../../components/layout/SideDrawer'
 import { WebMap } from '../../../components/map/WebMap'
@@ -116,7 +115,7 @@ export default function Home() {
     } catch { /* GPS unavailable */ }
   }
   const sheetRef = useRef<BottomSheet>(null)
-  const snapPoints = useMemo(() => ['46%', '60%'], [])
+  const snapPoints = useMemo(() => ['42%', '58%'], [])
 
   function openCity() {
     setSheMode(false)
@@ -155,14 +154,14 @@ export default function Home() {
       />
 
       {errorMsg && (
-        <Pressable style={styles.gpsBanner}>
-          <Txt size={12} color={Colors.dark1}>⚠️ {errorMsg}</Txt>
-        </Pressable>
+        <View style={styles.gpsBanner}>
+          <Txt size={11} color={Colors.dark1}>⚠️ {errorMsg}</Txt>
+        </View>
       )}
 
-      {/* Locate-me button — floats above the BottomSheet at all times */}
+      {/* Locate-me — top-right corner of the map, out of the way */}
       <Pressable style={styles.locateBtn} onPress={locateMe}>
-        <Icon name="crosshairs-gps" size={22} color={Colors.dark1} />
+        <Icon name="crosshairs-gps" size={20} color={Colors.dark1} />
       </Pressable>
 
       <BottomSheet
@@ -174,50 +173,61 @@ export default function Home() {
       >
         <BottomSheetView style={styles.sheetContent}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-            <Txt weight="bold" size={22} style={{ marginTop: Spacing.sm }}>{t('home.greeting', { name: displayName })}</Txt>
 
+            {/* Greeting */}
+            <Txt weight="bold" size={18} style={{ marginTop: 2 }}>
+              {t('home.greeting', { name: displayName })}
+            </Txt>
+
+            {/* Photo warning — slim single line */}
             {photoStatus === 'missing' && (
               <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
-                <Txt size={12} color={Colors.white} style={{ flex: 1 }}>
-                  {t('home.photoWarn')}
-                </Txt>
-                <View style={styles.photoBtn}>
-                  <Txt size={11} color={Colors.dark1} weight="bold">{t('home.takePhoto')}</Txt>
-                </View>
+                <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
+                <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
+                <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
               </Pressable>
             )}
 
+            {/* Search bar */}
             <Pressable style={styles.search} onPress={openCity}>
-              <Icon name="magnify" size={18} color={Colors.muted} />
-              <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
+              <Icon name="magnify" size={16} color={Colors.muted} />
+              <Txt size={13} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
             </Pressable>
 
+            {/* Service cards — slim uniform rows */}
             <View style={styles.services}>
-              {/* ride card — city + integrated SHE half */}
-              <View style={styles.rideCard}>
-                <Pressable style={({ pressed }) => [styles.rideMain, pressed && styles.pressed]} onPress={openCity}>
-                  <View style={styles.rideIcon}><Icon name="car" size={30} color={Colors.gold} /></View>
-                  <View style={{ flex: 1 }}>
-                    <Txt weight="bold" size={16}>{t('service.ride')}</Txt>
-                    <Txt size={11} color={Colors.muted} style={{ marginTop: 2 }}>{t('service.rideSub')}</Txt>
-                  </View>
-                </Pressable>
-                <Pressable style={({ pressed }) => [styles.sheHalf, pressed && styles.pressed]} onPress={openShe}>
-                  <View style={styles.sheIcon}><Icon name="car" size={28} color={Colors.purple} /></View>
-                  <Txt weight="bold" size={13} color={Colors.purple} style={{ marginTop: 6 }}>{t('service.women')}</Txt>
-                  <Txt size={10} color={Colors.muted} style={{ marginTop: 1 }}>{t('service.womenOnly')}</Txt>
-                </Pressable>
-              </View>
-
-              {/* delivery card */}
-              <Card style={styles.deliveryCard} onPress={openDelivery}>
-                <View style={styles.deliveryIcon}><Icon name="package-variant" size={30} color={Colors.gold} /></View>
-                <View style={{ flex: 1 }}>
-                  <Txt weight="bold" size={16}>{t('service.delivery')}</Txt>
-                  <Txt size={11} color={Colors.muted} style={{ marginTop: 2 }}>{t('service.deliverySub')}</Txt>
+              <Pressable style={({ pressed }) => [styles.serviceRow, pressed && styles.pressed]} onPress={openCity}>
+                <View style={[styles.svcIcon, { backgroundColor: Colors.goldAlpha10 }]}>
+                  <Icon name="car" size={18} color={Colors.gold} />
                 </View>
-                <DirIcon name="chevron-right" size={22} color={Colors.muted} />
-              </Card>
+                <View style={{ flex: 1 }}>
+                  <Txt weight="bold" size={13}>{t('service.ride')}</Txt>
+                  <Txt size={10} color={Colors.muted}>{t('service.rideSub')}</Txt>
+                </View>
+                <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+              </Pressable>
+
+              <Pressable style={({ pressed }) => [styles.serviceRow, styles.serviceRowShe, pressed && styles.pressed]} onPress={openShe}>
+                <View style={[styles.svcIcon, { backgroundColor: Colors.purpleAlpha15 }]}>
+                  <Icon name="human-female" size={18} color={Colors.purple} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Txt weight="bold" size={13} color={Colors.purple}>{t('service.women')}</Txt>
+                  <Txt size={10} color={Colors.muted}>{t('service.womenOnly')}</Txt>
+                </View>
+                <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+              </Pressable>
+
+              <Pressable style={({ pressed }) => [styles.serviceRow, pressed && styles.pressed]} onPress={openDelivery}>
+                <View style={[styles.svcIcon, { backgroundColor: Colors.goldAlpha10 }]}>
+                  <Icon name="package-variant" size={18} color={Colors.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Txt weight="bold" size={13}>{t('service.delivery')}</Txt>
+                  <Txt size={10} color={Colors.muted}>{t('service.deliverySub')}</Txt>
+                </View>
+                <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+              </Pressable>
             </View>
 
             <View style={styles.recent}>
@@ -261,62 +271,65 @@ export default function Home() {
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
-    gpsBanner: { backgroundColor: '#e0a020', padding: Spacing.md, alignItems: 'center' },
+    gpsBanner: {
+      position: 'absolute', top: 56, left: 0, right: 0,
+      backgroundColor: '#c87700', paddingVertical: 6, paddingHorizontal: Spacing.md,
+      alignItems: 'center', zIndex: 5,
+    },
     locateBtn: {
-      position: 'absolute', bottom: '50%', right: Spacing.lg,
-      width: 44, height: 44, borderRadius: 22,
+      position: 'absolute', top: 130, right: Spacing.lg,
+      width: 40, height: 40, borderRadius: 20,
       backgroundColor: Colors.white,
       alignItems: 'center', justifyContent: 'center',
       elevation: 4,
       shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2, shadowRadius: 4,
+      shadowOpacity: 0.18, shadowRadius: 4,
       zIndex: 10,
     },
     sheetBg: { backgroundColor: Colors.dark2 },
-    handle: { backgroundColor: Colors.dark4, width: 32 },
+    handle: { backgroundColor: Colors.dark4, width: 36 },
     sheetContent: { flex: 1, paddingHorizontal: Spacing.screenPadding },
-    scrollBody: { paddingBottom: Spacing.lg },
+    scrollBody: { paddingBottom: Spacing.xl },
+
     photoWarn: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: 'row-reverse', alignItems: 'center', gap: 8,
       backgroundColor: Colors.goldAlpha10, borderRadius: Spacing.radiusMd,
-      borderWidth: 1, borderColor: Colors.gold,
-      padding: Spacing.md, marginTop: Spacing.md,
+      borderWidth: 1, borderColor: Colors.goldAlpha10,
+      paddingVertical: 8, paddingHorizontal: Spacing.md, marginTop: Spacing.sm,
     },
-    photoBtn: { backgroundColor: Colors.white, borderRadius: Spacing.radiusSm, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+
     search: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
-      height: 52, paddingHorizontal: Spacing.md, marginTop: Spacing.lg,
+      height: 46, paddingHorizontal: Spacing.md, marginTop: Spacing.sm,
     },
-    services: { gap: Spacing.lg, marginTop: Spacing.lg },
-    rideCard: {
-      flexDirection: 'row-reverse', alignItems: 'stretch',
-      backgroundColor: Colors.dark3, borderRadius: 16, overflow: 'hidden',
+
+    services: { gap: 8, marginTop: Spacing.md },
+    serviceRow: {
+      flexDirection: 'row-reverse', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.dark3, borderRadius: 14,
+      paddingVertical: 11, paddingHorizontal: 14,
     },
-    rideMain: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
-    sheHalf: {
-      width: 104, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: Colors.purpleAlpha15, borderRightWidth: 1, borderRightColor: Colors.border,
-      paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
+    serviceRowShe: {
+      backgroundColor: Colors.purpleAlpha15,
+      borderWidth: 1, borderColor: Colors.purpleAlpha15,
     },
-    sheIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.purpleAlpha15, alignItems: 'center', justifyContent: 'center' },
-    deliveryCard: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
-      backgroundColor: Colors.dark3, padding: Spacing.lg,
+    svcIcon: {
+      width: 36, height: 36, borderRadius: 10,
+      alignItems: 'center', justifyContent: 'center',
     },
-    rideIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
-    deliveryIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
-    recent: { marginTop: Spacing.lg },
+
+    recent: { marginTop: Spacing.md },
     recentTitle: { marginBottom: Spacing.sm, textAlign: 'right' },
     recentRow: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
       paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border,
     },
     recentIcon: {
-      width: 38, height: 38, borderRadius: 19,
+      width: 36, height: 36, borderRadius: 18,
       backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center',
     },
-    pressed: { opacity: 0.7 },
+    pressed: { opacity: 0.65 },
     recentEmpty: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
       paddingVertical: Spacing.md, opacity: 0.5,
