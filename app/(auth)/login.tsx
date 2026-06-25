@@ -47,7 +47,8 @@ export default function Login() {
   // land on profile-setup, existing users go to their role's home).
   useEffect(() => {
     if (response?.type !== 'success') return
-    const idToken = response.params?.id_token
+    const idToken = (response as any).authentication?.idToken
+                 ?? response.params?.id_token
     if (!idToken) return
     ;(async () => {
       setLoading(true)
