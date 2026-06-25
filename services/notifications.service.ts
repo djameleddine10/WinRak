@@ -11,21 +11,25 @@ const PROJECT_ID =
 // Foreground presentation: show a banner + list entry, play sound, bump badge.
 // (SDK 56 requires shouldShowBanner/shouldShowList; shouldShowAlert is the
 // deprecated alias kept for older native runtimes.)
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert:  true,
-    shouldShowBanner: true,
-    shouldShowList:   true,
-    shouldPlaySound:  true,
-    shouldSetBadge:   true,
-  }),
-})
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert:  true,
+      shouldShowBanner: true,
+      shouldShowList:   true,
+      shouldPlaySound:  true,
+      shouldSetBadge:   true,
+    }),
+  })
+} catch { /* native module unavailable in this build */ }
 
 // Registers this device's Expo push token for the signed-in user.
 // Safe to call on every app open. Returns the token, or null when running on a
 // simulator / without permission / on web.
 export async function registerPushToken(userId: string): Promise<string | null> {
-  if (Platform.OS === 'web' || !Device.isDevice) return null
+  let isPhysicalDevice = false
+  try { isPhysicalDevice = Device.isDevice } catch { /* native module missing */ }
+  if (Platform.OS === 'web' || !isPhysicalDevice) return null
 
   const { status: existing } = await Notifications.getPermissionsAsync()
   let finalStatus = existing

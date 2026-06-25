@@ -53,8 +53,6 @@ export function WebMap({
   const mapRef = useRef<MapView>(null)
   const dark   = scheme === 'dark'
 
-  const mapStyle: object[] = []
-
   // Smooth fly-to on locate button press
   useEffect(() => {
     if (!flyToLocation) return
@@ -85,7 +83,6 @@ export function WebMap({
         provider={PROVIDER_GOOGLE}
         style={FILL}
         initialRegion={zoomToRegion(center.lat, center.lng, zoom)}
-        customMapStyle={mapStyle}
         showsUserLocation={showUser}
         showsMyLocationButton={false}
         showsCompass={false}
