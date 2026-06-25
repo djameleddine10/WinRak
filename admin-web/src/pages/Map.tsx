@@ -131,36 +131,26 @@ export default function MapPage() {
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
-    const [{ data: driverData }, { data: rideData }] = await Promise.all([
-      supabase
-        .from('drivers')
-        .select(`
-          id, status, current_lat, current_lng, vehicle_type, vehicle_plate, rating,
-          profile:profiles!id(full_name, phone)
-        `)
-        .not('status', 'eq', 'pending'),
+    // Live GPS lives in driver_locations; active rides live in trips.
+    // Both are served by SECURITY DEFINER RPCs (see 20260625_map_live.sql)
+    // so they bypass RLS and return the coordinates the map needs.
+    const [{ data: driverData, error: dErr }, { data: tripData, error: tErr }] =
+      await Promise.all([
+        supabase.rpc('map_drivers'),
+        supabase.rpc('map_active_trips'),
+      ])
 
-      supabase
-        .from('rides')
-        .select(`
-          id, passenger_id, driver_id,
-          from_lat, from_lng, from_address,
-          to_lat, to_lng, to_address,
-          status, price, distance_km,
-          passenger:passengers!passenger_id(profile:profiles!id(full_name)),
-          driver:drivers!driver_id(profile:profiles!id(full_name))
-        `)
-        .in('status', ['accepted', 'in_progress']),
-    ])
+    if (dErr) console.warn('map_drivers:', dErr.message)
+    if (tErr) console.warn('map_active_trips:', tErr.message)
 
     setDrivers(
       (driverData ?? []).map((d: any) => ({
         id: d.id,
-        full_name: d.profile?.full_name ?? 'Chauffeur',
-        phone: d.profile?.phone ?? '—',
+        full_name: d.full_name ?? 'Chauffeur',
+        phone: d.phone ?? '—',
         status: d.status ?? 'offline',
-        current_lat: d.current_lat,
-        current_lng: d.current_lng,
+        current_lat: d.lat,
+        current_lng: d.lng,
         vehicle_type: d.vehicle_type,
         vehicle_plate: d.vehicle_plate,
         rating: d.rating,
@@ -168,7 +158,7 @@ export default function MapPage() {
     )
 
     setActiveRides(
-      (rideData ?? []).map((r: any) => ({
+      (tripData ?? []).map((r: any) => ({
         id: r.id,
         passenger_id: r.passenger_id,
         driver_id: r.driver_id,
@@ -181,8 +171,8 @@ export default function MapPage() {
         status: r.status,
         price: r.price,
         distance_km: r.distance_km,
-        passenger_name: r.passenger?.profile?.full_name ?? 'Passager',
-        driver_name: r.driver?.profile?.full_name ?? null,
+        passenger_name: r.passenger_name ?? 'Passager',
+        driver_name: r.driver_name ?? null,
       }))
     )
 
@@ -364,8 +354,9 @@ export default function MapPage() {
   useEffect(() => {
     const ch = supabase
       .channel('map-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' },   fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_locations' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' },          fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' },             fetchData)
       .subscribe((status) => setRealtimeOk(status === 'SUBSCRIBED'))
 
     return () => { supabase.removeChannel(ch) }

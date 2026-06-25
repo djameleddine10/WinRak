@@ -19,13 +19,13 @@
 
 /* Light */
 .light {
-  --bg:             241 242 246;    /* #F1F2F6 — gris très doux */
-  --surface:        255 255 255;    /* #FFFFFF */
-  --border-c:       218 220 229;    /* #DADCE5 */
-  --muted:          120 126 142;    /* #787E8E */
-  --text-primary:   15 20 35;       /* #0F1423 */
-  --text-secondary: 90  98 115;     /* #5A6273 */
-  --sidebar:        255 255 255;    /* #FFFFFF sidebar blanc */
+  --bg:             241 242 246;
+  --surface:        255 255 255;
+  --border-c:       218 220 229;
+  --muted:          120 126 142;
+  --text-primary:   15 20 35;
+  --text-secondary: 90 98 115;
+  --sidebar:        255 255 255;
 }
 
 /* ── RTL layout ──────────────────────────────────────────────────────────── */
@@ -163,21 +163,19 @@
 
 /* ── Light mode overrides ────────────────────────────────────────────────── */
 
-.light body                  { background-color: #F1F2F6; }
-.light .btn-secondary        { background-color: #FFFFFF; border-color: #DADCE5; }
-.light .btn-secondary:hover  { background-color: #F5F6FA; }
-.light .glass-card           { background-color: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.08); }
-.light .table-header         { background-color: #F8F9FB; color: #5A6273; }
-.light .table-cell           { border-color: #E8EAF0; }
-.light .input-field          { background-color: #FFFFFF; border-color: #DADCE5; color: #0F1423; }
-.light .stat-card            { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-.light .watermark            { color: #6366F1; }
-.light ::-webkit-scrollbar-track { background: #F1F2F6; }
-.light ::-webkit-scrollbar-thumb { background: #C5C8D4; }
+.light body                             { background-color: #F1F2F6; }
+.light .btn-secondary                   { background-color: #FFFFFF; border-color: #DADCE5; }
+.light .btn-secondary:hover             { background-color: #F5F6FA; }
+.light .glass-card                      { background-color: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.08); }
+.light .table-header                    { background-color: #F8F9FB; color: #5A6273; }
+.light .table-cell                      { border-color: #E8EAF0; }
+.light .input-field                     { background-color: #FFFFFF; border-color: #DADCE5; color: #0F1423; }
+.light .stat-card                       { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.light .watermark                       { color: #6366F1; }
+.light ::-webkit-scrollbar-track       { background: #F1F2F6; }
+.light ::-webkit-scrollbar-thumb       { background: #C5C8D4; }
 .light ::-webkit-scrollbar-thumb:hover { background: #A0A4B2; }
-
-/* Sidebar light */
-.light aside.winrak-sidebar  {
+.light aside.winrak-sidebar {
   background-color: #FFFFFF !important;
   border-right: 1px solid #DADCE5;
   box-shadow: 2px 0 12px rgba(0,0,0,0.06);
