@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dimensions, Pressable, StyleSheet, View } from 'react-native'
+import { Animated, Dimensions, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -40,13 +40,26 @@ export default function DriverHome() {
   const setRealTripId     = useDriverStore((s) => s.setRealTripId)
   const setOfferId        = useDriverStore((s) => s.setOfferId)
   const simulateRequest   = useDriverStore((s) => s.simulateRequest)
+  const driverStats     = useUserStore((s) => s.driverStats)
+  const driverMock      = useUserStore((s) => s.driver)
   const channelRef      = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const locationSubRef  = useRef<{ remove: () => void } | null>(null)
+  const pulseAnim       = useRef(new Animated.Value(1)).current
   const [drawer, setDrawer] = useState(false)
   const t = useT()
 
   const online = status !== 'offline'
   const requestOpen = useRef(false)
+
+  // Pulse animation on the toggle when going online
+  useEffect(() => {
+    if (online) {
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 150, useNativeDriver: true }),
+        Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: true, friction: 4 }),
+      ]).start()
+    }
+  }, [online])
 
   // The radar is the live link to passengers: when a request lands, open the
   // request modal exactly once. The guard prevents stacking duplicate modals if
@@ -167,17 +180,20 @@ export default function DriverHome() {
           <Icon name="menu" size={26} color={Colors.white} />
         </Pressable>
 
-        <Pressable
-          onPress={handleToggle}
-          style={[styles.toggle, { backgroundColor: online ? Colors.success : Colors.danger }]}
-        >
-          <Icon name={online ? 'access-point' : 'power'} size={16} color={Colors.pureWhite} />
-          <Txt weight="bold" size={15} color={Colors.pureWhite}>{online ? t('driver.online') : t('driver.offline')}</Txt>
-        </Pressable>
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <Pressable
+            onPress={handleToggle}
+            style={[styles.toggle, { backgroundColor: online ? Colors.success : Colors.dark3 }]}
+          >
+            <Icon name={online ? 'access-point' : 'power'} size={16} color={online ? Colors.pureWhite : Colors.muted} />
+            <Txt weight="bold" size={15} color={online ? Colors.pureWhite : Colors.muted}>
+              {online ? t('driver.online') : t('driver.offline')}
+            </Txt>
+          </Pressable>
+        </Animated.View>
 
         <Pressable onPress={() => router.push('/(passenger)/settings')} style={styles.iconBtn} hitSlop={8}>
           <Icon name="cog" size={24} color={Colors.white} />
-          <View style={styles.gearDot} />
         </Pressable>
       </View>
 
@@ -205,13 +221,33 @@ export default function DriverHome() {
             style={styles.devBtn}
             hitSlop={8}
           >
-            <Txt size={12} color={Colors.dark1} weight="bold">⚡ محاكاة طلب</Txt>
+            <Txt size={12} color={Colors.dark1} weight="bold">محاكاة طلب</Txt>
           </Pressable>
         )}
       </View>
 
+      {/* Daily stats bar */}
+      <View style={styles.statsBar}>
+        <StatChip icon="car-multiple" label={t('driver.todayRides')} value={String(driverMock.stats.todayRides)} />
+        <View style={styles.statsDivider} />
+        <StatChip icon="clock-outline" label={t('driver.hoursOnline')} value={`${driverMock.stats.hoursOnline}h`} />
+        <View style={styles.statsDivider} />
+        <StatChip icon="cash" label={t('driver.todayIncome')} value={`${(driverMock.earnings.today).toLocaleString('en-US')}`} gold />
+      </View>
+
       <DriverTabBar active="orders" />
       <SideDrawer visible={drawer} onClose={() => setDrawer(false)} />
+    </View>
+  )
+}
+
+function StatChip({ icon, label, value, gold }: { icon: string; label: string; value: string; gold?: boolean }) {
+  const Colors = useColors()
+  return (
+    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+      <Icon name={icon} size={18} color={gold ? Colors.gold : Colors.muted} />
+      <Txt weight="bold" size={16} color={gold ? Colors.gold : Colors.white}>{value}</Txt>
+      <Txt size={11} color={Colors.muted}>{label}</Txt>
     </View>
   )
 }
@@ -237,7 +273,13 @@ function makeStyles(Colors: Palette) {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
       borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.xl, paddingVertical: 10,
     },
-    gearDot: { position: 'absolute', top: 2, right: 2, width: 9, height: 9, borderRadius: 5, backgroundColor: Colors.danger },
+    statsBar: {
+      flexDirection: 'row-reverse', alignItems: 'center',
+      backgroundColor: Colors.dark2, marginHorizontal: Spacing.screenPadding,
+      borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md,
+      marginBottom: Spacing.sm,
+    },
+    statsDivider: { width: 1, height: 32, backgroundColor: Colors.dark3 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     sheBadge: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.purpleAlpha15, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 6, marginBottom: Spacing.lg },
     statusText: { marginBottom: Spacing.xxl, paddingHorizontal: Spacing.xl },

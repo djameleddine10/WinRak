@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { Animated, ScrollView, StyleSheet, View } from 'react-native'
+import { Animated, Share, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -10,6 +10,7 @@ import { Spacing } from '../../constants/spacing'
 import { Txt } from '../../components/ui/Txt'
 import { Icon } from '../../components/ui/Icon'
 import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
 import { Divider } from '../../components/ui/Divider'
 import { useRideStore } from '../../store/rideStore'
 import { useDriverName } from '../../i18n/locale'
@@ -21,7 +22,8 @@ export default function RideCompleted() {
   const distanceUnit = useSettingsStore((s) => s.distanceUnit)
   const ride = useRideStore((s) => s.currentRide)
   const driverName = useDriverName()
-  const scale = useRef(new Animated.Value(0)).current
+  const scale   = useRef(new Animated.Value(0)).current
+  const opacity = useRef(new Animated.Value(0)).current
 
   const paymentLabels: Record<string, string> = useMemo(
     () => ({ baridimob: 'BaridiMob', cash: t('payment.cash'), wallet: t('payment.wallet') }),
@@ -29,16 +31,26 @@ export default function RideCompleted() {
   )
 
   useEffect(() => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5 }).start()
-    const timer = setTimeout(() => router.replace('/(passenger)/rating'), 1500)
+    Animated.parallel([
+      Animated.spring(scale,   { toValue: 1, useNativeDriver: true, friction: 5 }),
+      Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+    ]).start()
+    const timer = setTimeout(() => router.replace('/(passenger)/rating'), 3000)
     return () => clearTimeout(timer)
   }, [])
+
+  async function handleShare() {
+    if (!ride) return
+    await Share.share({
+      message: `رحلتي مع WinRak: ${ride.from.address} ← ${ride.to.address} | ${ride.price} ${t('common.currency')}`,
+    })
+  }
 
   if (!ride) return null
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Animated.View style={[styles.check, { transform: [{ scale }] }]}>
+      <Animated.View style={[styles.check, { transform: [{ scale }], opacity }]}>
         <Icon name="check-circle" size={64} color={Colors.success} />
       </Animated.View>
       <Txt weight="black" size={22} center>{t('rideCompleted.title')}</Txt>
@@ -57,6 +69,13 @@ export default function RideCompleted() {
         <Row icon="credit-card" label={t('rideCompleted.payment')} value={paymentLabels[ride.paymentMethod] ?? ride.paymentMethod} />
       </Card>
 
+      <View style={{ height: Spacing.xl }} />
+      <Button
+        label={t('rideCompleted.share')}
+        icon="share-variant"
+        variant="outline"
+        onPress={handleShare}
+      />
       <Txt size={14} color={Colors.muted} center style={{ marginTop: Spacing.xl }}>{t('rating.howWas')}</Txt>
     </ScrollView>
   )
