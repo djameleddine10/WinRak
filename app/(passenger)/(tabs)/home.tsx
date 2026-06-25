@@ -136,6 +136,16 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
+      {/* Map fills the entire screen — all UI floats on top */}
+      <WebMap
+        showUser
+        variant="explore"
+        flyToLocation={flyTarget}
+        markers={mapDrivers
+          .filter((d) => d.isOnline)
+          .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
+      />
+
       <TopBar
         showMenu
         onMenu={() => setDrawerOpen(true)}
@@ -149,17 +159,6 @@ export default function Home() {
           <Txt size={12} color={Colors.dark1}>⚠️ {errorMsg}</Txt>
         </Pressable>
       )}
-
-      <View style={styles.mapWrap}>
-        <WebMap
-          showUser
-          variant="explore"
-          flyToLocation={flyTarget}
-          markers={mapDrivers
-            .filter((d) => d.isOnline)
-            .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
-        />
-      </View>
 
       {/* Locate-me button — floats above the BottomSheet at all times */}
       <Pressable style={styles.locateBtn} onPress={locateMe}>
@@ -263,7 +262,6 @@ function makeStyles(Colors: Palette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     gpsBanner: { backgroundColor: '#e0a020', padding: Spacing.md, alignItems: 'center' },
-    mapWrap: { flex: 1 },
     locateBtn: {
       position: 'absolute', bottom: '50%', right: Spacing.lg,
       width: 44, height: 44, borderRadius: 22,

@@ -43,7 +43,7 @@ export function WebMap({
   route    = [],
   showUser = false,
   flyToLocation,
-  variant  = 'navigation',
+  variant: _variant = 'navigation',
   style,
   onRegionChange,
   onRegionChangeComplete,
