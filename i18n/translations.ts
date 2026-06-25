@@ -391,6 +391,9 @@ const ar = {
   // Searching for driver
   'searching.title': 'جاري البحث عن سائق...',
   'searching.sub': 'نبحث عن أقرب سائق لك',
+  'searching.radius1': 'نبحث في نطاق 1 كم',
+  'searching.radius2': 'نوسّع النطاق إلى 2 كم',
+  'searching.radius3': 'نوسّع النطاق إلى 5 كم',
   'searching.offered': 'عرضت: {price} {currency}',
   'searching.editOffer': 'تعديل العرض',
   'searching.cancel': 'إلغاء الطلب',
@@ -1170,6 +1173,9 @@ const fr: Record<TranslationKey, string> = {
   // Searching for driver
   'searching.title': "Recherche d'un chauffeur…",
   'searching.sub': 'Nous cherchons le chauffeur le plus proche',
+  'searching.radius1': 'Recherche dans un rayon de 1 km',
+  'searching.radius2': 'Élargissement du rayon à 2 km',
+  'searching.radius3': 'Élargissement du rayon à 5 km',
   'searching.offered': 'Proposé : {price} {currency}',
   'searching.editOffer': "Modifier l'offre",
   'searching.cancel': 'Annuler la demande',
@@ -1947,6 +1953,9 @@ const en: Record<TranslationKey, string> = {
   // Searching for driver
   'searching.title': 'Searching for a driver…',
   'searching.sub': 'Looking for the nearest driver',
+  'searching.radius1': 'Searching within 1 km',
+  'searching.radius2': 'Expanding radius to 2 km',
+  'searching.radius3': 'Expanding radius to 5 km',
   'searching.offered': 'Offered: {price} {currency}',
   'searching.editOffer': 'Edit offer',
   'searching.cancel': 'Cancel request',

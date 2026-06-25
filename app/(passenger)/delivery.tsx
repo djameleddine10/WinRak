@@ -41,6 +41,7 @@ const SERVICES: ServiceDef[] = [
     icon: 'silverware-fork-knife',
     accent: (c) => c.gold,
     tint: (c) => c.goldAlpha15,
+    badge: { label: 'قريباً', variant: 'gold' as const },
   },
   {
     service: 'parcel',

@@ -175,7 +175,7 @@ export default function Home() {
       >
         <BottomSheetView style={styles.sheetContent}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-            <Txt weight="bold" size={18}>{t('home.greeting', { name: displayName })}</Txt>
+            <Txt weight="bold" size={22} style={{ marginTop: Spacing.sm }}>{t('home.greeting', { name: displayName })}</Txt>
 
             {photoStatus === 'missing' && (
               <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
@@ -221,12 +221,16 @@ export default function Home() {
               </Card>
             </View>
 
-            {recentDestinations.length > 0 && (
-              <View style={styles.recent}>
-                <Txt weight="bold" size={14} color={Colors.muted} style={styles.recentTitle}>
-                  {t('home.recentTitle')}
-                </Txt>
-                {recentDestinations.map((d) => (
+            <View style={styles.recent}>
+              <Txt weight="bold" size={14} color={Colors.muted} style={styles.recentTitle}>
+                {t('home.recentTitle')}
+              </Txt>
+              {recentDestinations.length === 0 ? (
+                <View style={styles.recentEmpty}>
+                  <Icon name="map-marker-off-outline" size={22} color={Colors.dark4} />
+                  <Txt size={13} color={Colors.dark4}>{t('home.searchPlaceholder')}</Txt>
+                </View>
+              ) : recentDestinations.map((d) => (
                   <Pressable
                     key={d.name}
                     style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
@@ -243,9 +247,8 @@ export default function Home() {
                     </View>
                     <DirIcon name="chevron-right" size={20} color={Colors.dark4} />
                   </Pressable>
-                ))}
-              </View>
-            )}
+              ))}
+            </View>
 
           </ScrollView>
         </BottomSheetView>
@@ -277,7 +280,8 @@ function makeStyles(Colors: Palette) {
     scrollBody: { paddingBottom: Spacing.lg },
     photoWarn: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
-      backgroundColor: Colors.dangerAlpha10, borderRadius: Spacing.radiusMd,
+      backgroundColor: Colors.goldAlpha10, borderRadius: Spacing.radiusMd,
+      borderWidth: 1, borderColor: Colors.gold,
       padding: Spacing.md, marginTop: Spacing.md,
     },
     photoBtn: { backgroundColor: Colors.white, borderRadius: Spacing.radiusSm, paddingHorizontal: Spacing.md, paddingVertical: 6 },
@@ -315,5 +319,9 @@ function makeStyles(Colors: Palette) {
       backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center',
     },
     pressed: { opacity: 0.7 },
+    recentEmpty: {
+      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      paddingVertical: Spacing.md, opacity: 0.5,
+    },
   })
 }

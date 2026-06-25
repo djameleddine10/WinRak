@@ -30,11 +30,19 @@ export default function Searching() {
   // Real mode: Supabase dispatch has no fixed countdown, so we animate a cycling
   // progress bar (30 s cycles) so the screen doesn't feel frozen.
   const [realTimer, setRealTimer] = useState(30)
+  const [radiusPhase, setRadiusPhase] = useState(0) // 0=1km, 1=2km, 2=5km
   useEffect(() => {
     if (!currentTripId) return
     setRealTimer(30)
+    setRadiusPhase(0)
     const iv = setInterval(() => {
-      setRealTimer((s) => s <= 1 ? 30 : s - 1)
+      setRealTimer((s) => {
+        if (s <= 1) {
+          setRadiusPhase((p) => Math.min(p + 1, 2))
+          return 30
+        }
+        return s - 1
+      })
     }, 1000)
     return () => clearInterval(iv)
   }, [currentTripId])
@@ -123,7 +131,11 @@ export default function Searching() {
       <View style={styles.card}>
         <RadarSearch size={260} />
         <Txt weight="bold" size={16} center style={{ marginTop: Spacing.lg }}>{t('searching.title')}</Txt>
-        <Txt size={13} color={Colors.muted} center style={{ marginTop: 4 }}>{t('searching.sub')}</Txt>
+        <Txt size={13} color={Colors.muted} center style={{ marginTop: 4 }}>
+          {currentTripId
+            ? t(radiusPhase === 0 ? 'searching.radius1' : radiusPhase === 1 ? 'searching.radius2' : 'searching.radius3')
+            : t('searching.sub')}
+        </Txt>
         <Txt weight="bold" size={18} color={Colors.gold} center style={{ marginTop: Spacing.md }}>
           {t('searching.offered', { price: offeredPrice.toLocaleString('en-US'), currency: t('common.currency') })}
         </Txt>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import Svg, { Rect } from 'react-native-svg'
@@ -125,12 +125,11 @@ export default function Login() {
 
         <View style={{ height: Spacing.lg }} />
         <Button
-          label={loading ? '' : t('login.continue')}
-          icon={loading ? undefined : undefined}
+          label={t('login.continue')}
           onPress={handleContinue}
           disabled={loading || phone.trim().length < 9}
+          loading={loading}
         />
-        {loading && <ActivityIndicator color={Colors.gold} style={{ marginTop: 8 }} />}
 
         <Divider label={t('login.or')} />
 
