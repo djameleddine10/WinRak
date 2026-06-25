@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import { supabase } from '../lib/supabase'
 import { RefreshCw, Car, Users, Route, Wifi, WifiOff } from 'lucide-react'
 
@@ -184,25 +184,33 @@ export default function MapPage() {
 
   useEffect(() => {
     if (!containerRef.current) return
-    const loader = new Loader({ apiKey: GMAP_KEY, version: 'weekly' })
-    loader.load().then((google) => {
-      const map = new google.maps.Map(containerRef.current!, {
-        center: ALGERIA,
-        zoom: 6,
-        styles: DARK_STYLE,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: true,
-        zoomControl: true,
-        backgroundColor: '#111118',
+    let cancelled = false
+
+    // Loader v2 functional API: setOptions() once, then importLibrary().
+    // Load 'maps' (Map, Marker, Polyline, InfoWindow) + 'core' (Size, Point,
+    // LatLngBounds, event) so the google.maps.* globals used below are ready.
+    setOptions({ key: GMAP_KEY, v: 'weekly' })
+    Promise.all([importLibrary('maps'), importLibrary('core')])
+      .then(([{ Map, InfoWindow }]) => {
+        if (cancelled || !containerRef.current) return
+        const map = new Map(containerRef.current, {
+          center: ALGERIA,
+          zoom: 6,
+          styles: DARK_STYLE,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+          zoomControl: true,
+          backgroundColor: '#111118',
+        })
+        mapRef.current = map
+        infoRef.current = new InfoWindow({ maxWidth: 280 })
+        setMapReady(true)
       })
-      mapRef.current = map
-      infoRef.current = new google.maps.InfoWindow({
-        maxWidth: 280,
-      })
-      setMapReady(true)
-    })
+      .catch((e) => console.error('Google Maps load failed:', e))
+
     fetchData()
+    return () => { cancelled = true }
   }, [fetchData])
 
   // ── Update driver markers ──────────────────────────────────────────────────
