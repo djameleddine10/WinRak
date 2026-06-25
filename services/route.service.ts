@@ -1,5 +1,4 @@
-// ─── حساب المسافة والوقت الحقيقيين عبر OSRM (OpenStreetMap) ──────────────────
-// لا يحتاج مفتاح API — مجاني تماماً ويغطي الجزائر بشكل كامل.
+const GMAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? ''
 
 export interface RouteInfo {
   distanceKm:  number
@@ -11,11 +10,14 @@ export async function getRouteInfo(
   fromLat: number,
   fromLng: number,
   toLat:   number,
-  toLng:   number
+  toLng:   number,
 ): Promise<RouteInfo> {
   const url =
-    `https://router.project-osrm.org/route/v1/driving/` +
-    `${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`
+    `https://maps.googleapis.com/maps/api/directions/json` +
+    `?origin=${fromLat},${fromLng}` +
+    `&destination=${toLat},${toLng}` +
+    `&mode=driving` +
+    `&key=${GMAPS_KEY}`
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 8000)
@@ -25,20 +27,18 @@ export async function getRouteInfo(
     clearTimeout(timer)
     const data = await res.json()
 
-    if (data.code !== 'Ok' || !data.routes?.length) {
-      throw new Error('OSRM: no route found')
+    if (data.status !== 'OK' || !data.routes?.length) {
+      throw new Error(`Google Maps: ${data.status ?? 'no route found'}`)
     }
 
-    const route  = data.routes[0]
-    const coords: number[][] = route.geometry.coordinates  // [[lng, lat], ...]
-
-    // Sample to max 120 points to avoid overloading the map renderer
-    const waypoints = sampleCoords(coords, 120)
+    const leg      = data.routes[0].legs[0]
+    const polyline = data.routes[0].overview_polyline.points
+    const coords   = decodePolyline(polyline)
 
     return {
-      distanceKm:  Math.round(route.distance / 100) / 10,
-      durationMin: Math.max(1, Math.round(route.duration / 60)),
-      waypoints,
+      distanceKm:  Math.round(leg.distance.value / 100) / 10,
+      durationMin: Math.max(1, Math.round(leg.duration.value / 60)),
+      waypoints:   samplePoints(coords, 120),
     }
   } catch {
     clearTimeout(timer)
@@ -46,21 +46,48 @@ export async function getRouteInfo(
   }
 }
 
-function sampleCoords(coords: number[][], maxPoints: number): Array<{ lat: number; lng: number }> {
-  if (coords.length <= maxPoints) return coords.map(([lng, lat]) => ({ lat, lng }))
-  const step = Math.ceil(coords.length / maxPoints)
-  const result: Array<{ lat: number; lng: number }> = []
-  for (let i = 0; i < coords.length - 1; i += step) {
-    const [lng, lat] = coords[i]
-    result.push({ lat, lng })
+// ─── Google Maps encoded polyline decoder ────────────────────────────────────
+function decodePolyline(encoded: string): Array<{ lat: number; lng: number }> {
+  const points: Array<{ lat: number; lng: number }> = []
+  let index = 0, lat = 0, lng = 0
+
+  while (index < encoded.length) {
+    let shift = 0, result = 0, byte: number
+    do {
+      byte = encoded.charCodeAt(index++) - 63
+      result |= (byte & 0x1f) << shift
+      shift += 5
+    } while (byte >= 0x20)
+    lat += (result & 1) ? ~(result >> 1) : result >> 1
+
+    shift = 0; result = 0
+    do {
+      byte = encoded.charCodeAt(index++) - 63
+      result |= (byte & 0x1f) << shift
+      shift += 5
+    } while (byte >= 0x20)
+    lng += (result & 1) ? ~(result >> 1) : result >> 1
+
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 })
   }
-  const [lastLng, lastLat] = coords[coords.length - 1]
-  result.push({ lat: lastLat, lng: lastLng })
+  return points
+}
+
+function samplePoints(
+  points: Array<{ lat: number; lng: number }>,
+  maxPoints: number,
+): Array<{ lat: number; lng: number }> {
+  if (points.length <= maxPoints) return points
+  const step   = Math.ceil(points.length / maxPoints)
+  const result = points.filter((_, i) => i % step === 0)
+  if (result[result.length - 1] !== points[points.length - 1]) {
+    result.push(points[points.length - 1])
+  }
   return result
 }
 
-// ─── سعر تقريبي بالدينار الجزائري بناءً على المسافة ─────────────────────────
-const BASE = 150          // رسوم أساسية DZD
+// ─── تقدير السعر بالدينار الجزائري ───────────────────────────────────────────
+const BASE = 150
 const PER_KM: Record<string, number> = {
   sedan:   80,
   comfort: 100,
@@ -72,5 +99,5 @@ const PER_KM: Record<string, number> = {
 
 export function estimatePrice(vehicleType: string, distanceKm: number): number {
   const perKm = PER_KM[vehicleType] ?? 80
-  return Math.round((BASE + perKm * distanceKm) / 50) * 50  // يُقرَّب لأقرب 50 دج
+  return Math.round((BASE + perKm * distanceKm) / 50) * 50
 }
