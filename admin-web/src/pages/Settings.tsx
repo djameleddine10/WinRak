@@ -21,9 +21,9 @@ const WILAYAS = [
   'Tipaza','Mila','Aïn Defla','Naâma','Aïn Témouchent','Ghardaïa','Relizane',
 ]
 
-const LANGS: { value: Lang; flag: string; label: string; native: string }[] = [
-  { value: 'fr', flag: '🇫🇷', label: 'Français', native: 'FR' },
-  { value: 'ar', flag: '🇩🇿', label: 'العربية',  native: 'AR' },
+const LANGS: { value: Lang; countryCode: string; label: string; sub: string }[] = [
+  { value: 'fr', countryCode: 'fr', label: 'Français', sub: 'Français' },
+  { value: 'ar', countryCode: 'dz', label: 'العربية',  sub: 'عربية (DZ)' },
 ]
 
 async function setConfig(key: string, value: unknown, userId: string) {
@@ -163,17 +163,33 @@ export default function Settings() {
                   key={l.value}
                   onClick={() => setLang(l.value)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-200 flex-1',
+                    'relative flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all duration-200 flex-1 overflow-hidden',
                     active
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-bg text-muted hover:border-primary/40 hover:text-text-primary'
+                      ? 'border-primary/60 bg-primary/8 text-primary shadow-sm shadow-primary/10'
+                      : 'border-border bg-bg text-muted hover:border-border/80 hover:bg-surface'
                   )}
                 >
-                  <span className="text-base leading-none">{l.flag}</span>
-                  <span className="text-sm font-medium">{l.label}</span>
+                  {/* Flag image from flagcdn */}
+                  <img
+                    src={`https://flagcdn.com/20x15/${l.countryCode}.png`}
+                    srcSet={`https://flagcdn.com/40x30/${l.countryCode}.png 2x`}
+                    width={20}
+                    height={15}
+                    alt={l.label}
+                    className="rounded-[2px] flex-shrink-0 object-cover"
+                    style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                  />
+                  {/* Label */}
+                  <span className={cn('text-sm font-medium leading-none', active ? 'text-primary' : 'text-text-primary')}>
+                    {l.label}
+                  </span>
+                  <span className={cn('text-[10px] leading-none', active ? 'text-primary/60' : 'text-muted')}>
+                    {l.sub}
+                  </span>
+                  {/* Active check */}
                   {active && (
                     <span className="ml-auto w-4 h-4 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <Check size={10} className="text-white" />
+                      <Check size={9} className="text-white" strokeWidth={3} />
                     </span>
                   )}
                 </button>
