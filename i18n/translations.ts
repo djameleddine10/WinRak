@@ -52,9 +52,7 @@ const ar = {
   'appearance.note': 'الوضع الداكن أريح للعين ويوفّر شحن البطارية',
   'language.note': 'تتغير اللغة فوراً في جميع أنحاء التطبيق',
 
-  // Auth flow (splash / onboarding / login / otp)
-  'splash.tagline':   'توصيلك وين ما كنت',
-  'splash.brandName': 'وين راك',
+  // Auth flow (onboarding / login / otp)
   'onboarding.skip': 'تخطي',
   'onboarding.next': 'التالي',
   'onboarding.start': 'ابدأ الآن',
@@ -846,8 +844,6 @@ const fr: Record<TranslationKey, string> = {
   'appearance.note': 'Le mode sombre est plus reposant pour les yeux et économise la batterie',
   'language.note': "La langue change instantanément dans toute l'application",
 
-  'splash.tagline':   'On vous emmène partout',
-  'splash.brandName': 'WinRak',
   'onboarding.skip': 'Passer',
   'onboarding.next': 'Suivant',
   'onboarding.start': 'Commencer',
@@ -1627,8 +1623,6 @@ const en: Record<TranslationKey, string> = {
   'appearance.note': 'Dark mode is easier on the eyes and saves battery',
   'language.note': 'Language changes instantly throughout the app',
 
-  'splash.tagline':   'We take you anywhere',
-  'splash.brandName': 'WinRak',
   'onboarding.skip': 'Skip',
   'onboarding.next': 'Next',
   'onboarding.start': 'Get started',

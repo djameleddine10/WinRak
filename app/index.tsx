@@ -36,7 +36,7 @@ export default function Index() {
     }).catch(() => {})
   }, [])
 
-  if (!isLoggedIn) return <Redirect href="/(auth)/splash" />
+  if (!isLoggedIn) return <Redirect href="/(auth)/onboarding" />
 
   if (mode === 'driver') {
     if (registrationStatus === 'approved') return <Redirect href="/(driver)/home" />
