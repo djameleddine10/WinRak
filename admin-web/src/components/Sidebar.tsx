@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Car, MapPin, Store, Pill,
   Bell, Settings, LogOut, ChevronLeft, ChevronRight,
-  TrendingUp, Shield
+  TrendingUp, Shield, Map
 } from 'lucide-react'
 import { useState } from 'react'
 import { Logo } from './Logo'
@@ -11,6 +11,7 @@ import { cn } from '../lib/utils'
 
 const NAV = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
+  { to: '/map', icon: Map, label: 'Carte en direct' },
   { to: '/drivers', icon: Car, label: 'Chauffeurs' },
   { to: '/passengers', icon: Users, label: 'Passagers' },
   { to: '/rides', icon: MapPin, label: 'Courses' },

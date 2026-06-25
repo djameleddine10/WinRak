@@ -16,6 +16,7 @@ import Pharmacies from './pages/Pharmacies'
 import Pricing from './pages/Pricing'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
+import MapPage from './pages/Map'
 
 function App() {
   const { initialize } = useAuthStore()
@@ -45,6 +46,7 @@ function App() {
           <Route path="restaurants" element={<Restaurants />} />
           <Route path="pharmacies" element={<Pharmacies />} />
           <Route path="pricing" element={<Pricing />} />
+          <Route path="map" element={<MapPage />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
         </Route>
