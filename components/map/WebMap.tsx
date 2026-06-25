@@ -53,9 +53,7 @@ export function WebMap({
   const mapRef = useRef<MapView>(null)
   const dark   = scheme === 'dark'
 
-  const mapStyle = dark
-    ? (variant === 'explore' ? DARK_EXPLORE_STYLE : DARK_NAV_STYLE)
-    : (variant === 'explore' ? [] : [])
+  const mapStyle: object[] = []
 
   // Smooth fly-to on locate button press
   useEffect(() => {
@@ -213,39 +211,3 @@ const FILL = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom:
 
 // ─── Google Maps dark styles ──────────────────────────────────────────────────
 
-// Google Maps official "night" palette — natural dark mode, not pitch-black.
-const DARK_BASE = [
-  { elementType: 'geometry',           stylers: [{ color: '#242f3e' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-  { elementType: 'labels.text.fill',   stylers: [{ color: '#746855' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-  { featureType: 'road',               elementType: 'geometry',             stylers: [{ color: '#38414e' }] },
-  { featureType: 'road',               elementType: 'geometry.stroke',      stylers: [{ color: '#212a37' }] },
-  { featureType: 'road',               elementType: 'labels.text.fill',     stylers: [{ color: '#9ca5b3' }] },
-  { featureType: 'road.highway',       elementType: 'geometry',             stylers: [{ color: '#746855' }] },
-  { featureType: 'road.highway',       elementType: 'geometry.stroke',      stylers: [{ color: '#1f2835' }] },
-  { featureType: 'road.highway',       elementType: 'labels.text.fill',     stylers: [{ color: '#f3d19c' }] },
-  { featureType: 'water',              elementType: 'geometry',             stylers: [{ color: '#17263c' }] },
-  { featureType: 'water',              elementType: 'labels.text.fill',     stylers: [{ color: '#515c6d' }] },
-  { featureType: 'water',              elementType: 'labels.text.stroke',   stylers: [{ color: '#17263c' }] },
-  { featureType: 'transit',            elementType: 'geometry',             stylers: [{ color: '#2f3948' }] },
-  { featureType: 'landscape',          elementType: 'geometry',             stylers: [{ color: '#2f3948' }] },
-]
-
-const DARK_NAV_STYLE = [
-  ...DARK_BASE,
-  { featureType: 'poi',      elementType: 'geometry',         stylers: [{ color: '#283d6a' }] },
-  { featureType: 'poi',      elementType: 'labels.icon',      stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi',      elementType: 'labels.text.fill', stylers: [{ color: '#6f9ba4' }] },
-  { featureType: 'poi.park', elementType: 'geometry',         stylers: [{ color: '#263c3f' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
-]
-
-const DARK_EXPLORE_STYLE = [
-  ...DARK_BASE,
-  { featureType: 'poi',          elementType: 'geometry',         stylers: [{ color: '#283d6a' }] },
-  { featureType: 'poi',          elementType: 'labels.text.fill', stylers: [{ color: '#6f9ba4' }] },
-  { featureType: 'poi.business', elementType: 'labels.icon',      stylers: [{ visibility: 'on'  }] },
-  { featureType: 'poi.park',     elementType: 'geometry',         stylers: [{ color: '#263c3f' }] },
-  { featureType: 'poi.park',     elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
-]
