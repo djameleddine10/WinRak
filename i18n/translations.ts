@@ -620,6 +620,7 @@ const ar = {
   'food.open': 'مفتوح',
   'food.closed': 'مغلق',
   'food.etaDelivery': '~{eta} {unit} · توصيل {fee} {currency}',
+  'food.noRestaurants': 'لا توجد مطاعم متاحة حالياً',
 
   // Restaurant detail
   'rest.openNow': 'مفتوح الآن',
@@ -1402,6 +1403,7 @@ const fr: Record<TranslationKey, string> = {
   'food.open': 'Ouvert',
   'food.closed': 'Fermé',
   'food.etaDelivery': '~{eta} {unit} · livraison {fee} {currency}',
+  'food.noRestaurants': 'Aucun restaurant disponible pour le moment',
 
   // Restaurant detail
   'rest.openNow': 'Ouvert maintenant',
@@ -2182,6 +2184,7 @@ const en: Record<TranslationKey, string> = {
   'food.open': 'Open',
   'food.closed': 'Closed',
   'food.etaDelivery': '~{eta} {unit} · delivery {fee} {currency}',
+  'food.noRestaurants': 'No restaurants available right now',
 
   // Restaurant detail
   'rest.openNow': 'Open now',

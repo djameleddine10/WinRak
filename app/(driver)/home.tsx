@@ -18,8 +18,6 @@ import * as Location from 'expo-location'
 import { supabase } from '../../lib/supabase'
 import { setDriverStatus, updateDriverLocation, subscribeToMyTripOffer } from '../../services/realtime.service'
 import { registerPushToken } from '../../services/notifications.service'
-import { mockRides } from '../../mock/rides'
-import { mockPassengers } from '../../mock/passengers'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
 
 const { width: SCREEN_W } = Dimensions.get('window')
@@ -123,40 +121,60 @@ export default function DriverHome() {
 
           if (!trip) return  // offer already expired or trip taken
 
-          // Fetch passenger's real name for display on driver screens
+          // Fetch passenger's real name and phone for driver screens
           const { data: passengerProfile } = await supabase
             .from('profiles')
-            .select('full_name')
+            .select('full_name, phone')
             .eq('id', trip.passenger_id)
             .maybeSingle()
+
+          const pName = passengerProfile?.full_name ?? 'راكب'
 
           setOfferId(offer.id)
           setRealTripId(trip.id)
           setIncomingRide(({
-            ...mockRides[0],
             id:            trip.trip_code ?? trip.id,
             rideType:      'city',
             from:          { name: trip.from_address, address: trip.from_address, lat: trip.from_lat,  lng: trip.from_lng  },
             to:            { name: trip.to_address,   address: trip.to_address,   lat: trip.to_lat,    lng: trip.to_lng    },
-            distance:      trip.distance_km  ?? 0,
-            duration:      trip.duration_min ?? 0,
-            price:         trip.price        ?? 0,
-            suggestedPrice: trip.price       ?? 0,
-            vehicleType:   trip.vehicle_type ?? 'sedan',
+            distance:      trip.distance_km   ?? 0,
+            duration:      trip.duration_min  ?? 0,
+            price:         trip.price         ?? 0,
+            suggestedPrice: trip.price        ?? 0,
+            vehicleType:   trip.vehicle_type  ?? 'sedan',
+            paymentMethod: trip.payment_method ?? 'cash',
             status:        'pending',
-            createdAt:     trip.created_at ?? new Date().toISOString(),
+            createdAt:     trip.created_at    ?? new Date().toISOString(),
             startedAt:     null as string | null,
             completedAt:   null as string | null,
             rating:        null as number | null,
             driverEta:     null as number | null,
             cancelReason:  null as string | null,
+            departureDate: null as string | null,
+            departureTime: null as string | null,
+            luggageAllowed: false,
+            driver:        null,
             passenger: {
-              ...mockPassengers[0],
-              id:        trip.passenger_id,
-              name:      passengerProfile?.full_name ?? 'راكب',
-              nameLatin: passengerProfile?.full_name ?? 'Passager',
-              rating:    4.8,
-              phone:     '',
+              id:               trip.passenger_id,
+              name:             pName,
+              nameLatin:        pName,
+              firstName:        pName,
+              lastName:         '',
+              avatar:           pName.charAt(0).toUpperCase(),
+              phone:            passengerProfile?.phone ?? '',
+              phoneMasked:      '',
+              email:            '',
+              rating:           4.8,
+              totalRides:       0,
+              gender:           'male',
+              birthDate:        '',
+              city:             '',
+              photoStatus:      'missing' as const,
+              registrationStep: 1,
+              savedPlaces:      { home: null, work: null },
+              wallet:           { balance: 0, points: 0 },
+              paymentMethods:   [],
+              emergencyContacts: [],
             },
           }) as any)
         })

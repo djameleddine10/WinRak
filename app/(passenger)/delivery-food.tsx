@@ -57,6 +57,12 @@ export default function DeliveryFood() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ListHeader}
+        ListEmptyComponent={!loading ? (
+          <View style={styles.empty}>
+            <Icon name="store-off-outline" size={40} color={Colors.dark4} />
+            <Txt size={14} color={Colors.muted}>{t('food.noRestaurants')}</Txt>
+          </View>
+        ) : null}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
         renderItem={({ item: r }) => (
           <Pressable onPress={() => open(r)}>
@@ -105,5 +111,6 @@ function makeStyles(Colors: Palette) {
     thumb: { width: 60, height: 60, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
     titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
     meta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 6 },
+    empty: { alignItems: 'center', gap: Spacing.md, paddingTop: Spacing.xxl, opacity: 0.5 },
   })
 }

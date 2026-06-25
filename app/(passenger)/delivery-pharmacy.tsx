@@ -12,7 +12,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { PhotoUpload } from '../../components/ui/PhotoUpload'
 import { TopBar } from '../../components/layout/TopBar'
-import { pharmacies as seedPharmacies, type Pharmacy } from '../../mock/delivery'
+import { type Pharmacy } from '../../mock/delivery'
 import { useDeliveryStore } from '../../store/deliveryStore'
 import { useT } from '../../hooks/useT'
 import { DirIcon } from '../../components/ui/DirIcon'
@@ -29,12 +29,14 @@ export default function DeliveryPharmacy() {
   const setMethod = useDeliveryStore((s) => s.setMethod)
   const setPrescription = useDeliveryStore((s) => s.setPrescription)
 
-  const [pharmacies, setPharmacies] = useState<Pharmacy[]>(seedPharmacies)
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchPharmacies()
-      .then((list) => { if (list.length > 0) setPharmacies(list) })
+      .then((list) => setPharmacies(list))
       .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   const firstOpen = pharmacies.find((p) => p.openNow) ?? pharmacies[0]

@@ -53,7 +53,7 @@ function now() {
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
 export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
-  restaurants: mockRestaurants, // optimistic seed — replaced by Supabase on load
+  restaurants: [],
   registered:  [],
   regStatus:   'idle',
   form:        { ...emptyForm },
