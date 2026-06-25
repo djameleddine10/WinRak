@@ -34,8 +34,9 @@ export function useRealMapDrivers() {
     load()
 
     // Realtime: driver moves → update position; driver goes offline → remove from map
+    // Unique name per mount so we never reuse an already-subscribed channel.
     const channel = supabase
-      .channel('home-map-drivers')
+      .channel(`home-map-drivers-${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'driver_locations' },
