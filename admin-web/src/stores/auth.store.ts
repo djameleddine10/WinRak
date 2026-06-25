@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token,
-        type: 'magiclink',
+        type: 'email',
       })
       if (error) {
         console.error('verifyOtp error:', error)
