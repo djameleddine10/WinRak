@@ -20,10 +20,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.winrak.app",
-      "config": {
-        "googleMapsApiKey": "AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY"
-      }
+      "bundleIdentifier": "com.winrak.app"
     },
     "android": {
       "package": "com.winrak.app",
@@ -37,11 +34,6 @@
         "color": "#ffbc07"
       },
       "predictiveBackGestureEnabled": false,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyAybYcVsgPmcT1AUW3OIEJjocpDc9qO2RY"
-        }
-      },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",

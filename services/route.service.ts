@@ -1,4 +1,4 @@
-const GMAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? ''
+import { GOOGLE_MAPS_KEY as GMAPS_KEY } from '../constants/config'
 
 export interface RouteInfo {
   distanceKm:  number
