@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
   AlertTriangle, Globe, Key, Save, Shield, MapPin,
-  Sun, Moon, Languages, Check
+  Sun, Languages, Check
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/auth.store'
-import { useUIStore, type Theme, type Lang } from '../stores/ui.store'
+import { useUIStore, type Lang } from '../stores/ui.store'
 import { useT } from '../lib/i18n'
 import { Logo } from '../components/Logo'
 import { toast } from 'sonner'
@@ -23,7 +23,7 @@ const WILAYAS = [
 
 export default function Settings() {
   const { profile } = useAuthStore()
-  const { theme, lang, setTheme, setLang } = useUIStore()
+  const { lang, setLang } = useUIStore()
   const t = useT()
 
   const [maintenance,   setMaintenance]   = useState(false)
@@ -47,43 +47,6 @@ export default function Settings() {
     if (error) { toast.error(error.message) }
     else        { toast.success('Mot de passe mis à jour'); setNewPass('') }
     setSaving(false)
-  }
-
-  // ── Theme option card ────────────────────────────────────────────────────
-
-  function ThemeCard({ value, icon: Icon, label, desc }: {
-    value: Theme; icon: React.ElementType; label: string; desc: string
-  }) {
-    const active = theme === value
-    return (
-      <button
-        onClick={() => setTheme(value)}
-        className={cn(
-          'flex-1 flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 text-center',
-          active
-            ? 'border-primary bg-primary/10'
-            : 'border-border bg-bg hover:border-primary/40'
-        )}
-      >
-        <div className={cn(
-          'w-10 h-10 rounded-full flex items-center justify-center',
-          active ? 'bg-primary text-white' : 'bg-surface text-muted'
-        )}>
-          <Icon size={20} />
-        </div>
-        <div>
-          <p className={cn('text-sm font-semibold', active ? 'text-primary' : 'text-text-primary')}>
-            {label}
-          </p>
-          <p className="text-xs text-muted mt-0.5">{desc}</p>
-        </div>
-        {active && (
-          <span className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-            <Check size={12} className="text-white" />
-          </span>
-        )}
-      </button>
-    )
   }
 
   // ── Language option card ─────────────────────────────────────────────────
@@ -129,7 +92,7 @@ export default function Settings() {
 
         {/* ── Apparence ─────────────────────────────────────────────────── */}
         <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Sun size={16} className="text-primary" />
             </div>
@@ -137,20 +100,6 @@ export default function Settings() {
               <h3 className="text-sm font-semibold">{t('appearance')}</h3>
               <p className="text-xs text-muted">{t('appearance_desc')}</p>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <ThemeCard
-              value="dark"
-              icon={Moon}
-              label={t('theme_dark')}
-              desc={t('theme_dark_desc')}
-            />
-            <ThemeCard
-              value="light"
-              icon={Sun}
-              label={t('theme_light')}
-              desc={t('theme_light_desc')}
-            />
           </div>
         </div>
 
