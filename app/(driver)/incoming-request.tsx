@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Pressable, StyleSheet, Vibration, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -12,7 +12,6 @@ import { Icon } from '../../components/ui/Icon'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
 import { PriceInput } from '../../components/ride/PriceInput'
-import { useRef } from 'react'
 import { useDriverStore } from '../../store/driverStore'
 import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
@@ -37,6 +36,7 @@ export default function IncomingRequest() {
   const passengerName   = usePassengerName()
   const didExpire       = useRef(false)
   const didLeave        = useRef(false)
+  const didVibrate      = useRef(false)
 
   // Start the counter at the passenger's offered price. Once a ride arrives we
   // sync it (the first render can land before incomingRide is populated).
@@ -52,6 +52,14 @@ export default function IncomingRequest() {
     didLeave.current = true
     router.back()
   }
+
+  // Vibrate at 5s remaining to alert the driver they're running out of time
+  useEffect(() => {
+    if (timer <= 5 && timer > 0 && !didVibrate.current) {
+      didVibrate.current = true
+      Vibration.vibrate([0, 200, 100, 200])
+    }
+  }, [timer])
 
   // When the countdown hits zero, release the offer and dismiss the modal exactly
   // once. router.back() pops this transparentModal off the driver stack — it never
@@ -107,6 +115,12 @@ export default function IncomingRequest() {
         <View style={styles.track}><View style={[styles.fill, { width: `${pct}%`, backgroundColor: danger ? Colors.danger : Colors.gold }]} /></View>
         <Txt size={11} color={Colors.muted} style={{ alignSelf: 'flex-start', marginBottom: Spacing.sm }}>{t('driver.seconds', { n: Math.max(0, timer) })}</Txt>
 
+        {/* Price — shown first: most important info for driver decision */}
+        <View style={styles.priceBlock}>
+          <Txt size={12} color={Colors.muted}>{t('driver.offeredPrice')}</Txt>
+          <Txt weight="black" size={32} color={Colors.gold}>{ride.price.toLocaleString('en-US')} {cur}</Txt>
+        </View>
+
         <View style={styles.passengerRow}>
           <Avatar initial={passengerName.charAt(0).toUpperCase()} size={48} />
           <View style={{ flex: 1 }}>
@@ -122,13 +136,12 @@ export default function IncomingRequest() {
           <TripRow icon="map-marker" label={t('driver.departure')} value={ride.from.address} />
           <TripRow icon="flag" label={t('driver.destination')} value={ride.to.address} />
           <View style={styles.tripMeta}>
-            <Txt size={12} color={Colors.muted}>🚗 {formatDistance(ride.distance, distanceUnit)}</Txt>
-            <Txt size={12} color={Colors.muted}>⏱️ {ride.duration} {t('common.min')}</Txt>
+            <Icon name="car" size={13} color={Colors.muted} />
+            <Txt size={12} color={Colors.muted}>{formatDistance(ride.distance, distanceUnit)}</Txt>
+            <Icon name="clock-outline" size={13} color={Colors.muted} />
+            <Txt size={12} color={Colors.muted}>{ride.duration} {t('common.min')}</Txt>
           </View>
         </View>
-
-        <Txt size={12} color={Colors.muted} style={{ marginTop: Spacing.md }}>{t('driver.offeredPrice')}</Txt>
-        <Txt weight="black" size={28} color={Colors.gold}>{ride.price.toLocaleString('en-US')} {cur}</Txt>
 
         <Txt size={13} style={{ marginTop: Spacing.sm, marginBottom: Spacing.sm }}>{t('driver.suggestPrice')}</Txt>
         <PriceInput value={counter} onChange={setCounter} compact suggestedPrices={[ride.price - 50, ride.price, ride.price + 50, ride.price + 100]} />
@@ -166,6 +179,7 @@ function makeStyles(Colors: Palette) {
     tripRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
     tripMeta: { flexDirection: 'row-reverse', gap: Spacing.lg, marginTop: 4 },
     actions: { flexDirection: 'row-reverse', gap: Spacing.md, marginTop: Spacing.lg },
-    rejectBtn: { backgroundColor: Colors.dark3 },
+    priceBlock: { alignItems: 'flex-end', marginBottom: Spacing.sm },
+    rejectBtn: { backgroundColor: Colors.dark3, borderWidth: 1.5, borderColor: Colors.danger },
   })
 }

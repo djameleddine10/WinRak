@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Linking, Pressable, StyleSheet, View } from 'react-native'
+import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -85,11 +85,24 @@ export default function DriverRideActive() {
   function callPassenger()    { Linking.openURL(`tel:${ride!.passenger.phone}`) }
   function messagePassenger() { Linking.openURL(`sms:${ride!.passenger.phone}`) }
 
-  async function handleEndRide() {
-    setEnded(true)
-    if (realTripId) completeTrip(realTripId).catch(console.warn)
-    completeRide()
-    router.replace('/(driver)/rating')
+  function handleEndRide() {
+    Alert.alert(
+      t('rideActive.endConfirmTitle'),
+      t('rideActive.endConfirmMsg'),
+      [
+        { text: t('rideActive.endConfirmNo'), style: 'cancel' },
+        {
+          text: t('rideActive.endConfirmYes'),
+          style: 'destructive',
+          onPress: async () => {
+            setEnded(true)
+            if (realTripId) completeTrip(realTripId).catch(console.warn)
+            completeRide()
+            router.replace('/(driver)/rating')
+          },
+        },
+      ],
+    )
   }
 
   const etaMin       = etaSec !== null ? Math.max(0, Math.ceil(etaSec / 60)) : null
@@ -129,7 +142,10 @@ export default function DriverRideActive() {
           </Txt>
         </View>
 
-        <Txt weight="bold" size={15}>📍 {ride.to.name}</Txt>
+        <View style={styles.destRow}>
+          <Icon name="map-marker" size={18} color={Colors.gold} />
+          <Txt weight="bold" size={15}>{ride.to.name}</Txt>
+        </View>
         <View style={styles.info}>
           <Txt size={13} color={Colors.muted}>{formatDistance(ride.distance, distanceUnit)}</Txt>
           <Txt size={13} color={Colors.muted}>{ride.duration} {t('common.min')}</Txt>
@@ -171,6 +187,7 @@ function makeStyles(Colors: Palette) {
     passengerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
     metaRow:      { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
     info:         { flexDirection: 'row-reverse', gap: Spacing.lg },
+    destRow:      { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
     actions:      { flexDirection: 'row-reverse', gap: Spacing.sm },
     actionBtn: {
       flex: 1, height: 48, backgroundColor: Colors.dark3,

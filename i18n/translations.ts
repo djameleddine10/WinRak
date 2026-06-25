@@ -713,6 +713,12 @@ const ar = {
   // Ride-active screen
   'rideActive.badge': 'الرحلة جارية 🟢',
   'rideActive.endRide': 'إنهاء الرحلة',
+  'rideActive.endConfirmTitle': 'إنهاء الرحلة؟',
+  'rideActive.endConfirmMsg': 'تأكيد أنك وصلت إلى الوجهة وأن الرحلة منتهية.',
+  'rideActive.endConfirmYes': 'نعم، إنهاء',
+  'rideActive.endConfirmNo': 'تراجع',
+  'rideActive.destination': 'الوجهة',
+  'rideActive.kmLeft': '{n} كم متبق',
 
   // Driver registration screen
   'driverReg.step1': 'المعلومات الشخصية',
@@ -1483,6 +1489,12 @@ const fr: Record<TranslationKey, string> = {
   // Ride-active screen
   'rideActive.badge': 'Trajet en cours 🟢',
   'rideActive.endRide': 'Terminer le trajet',
+  'rideActive.endConfirmTitle': 'Terminer le trajet ?',
+  'rideActive.endConfirmMsg': 'Confirmez que vous êtes arrivé à destination et que le trajet est terminé.',
+  'rideActive.endConfirmYes': 'Oui, terminer',
+  'rideActive.endConfirmNo': 'Annuler',
+  'rideActive.destination': 'Destination',
+  'rideActive.kmLeft': '{n} km restants',
 
   // Driver registration screen
   'driverReg.step1': 'Informations personnelles',
@@ -2251,6 +2263,12 @@ const en: Record<TranslationKey, string> = {
   // Ride-active screen
   'rideActive.badge': 'Ride in progress 🟢',
   'rideActive.endRide': 'End ride',
+  'rideActive.endConfirmTitle': 'End ride?',
+  'rideActive.endConfirmMsg': 'Confirm that you have reached the destination and the ride is complete.',
+  'rideActive.endConfirmYes': 'Yes, end ride',
+  'rideActive.endConfirmNo': 'Cancel',
+  'rideActive.destination': 'Destination',
+  'rideActive.kmLeft': '{n} km left',
 
   // Driver registration screen
   'driverReg.step1': 'Personal information',

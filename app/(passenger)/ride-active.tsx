@@ -5,8 +5,11 @@ import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
 import { useT } from '../../hooks/useT'
+import { useSettingsStore } from '../../store/settingsStore'
+import { formatDistance } from '../../utils/distance'
 import { Spacing } from '../../constants/spacing'
 import { Txt } from '../../components/ui/Txt'
+import { Icon } from '../../components/ui/Icon'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { ActionRow } from '../../components/ride/ActionRow'
@@ -22,10 +25,11 @@ export default function RideActive() {
   const t = useT()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const insets = useSafeAreaInsets()
-  const ride           = useRideStore((s) => s.currentRide)
-  const completeRide   = useRideStore((s) => s.completeRide)
-  const currentTripId  = useRideStore((s) => s.currentTripId)
-  const routeWaypoints = useRideStore((s) => s.routeWaypoints)
+  const ride            = useRideStore((s) => s.currentRide)
+  const completeRide    = useRideStore((s) => s.completeRide)
+  const currentTripId   = useRideStore((s) => s.currentTripId)
+  const routeWaypoints  = useRideStore((s) => s.routeWaypoints)
+  const distanceUnit    = useSettingsStore((s) => s.distanceUnit)
   const [realDriverPos, setRealDriverPos] = useState<{ lat: number; lng: number; heading: number } | null>(null)
   // Fallback: animate along the real OSRM route when no live GPS yet
   const { position: simPos, heading: simHeading, progress } = useDriverRouteSimulator(routeWaypoints, !realDriverPos)
@@ -79,11 +83,32 @@ export default function RideActive() {
 
       <View style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.lg }]}>
         <Badge label={t('ride.active')} variant="green" />
-        <Txt weight="bold" size={16} style={{ marginTop: Spacing.md }}>📍 {ride.to.name}</Txt>
-        <Txt size={13} color={Colors.muted}>
-          {t('ride.minLeft', { n: Math.max(1, Math.round((1 - progress) * ride.duration)) })}
-        </Txt>
-        <Txt weight="bold" size={16} color={Colors.gold} style={{ marginTop: 4 }}>
+
+        {/* Progress bar */}
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${Math.min(100, progress * 100)}%` }]} />
+        </View>
+
+        {/* Destination row */}
+        <View style={styles.destRow}>
+          <Icon name="map-marker" size={18} color={Colors.gold} />
+          <Txt weight="bold" size={15} style={{ flex: 1 }} numberOfLines={1}>{ride.to.name}</Txt>
+        </View>
+
+        {/* Time + distance remaining */}
+        <View style={styles.metaRow}>
+          <Icon name="clock-outline" size={14} color={Colors.muted} />
+          <Txt size={13} color={Colors.muted}>
+            {t('ride.minLeft', { n: Math.max(1, Math.round((1 - progress) * ride.duration)) })}
+          </Txt>
+          <Txt size={13} color={Colors.muted}> · </Txt>
+          <Icon name="map-marker-distance" size={14} color={Colors.muted} />
+          <Txt size={13} color={Colors.muted}>
+            {formatDistance(Math.max(0.1, (1 - progress) * ride.distance), distanceUnit)}
+          </Txt>
+        </View>
+
+        <Txt weight="bold" size={18} color={Colors.gold} style={{ marginTop: Spacing.sm }}>
           {ride.price.toLocaleString('en-US')} {t('common.currency')}
         </Txt>
         <View style={{ height: Spacing.md }} />
@@ -107,6 +132,19 @@ function makeStyles(Colors: Palette) {
       flex: 1, backgroundColor: Colors.dark2,
       borderTopLeftRadius: Spacing.radiusLg, borderTopRightRadius: Spacing.radiusLg,
       marginTop: -Spacing.radiusLg, padding: Spacing.screenPadding,
+    },
+    progressTrack: {
+      height: 4, backgroundColor: Colors.dark3, borderRadius: 2,
+      overflow: 'hidden', marginVertical: Spacing.md,
+    },
+    progressFill: {
+      height: 4, backgroundColor: Colors.gold, borderRadius: 2,
+    },
+    destRow: {
+      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+    },
+    metaRow: {
+      flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 4,
     },
   })
 }
