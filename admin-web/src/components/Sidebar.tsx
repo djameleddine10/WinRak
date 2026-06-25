@@ -4,15 +4,15 @@ import {
   Bell, Settings, LogOut, ChevronLeft, ChevronRight,
   TrendingUp, Shield, Map
 } from 'lucide-react'
-import { useState } from 'react'
 import { Logo } from './Logo'
 import { useAuthStore } from '../stores/auth.store'
+import { useSidebarStore } from '../stores/sidebar.store'
 import { useT } from '../lib/i18n'
 import { useUIStore } from '../stores/ui.store'
 import { cn } from '../lib/utils'
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false)
+  const { collapsed, toggle } = useSidebarStore()
   const { profile, signOut } = useAuthStore()
   const navigate = useNavigate()
   const t   = useT()
@@ -117,7 +117,7 @@ export function Sidebar() {
 
       {/* Collapse toggle */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={toggle}
         className={cn(
           'collapse-btn absolute top-20 w-6 h-6 rounded-full bg-surface border border-border',
           'flex items-center justify-center text-muted hover:text-text-primary',
