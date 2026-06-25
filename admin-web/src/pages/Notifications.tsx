@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Bell, Send, Users, Car, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Bell, Send, Users, Car, User, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatDate } from '../lib/utils'
 import { toast } from 'sonner'
@@ -19,6 +19,21 @@ export default function Notifications() {
   })
   const [sending, setSending] = useState(false)
   const [history, setHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setLoadingHistory(true)
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('sent_at', { ascending: false })
+        .limit(50)
+      if (!error && data) setHistory(data)
+      setLoadingHistory(false)
+    }
+    fetchHistory()
+  }, [])
 
   const send = async () => {
     if (!form.title || !form.body) {
@@ -147,7 +162,12 @@ export default function Notifications() {
         <div className="bg-surface border border-border rounded-xl p-5">
           <h3 className="text-sm font-semibold mb-4">Historique des notifications</h3>
           <div className="space-y-3">
-            {history.length === 0 && (
+            {loadingHistory && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={22} className="animate-spin text-primary" />
+              </div>
+            )}
+            {!loadingHistory && history.length === 0 && (
               <div className="text-center py-12 text-muted">
                 <Bell size={32} className="mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Aucune notification envoyée</p>

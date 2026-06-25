@@ -70,8 +70,8 @@ export type Database = {
       driver_locations: {
         Row: {
           driver_id: string
-          latitude: number
-          longitude: number
+          lat: number
+          lng: number
           heading: number
           speed: number
           is_online: boolean
