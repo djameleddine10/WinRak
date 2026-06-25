@@ -15,8 +15,18 @@ import { mockRoutePoints } from '../../mock/map'
 import { mockCourier } from '../../mock/delivery'
 import { useDeliveryStore, type DeliveryStatus } from '../../store/deliveryStore'
 import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
+import { supabase } from '../../lib/supabase'
 
 const ORDER: DeliveryStatus[] = ['finding', 'confirmed', 'preparing', 'on_the_way', 'delivered']
+
+interface CourierInfo {
+  name:       string
+  vehicleKey: string
+  plate:      string
+  rating:     number
+  etaMin:     number
+  driverId:   string | null
+}
 
 export default function DeliveryTracking() {
   const Colors = useColors()
@@ -24,30 +34,114 @@ export default function DeliveryTracking() {
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const insets = useSafeAreaInsets()
 
-  const status      = useDeliveryStore((s) => s.status)
-  const service     = useDeliveryStore((s) => s.service)
+  const status        = useDeliveryStore((s) => s.status)
+  const service       = useDeliveryStore((s) => s.service)
+  const currentOrderId = useDeliveryStore((s) => s.currentOrderId)
   const markDelivered = useDeliveryStore((s) => s.markDelivered)
-  const reset       = useDeliveryStore((s) => s.reset)
+  const reset         = useDeliveryStore((s) => s.reset)
+
+  // Real courier info — falls back to mock until Supabase assigns a driver
+  const [courier, setCourier] = useState<CourierInfo>({
+    name:       mockCourier.name,
+    vehicleKey: mockCourier.vehicleKey,
+    plate:      mockCourier.plate,
+    rating:     mockCourier.rating,
+    etaMin:     mockCourier.etaMin,
+    driverId:   null,
+  })
+
+  // Real courier GPS position (when a driver_id is assigned to the order)
+  const [courierGps, setCourierGps] = useState<{ lat: number; lng: number; heading: number } | null>(null)
+
+  // Fetch real courier info when order is confirmed and a driver is assigned
+  useEffect(() => {
+    if (!currentOrderId) return
+
+    let locationChannel: ReturnType<typeof supabase.channel> | null = null
+
+    async function fetchCourier(driverId: string) {
+      const [locRes, profileRes, driverRes] = await Promise.all([
+        supabase.from('driver_locations').select('lat, lng, heading').eq('driver_id', driverId).maybeSingle(),
+        supabase.from('profiles').select('full_name').eq('id', driverId).maybeSingle(),
+        supabase.from('drivers').select('rating, vehicle_type, vehicle_plate').eq('id', driverId).maybeSingle(),
+      ])
+
+      if (locRes.data) {
+        setCourierGps({ lat: locRes.data.lat, lng: locRes.data.lng, heading: locRes.data.heading ?? 0 })
+      }
+
+      setCourier((prev) => ({
+        ...prev,
+        driverId,
+        name:       profileRes.data?.full_name ?? prev.name,
+        vehicleKey: driverRes.data?.vehicle_type ? `courier.${driverRes.data.vehicle_type}` : prev.vehicleKey,
+        plate:      driverRes.data?.vehicle_plate ?? prev.plate,
+        rating:     driverRes.data?.rating ?? prev.rating,
+      }))
+
+      // Subscribe to this driver's GPS updates
+      locationChannel = supabase
+        .channel(`courier-loc-${driverId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'driver_locations', filter: `driver_id=eq.${driverId}` }, (payload) => {
+          const r = payload.new as { lat: number; lng: number; heading: number }
+          setCourierGps({ lat: r.lat, lng: r.lng, heading: r.heading ?? 0 })
+        })
+        .subscribe()
+    }
+
+    // Subscribe to delivery order changes (admin assigns driver → driver_id appears)
+    const orderChannel = supabase
+      .channel(`delivery-order-${currentOrderId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'delivery_orders', filter: `id=eq.${currentOrderId}` }, async (payload) => {
+        const updated = payload.new as { driver_id?: string | null; eta_min?: number | null }
+        if (updated.driver_id && updated.driver_id !== courier.driverId) {
+          await fetchCourier(updated.driver_id)
+        }
+        if (updated.eta_min) {
+          setCourier((prev) => ({ ...prev, etaMin: updated.eta_min! }))
+        }
+      })
+      .subscribe()
+
+    // Also try to load driver immediately (order might already have one)
+    supabase
+      .from('delivery_orders')
+      .select('driver_id, eta_min')
+      .eq('id', currentOrderId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.driver_id) fetchCourier(data.driver_id)
+        if (data?.eta_min) setCourier((prev) => ({ ...prev, etaMin: data.eta_min! }))
+      })
+
+    return () => {
+      supabase.removeChannel(orderChannel)
+      if (locationChannel) supabase.removeChannel(locationChannel)
+    }
+  }, [currentOrderId])
 
   // ETA countdown — starts when courier goes on_the_way
   const [etaSec, setEtaSec] = useState<number | null>(null)
   const etaRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    if (status === 'on_the_way' && etaSec === null) setEtaSec(mockCourier.etaMin * 60)
+    if (status === 'on_the_way' && etaSec === null) setEtaSec(courier.etaMin * 60)
   }, [status])
   useEffect(() => {
     if (etaSec === null || status !== 'on_the_way') return
     etaRef.current = setInterval(() => setEtaSec((s) => (s !== null && s > 1 ? s - 1 : 0)), 1000)
     return () => { if (etaRef.current) clearInterval(etaRef.current) }
   }, [etaSec !== null, status])
-  const etaMin = etaSec !== null ? Math.max(0, Math.ceil(etaSec / 60)) : mockCourier.etaMin
+  const etaMin = etaSec !== null ? Math.max(0, Math.ceil(etaSec / 60)) : courier.etaMin
 
-  // Animate courier along route during on_the_way
+  // Visual route simulation — used only when no real GPS is available
   const active = status === 'on_the_way'
-  const { position: courierPos, heading } = useDriverRouteSimulator(
-    active ? mockRoutePoints : null,
-    active,
+  const { position: simulatedPos, heading: simulatedHeading } = useDriverRouteSimulator(
+    active && !courierGps ? mockRoutePoints : null,
+    active && !courierGps,
   )
+
+  const courierPos     = courierGps ?? simulatedPos
+  const courierHeading = courierGps?.heading ?? simulatedHeading
 
   const isParcel = service === 'parcel'
   const isFood   = service === 'food'
@@ -93,7 +187,7 @@ export default function DeliveryTracking() {
     ...(courierVisible ? [{
       lat:     active ? courierPos.lat : mockRoutePoints[2].lat,
       lng:     active ? courierPos.lng : mockRoutePoints[2].lng,
-      heading: active ? heading : 270,
+      heading: active ? courierHeading : 270,
       type:    'car' as const,
     }] : []),
   ]
@@ -131,9 +225,9 @@ export default function DeliveryTracking() {
           <View style={styles.steps}>
             {copy.steps.map((s, i) => {
               const reqIndex = i + 1
-              const done = idx > reqIndex
+              const done   = idx > reqIndex
               const active = idx === reqIndex
-              const tint = done ? Colors.success : active ? Colors.gold : Colors.dark4
+              const tint   = done ? Colors.success : active ? Colors.gold : Colors.dark4
               return (
                 <View key={reqIndex} style={styles.step}>
                   <View style={[styles.stepIcon, { backgroundColor: done ? Colors.successAlpha15 : active ? Colors.goldAlpha15 : Colors.dark3 }]}>
@@ -153,15 +247,15 @@ export default function DeliveryTracking() {
             <View style={styles.courier}>
               <View style={styles.courierAvatar}><Icon name="account" size={26} color={Colors.gold} /></View>
               <View style={{ flex: 1 }}>
-                <Txt weight="bold" size={14}>{mockCourier.name}</Txt>
+                <Txt weight="bold" size={14}>{courier.name}</Txt>
                 <View style={styles.courierMeta}>
                   <Icon name="moped" size={14} color={Colors.muted} />
-                  <Txt size={11} color={Colors.muted}>{t(mockCourier.vehicleKey)} · {mockCourier.plate}</Txt>
+                  <Txt size={11} color={Colors.muted}>{t(courier.vehicleKey as any)} · {courier.plate}</Txt>
                 </View>
               </View>
               <View style={styles.courierRating}>
                 <Icon name="star" size={14} color={Colors.gold} />
-                <Txt size={12} weight="bold">{mockCourier.rating}</Txt>
+                <Txt size={12} weight="bold">{courier.rating.toFixed(1)}</Txt>
               </View>
               <Pressable style={styles.callBtn} hitSlop={6}>
                 <Icon name="phone" size={20} color={Colors.dark1} />

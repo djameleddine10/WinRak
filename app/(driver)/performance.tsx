@@ -42,8 +42,19 @@ export default function Performance() {
     return false
   })
 
-  const ridesToNext = 14
-  const progress = 0.18 // mock progress toward the next tier
+  // Tier thresholds: Bronze→Silver at 50 trips, Silver→Gold at 150, Gold→Platinum at 500
+  const TIERS: Record<string, { base: number; threshold: number; hasNext: boolean }> = {
+    bronze:   { base: 0,   threshold: 50,  hasNext: true  },
+    silver:   { base: 50,  threshold: 150, hasNext: true  },
+    gold:     { base: 150, threshold: 500, hasNext: true  },
+    platinum: { base: 500, threshold: 500, hasNext: false },
+  }
+  const totalTrips = driverStats?.totalTrips ?? 0
+  const tier       = TIERS[driver.level] ?? TIERS.bronze
+  const ridesToNext = tier.hasNext ? Math.max(0, tier.threshold - totalTrips) : 0
+  const progress    = tier.hasNext
+    ? Math.min(1, (totalTrips - tier.base) / (tier.threshold - tier.base))
+    : 1
 
   return (
     <View style={styles.container}>

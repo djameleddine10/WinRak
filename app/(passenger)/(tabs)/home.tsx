@@ -19,7 +19,7 @@ import { useLocation } from '../../../hooks/useLocation'
 import { useT } from '../../../hooks/useT'
 import { usePassengerName } from '../../../i18n/locale'
 import { DirIcon } from '../../../components/ui/DirIcon'
-import { useDriverAnimation } from '../../../hooks/useDriverAnimation'
+import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
@@ -100,8 +100,8 @@ export default function Home() {
       .catch(() => {})
   }, [profile?.id])
 
-  // Animate mock drivers on the home map so it feels alive
-  useDriverAnimation()
+  // Load real online drivers from Supabase and keep them live via Realtime
+  useRealMapDrivers()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null)
