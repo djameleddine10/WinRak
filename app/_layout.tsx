@@ -58,9 +58,9 @@ export default function RootLayout() {
     SplashScreen.hideAsync()
   }, [])
 
-  // Minimum splash display: 2 seconds regardless of how fast fonts/stores load.
+  // Minimum splash display: 800ms is enough to see the first two radar rings.
   useEffect(() => {
-    const t = setTimeout(() => setMinDelayDone(true), 2000)
+    const t = setTimeout(() => setMinDelayDone(true), 800)
     return () => clearTimeout(t)
   }, [])
 
