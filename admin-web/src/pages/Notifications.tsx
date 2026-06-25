@@ -25,9 +25,9 @@ export default function Notifications() {
     const fetchHistory = async () => {
       setLoadingHistory(true)
       const { data, error } = await supabase
-        .from('notifications')
+        .from('admin_notifications')
         .select('*')
-        .order('sent_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50)
       if (!error && data) setHistory(data)
       setLoadingHistory(false)
@@ -42,21 +42,29 @@ export default function Notifications() {
     }
     setSending(true)
     try {
-      // Insert notification record
-      const { data, error } = await supabase.from('notifications').insert({
+      const payload = {
         target: form.target,
-        title: form.title,
-        body: form.body,
-        data: form.data ? JSON.parse(form.data) : null,
-        sent_at: new Date().toISOString(),
-        status: 'sent',
-      }).select().single()
+        title:  form.title,
+        body:   form.body,
+        data:   form.data ? JSON.parse(form.data) : null,
+      }
 
+      const { data, error } = await supabase.functions.invoke('notify-broadcast', {
+        body: payload,
+      })
       if (error) throw error
 
-      // TODO: trigger actual push via Expo Push API
-      toast.success(`Notification envoyée à: ${TARGETS.find(t => t.value === form.target)?.label}`)
-      setHistory(prev => [data, ...prev])
+      const label = TARGETS.find(t => t.value === form.target)?.label
+      toast.success(`Envoyé à ${label} — ${data.sent}/${data.total} appareils`)
+
+      // Reload history from DB so the new row (inserted by the Edge Function) appears
+      const { data: fresh } = await supabase
+        .from('admin_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (fresh) setHistory(fresh)
+
       setForm({ target: 'all', title: '', body: '', data: '' })
     } catch (err: any) {
       toast.error(err.message)
@@ -181,10 +189,13 @@ export default function Notifications() {
                     <p className="text-xs text-muted mt-0.5">{n.body}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="badge-primary">{TARGETS.find(t => t.value === n.target)?.label}</span>
-                      <span className="text-xs text-muted">{formatDate(n.sent_at)}</span>
+                      <span className="text-xs text-muted">{formatDate(n.created_at)}</span>
+                      <span className="text-xs text-muted">{n.sent_count} appareils</span>
                     </div>
                   </div>
-                  <span className="badge-success flex-shrink-0">Envoyé</span>
+                  <span className={n.status === 'partial' ? 'badge-warning flex-shrink-0' : 'badge-success flex-shrink-0'}>
+                    {n.status === 'no_tokens' ? 'Aucun token' : n.status === 'partial' ? 'Partiel' : 'Envoyé'}
+                  </span>
                 </div>
               </div>
             ))}
