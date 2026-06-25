@@ -46,7 +46,7 @@ export default function DriverRating() {
     if (stars > 0) {
       setPassengerRating(stars)
       if (realTripId) {
-        rateTrip({ tripId: realTripId, driverRating: stars }).catch(console.warn)
+        rateTrip({ tripId: realTripId, driverRating: stars }).catch(() => {})
       }
     }
     // Show earnings summary for 2 s then go home

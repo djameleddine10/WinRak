@@ -34,7 +34,7 @@ export default function DeliveryPharmacy() {
   useEffect(() => {
     fetchPharmacies()
       .then((list) => { if (list.length > 0) setPharmacies(list) })
-      .catch(console.warn)
+      .catch(() => {})
   }, [])
 
   const firstOpen = pharmacies.find((p) => p.openNow) ?? pharmacies[0]

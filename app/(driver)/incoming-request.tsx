@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Vibration, View } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -68,7 +69,7 @@ export default function IncomingRequest() {
     if (timer > 0 || didExpire.current) return
     didExpire.current = true
     if (currentOfferId) {
-      advanceTripOffer(currentOfferId, 'expired').catch(console.warn)
+      advanceTripOffer(currentOfferId, 'expired').catch(() => {})
       setOfferId(null)
     }
     const navTimeout = setTimeout(leave, 400)
@@ -78,8 +79,9 @@ export default function IncomingRequest() {
   function accept() {
     if (didLeave.current) return
     didLeave.current = true
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     if (realTripId && profile?.id) {
-      acceptTrip(realTripId, profile.id).catch((e) => console.warn('[WinRak] acceptTrip:', e))
+      acceptTrip(realTripId, profile.id).catch(() => {})
     }
     if (currentOfferId) setOfferId(null)
     acceptRide()
@@ -87,8 +89,9 @@ export default function IncomingRequest() {
   }
 
   function reject() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
     if (currentOfferId) {
-      advanceTripOffer(currentOfferId, 'rejected').catch(console.warn)
+      advanceTripOffer(currentOfferId, 'rejected').catch(() => {})
       setOfferId(null)
     }
     rejectRide()

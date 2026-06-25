@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { Animated } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useColors } from '../../hooks/useColors'
@@ -14,7 +14,7 @@ interface DirIconProps {
 // Directional icon that mirrors itself for RTL and smoothly animates the flip
 // whenever the language switches between RTL (Arabic) and LTR (French / English).
 // Always pass the LTR version of the icon name; scaleX: -1 handles the mirror.
-export function DirIcon({ name, size = 22, color, style }: DirIconProps) {
+export const DirIcon = memo(function DirIcon({ name, size = 22, color, style }: DirIconProps) {
   const Colors = useColors()
   const isRTL = useIsRTL()
   const scaleX = useRef(new Animated.Value(isRTL ? -1 : 1)).current
@@ -37,4 +37,4 @@ export function DirIcon({ name, size = 22, color, style }: DirIconProps) {
       />
     </Animated.View>
   )
-}
+})

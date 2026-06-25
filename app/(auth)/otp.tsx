@@ -83,7 +83,7 @@ export default function Otp() {
             .then((stats) => {
               if (stats) setDriverStats({ rating: stats.rating, totalTrips: stats.total_trips })
             })
-            .catch(console.warn)
+            .catch(() => {})
           router.replace('/(driver)/home')
         } else {
           setMode('passenger')

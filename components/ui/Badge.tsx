@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -14,7 +15,7 @@ interface BadgeProps {
   icon?: string
 }
 
-export function Badge({ label, variant = 'gold', size = 'md', icon }: BadgeProps) {
+export const Badge = memo(function Badge({ label, variant = 'gold', size = 'md', icon }: BadgeProps) {
   const Colors = useColors()
   const v = makeVariants(Colors)[variant]
   const fontSize = size === 'sm' ? 10 : 12
@@ -24,7 +25,7 @@ export function Badge({ label, variant = 'gold', size = 'md', icon }: BadgeProps
       <Txt weight="semibold" size={fontSize} color={v.text}>{label}</Txt>
     </View>
   )
-}
+})
 
 function makeVariants(Colors: Palette): Record<BadgeVariant, { bg: string; text: string }> {
   return {

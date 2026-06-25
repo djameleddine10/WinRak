@@ -1,4 +1,6 @@
+import { memo } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, View, ViewStyle } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
 import { Spacing } from '../../constants/spacing'
@@ -25,7 +27,7 @@ interface ButtonProps {
 
 const HEIGHTS: Record<Size, number> = { sm: 40, md: 46, lg: 52 }
 
-export function Button({
+export const Button = memo(function Button({
   label, onPress, variant = 'primary', size = 'lg',
   icon, iconPosition = 'left', loading, disabled, fullWidth = true, style,
 }: ButtonProps) {
@@ -35,9 +37,16 @@ export function Button({
   const height = HEIGHTS[size]
   const isDisabled = disabled || loading
 
+  function handlePress() {
+    if (isDisabled || !onPress) return
+    // Light haptic on every button tap
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    onPress()
+  }
+
   return (
     <Pressable
-      onPress={isDisabled ? undefined : onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.base,
         {
@@ -64,7 +73,7 @@ export function Button({
       )}
     </Pressable>
   )
-}
+})
 
 function makeVariants(Colors: Palette): Record<Variant, { bg: string; text: string; border: string; borderWidth: number }> {
   return {

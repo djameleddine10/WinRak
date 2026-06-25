@@ -33,7 +33,7 @@ export default function DeliveryMeds() {
   useEffect(() => {
     fetchMedicines()
       .then((list) => { if (list.length > 0) setAllMeds(list) })
-      .catch(console.warn)
+      .catch(() => {})
   }, [])
 
   const [filter, setFilter] = useState<Filter>('all')

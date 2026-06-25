@@ -75,7 +75,7 @@ export default function DriverHome() {
 
   // Register push token once when the driver's profile is available.
   useEffect(() => {
-    if (profile?.id) registerPushToken(profile.id).catch(console.warn)
+    if (profile?.id) registerPushToken(profile.id).catch(() => {})
   }, [profile?.id])
 
   // Cleanup realtime channel and GPS subscription on unmount
@@ -89,13 +89,13 @@ export default function DriverHome() {
   async function handleToggle() {
     if (online) {
       goOffline()
-      if (profile?.id) setDriverStatus(profile.id, 'offline').catch(console.warn)
+      if (profile?.id) setDriverStatus(profile.id, 'offline').catch(() => {})
       if (channelRef.current) { supabase.removeChannel(channelRef.current); channelRef.current = null }
       if (locationSubRef.current) { locationSubRef.current.remove(); locationSubRef.current = null }
     } else {
       if (profile?.id) {
         setOnline()
-        setDriverStatus(profile.id, 'online').catch(console.warn)
+        setDriverStatus(profile.id, 'online').catch(() => {})
 
         const { status: locStatus } = await Location.requestForegroundPermissionsAsync()
         if (locStatus === 'granted') {
@@ -108,7 +108,7 @@ export default function DriverHome() {
                 lng:      coords.longitude,
                 heading:  coords.heading ?? 0,
                 speed:    (coords.speed ?? 0) * 3.6,
-              }).catch(console.warn)
+              }).catch(() => {})
             }
           )
         }

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Text, TextProps } from 'react-native'
 import { useColors } from '../../hooks/useColors'
 import { Typography, FontWeight } from '../../constants/typography'
@@ -14,7 +15,7 @@ interface TxtProps extends TextProps {
 
 // Cairo-font text wrapper. Alignment follows the active layout direction (right in RTL,
 // left in LTR) so French/English read naturally; `center` overrides it.
-export function Txt({
+export const Txt = memo(function Txt({
   weight = 'regular',
   size = Typography.sizes.base,
   color,
@@ -43,4 +44,4 @@ export function Txt({
       {children}
     </Text>
   )
-}
+})

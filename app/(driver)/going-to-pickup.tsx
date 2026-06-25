@@ -52,8 +52,8 @@ export default function GoingToPickup() {
         lng:      coords.longitude,
         heading:  coords.heading ?? 0,
         speed:    coords.speed   ?? 0,
-      }).catch(console.warn),
-    ).then((s) => { sub = s }).catch(console.warn)
+      }).catch(() => {}),
+    ).then((s) => { sub = s }).catch(() => {})
     return () => { sub?.remove() }
   }, [profile?.id])
 
@@ -66,7 +66,7 @@ export default function GoingToPickup() {
           setRouteWaypoints(info.waypoints)
           setEtaSec(info.durationMin * 60)
         })
-        .catch(console.warn)
+        .catch(() => {})
 
     Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
       .then(({ coords }) => compute(coords.latitude, coords.longitude))
@@ -88,7 +88,7 @@ export default function GoingToPickup() {
   function messagePassenger() { Linking.openURL(`sms:${ride!.passenger.phone}`) }
 
   async function handleStartRide() {
-    if (realTripId) startTrip(realTripId).catch(console.warn)
+    if (realTripId) startTrip(realTripId).catch(() => {})
     startRide()
     router.replace('/(driver)/ride-active')
   }

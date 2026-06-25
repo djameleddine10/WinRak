@@ -63,7 +63,7 @@ export default function Home() {
 
   // Register this device for push notifications once the passenger is known.
   useEffect(() => {
-    if (profile?.id) registerPushToken(profile.id).catch(console.warn)
+    if (profile?.id) registerPushToken(profile.id).catch(() => {})
   }, [profile?.id])
 
   // Load real ride history for recent destinations
@@ -97,7 +97,7 @@ export default function Home() {
         }))
         setRideHistory(rides as any)
       })
-      .catch(console.warn)
+      .catch(() => {})
   }, [profile?.id])
 
   // Animate mock drivers on the home map so it feels alive

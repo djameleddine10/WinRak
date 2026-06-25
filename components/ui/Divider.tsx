@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -11,7 +11,7 @@ interface DividerProps {
 }
 
 // Plain hairline, or "line — text — line" when label is provided.
-export function Divider({ label, spacing = Spacing.lg }: DividerProps) {
+export const Divider = memo(function Divider({ label, spacing = Spacing.lg }: DividerProps) {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   if (!label) return <View style={[styles.line, { marginVertical: spacing }]} />
@@ -22,7 +22,7 @@ export function Divider({ label, spacing = Spacing.lg }: DividerProps) {
       <View style={styles.flexLine} />
     </View>
   )
-}
+})
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({

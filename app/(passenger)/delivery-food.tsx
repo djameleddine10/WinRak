@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -32,51 +32,55 @@ export default function DeliveryFood() {
     router.push({ pathname: '/(passenger)/restaurant', params: { id: r.id } })
   }
 
+  const ListHeader = useMemo(() => (
+    <>
+      {/* Register your restaurant */}
+      <Pressable style={styles.banner} onPress={() => router.push('/(passenger)/restaurant-signup')}>
+        <View style={styles.bannerIcon}><Icon name="store-plus" size={28} color={Colors.dark1} /></View>
+        <View style={{ flex: 1 }}>
+          <Txt weight="bold" size={15} color={Colors.dark1}>{t('food.registerBanner')}</Txt>
+          <Txt size={12} color={Colors.dark1} style={{ marginTop: 2 }}>{t('food.registerSub')}</Txt>
+        </View>
+        <DirIcon name="chevron-right" size={24} color={Colors.dark1} />
+      </Pressable>
+      <Txt size={12} color={Colors.muted} style={styles.section}>{t('food.nearby')}</Txt>
+      {loading && <ActivityIndicator color={Colors.gold} style={{ marginTop: Spacing.xl }} />}
+    </>
+  ), [loading, Colors, t, styles])
+
   return (
     <View style={styles.container}>
       <TopBar title={t('food.title')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Register your restaurant */}
-        <Pressable style={styles.banner} onPress={() => router.push('/(passenger)/restaurant-signup')}>
-          <View style={styles.bannerIcon}><Icon name="store-plus" size={28} color={Colors.dark1} /></View>
-          <View style={{ flex: 1 }}>
-            <Txt weight="bold" size={15} color={Colors.dark1}>{t('food.registerBanner')}</Txt>
-            <Txt size={12} color={Colors.dark1} style={{ marginTop: 2 }}>{t('food.registerSub')}</Txt>
-          </View>
-          <DirIcon name="chevron-right" size={24} color={Colors.dark1} />
-        </Pressable>
-
-        <Txt size={12} color={Colors.muted} style={styles.section}>{t('food.nearby')}</Txt>
-
-        {loading && <ActivityIndicator color={Colors.gold} style={{ marginTop: Spacing.xl }} />}
-
-        <View style={{ gap: Spacing.md }}>
-          {!loading && list.map((r) => (
-            <Pressable key={r.id} onPress={() => open(r)}>
-              <View style={styles.card}>
-                <View style={styles.thumb}><Icon name={r.icon} size={32} color={Colors.gold} /></View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.titleRow}>
-                    <Txt weight="bold" size={15} numberOfLines={1} style={{ flex: 1 }}>{r.name}</Txt>
-                    {r.isOpen
-                      ? <Badge label={t('food.open')} variant="green" size="sm" />
-                      : <Badge label={t('food.closed')} variant="red" size="sm" />}
-                  </View>
-                  <Txt size={12} color={Colors.muted} style={{ marginTop: 2 }}>{t(r.cuisineLabelKey)} · {r.area}</Txt>
-                  <View style={styles.meta}>
-                    <Icon name="star" size={13} color={Colors.gold} />
-                    <Txt size={11} color={Colors.muted}>{r.rating}</Txt>
-                    <Icon name="moped" size={13} color={Colors.muted} />
-                    <Txt size={11} color={Colors.muted}>{t('food.etaDelivery', { eta: r.etaMin, unit: t('common.min'), fee: r.deliveryFee, currency: t('common.currency') })}</Txt>
-                  </View>
+      <FlatList
+        data={loading ? [] : list}
+        keyExtractor={(r) => r.id}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={ListHeader}
+        ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
+        renderItem={({ item: r }) => (
+          <Pressable onPress={() => open(r)}>
+            <View style={styles.card}>
+              <View style={styles.thumb}><Icon name={r.icon} size={32} color={Colors.gold} /></View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.titleRow}>
+                  <Txt weight="bold" size={15} numberOfLines={1} style={{ flex: 1 }}>{r.name}</Txt>
+                  {r.isOpen
+                    ? <Badge label={t('food.open')} variant="green" size="sm" />
+                    : <Badge label={t('food.closed')} variant="red" size="sm" />}
+                </View>
+                <Txt size={12} color={Colors.muted} style={{ marginTop: 2 }}>{t(r.cuisineLabelKey)} · {r.area}</Txt>
+                <View style={styles.meta}>
+                  <Icon name="star" size={13} color={Colors.gold} />
+                  <Txt size={11} color={Colors.muted}>{r.rating}</Txt>
+                  <Icon name="moped" size={13} color={Colors.muted} />
+                  <Txt size={11} color={Colors.muted}>{t('food.etaDelivery', { eta: r.etaMin, unit: t('common.min'), fee: r.deliveryFee, currency: t('common.currency') })}</Txt>
                 </View>
               </View>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={{ height: Spacing.xl }} />
-      </ScrollView>
+            </View>
+          </Pressable>
+        )}
+      />
     </View>
   )
 }
@@ -84,7 +88,7 @@ export default function DeliveryFood() {
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
-    content: { padding: Spacing.screenPadding },
+    content: { padding: Spacing.screenPadding, paddingBottom: Spacing.xl },
     banner: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.gold, borderRadius: Spacing.radiusLg, padding: Spacing.lg,

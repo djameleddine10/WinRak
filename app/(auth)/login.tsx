@@ -98,7 +98,7 @@ export default function Login() {
     } catch (e: any) {
       // In production a send failure stops the flow. In dev (DEV_AUTH_BYPASS)
       // we still navigate so the app is testable without an SMS provider.
-      console.warn('[WinRak] sendOTP failed:', e.message)
+      if (__DEV__) console.warn('[WinRak] sendOTP failed:', e.message)
       setLoading(false)
       if (!DEV_AUTH_BYPASS) {
         Alert.alert(t('otp.errorTitle'), t('login.smsError'))

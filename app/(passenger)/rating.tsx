@@ -38,7 +38,7 @@ export default function Rating() {
       setDriverRating(stars)
       if (currentTripId) {
         rateTrip({ tripId: currentTripId, passengerRating: stars })
-          .catch(console.warn)
+          .catch(() => {})
       }
     }
     reset()

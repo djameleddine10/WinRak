@@ -59,7 +59,7 @@ export default function ProfileSetup() {
           if (p) setProfile(p)
         }
       } catch (e: any) {
-        console.warn('[WinRak] createProfile failed:', e.message)
+        if (__DEV__) console.warn('[WinRak] createProfile failed:', e.message)
       }
     }
 

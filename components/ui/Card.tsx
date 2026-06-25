@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -15,7 +15,7 @@ interface CardProps {
 }
 
 // Dark card. leftAccent renders a 4px colored bar on the RIGHT side (RTL "leading" edge).
-export function Card({
+export const Card = memo(function Card({
   children, padding = Spacing.cardPadding, radius = Spacing.radiusMd,
   border, leftAccent, onPress, style,
 }: CardProps) {
@@ -46,7 +46,7 @@ export function Card({
     )
   }
   return content
-}
+})
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({

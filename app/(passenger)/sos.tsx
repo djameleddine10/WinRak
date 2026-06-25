@@ -39,7 +39,7 @@ export default function Sos() {
       .then((pos) => {
         if (pos) locationRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }
       })
-      .catch(console.warn)
+      .catch(() => {})
   }, [])
 
   async function handleSOSTrigger() {
@@ -61,7 +61,7 @@ export default function Sos() {
       const msg = `🆘 أحتاج مساعدة عاجلة! تطبيق WinRak${locText}`
       Linking.openURL(`sms:${contact.phone}?body=${encodeURIComponent(msg)}`)
         .then(() => setSmsSent(true))
-        .catch(console.warn)
+        .catch(() => {})
     }
   }
 

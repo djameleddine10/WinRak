@@ -42,10 +42,10 @@ export default function Earnings() {
     if (!profile?.id) return
     getDriverWallet(profile.id)
       .then((w) => setWalletBalance(w.wallet_balance))
-      .catch(console.warn)
+      .catch(() => {})
     getDriverTransactions(profile.id)
       .then(setTxList)
-      .catch(console.warn)
+      .catch(() => {})
   }, [profile?.id])
 
   // Compute period totals from real transactions
@@ -180,22 +180,22 @@ export default function Earnings() {
   )
 }
 
+// Row and Stat are pure display components — styles are static, so we avoid
+// re-creating them on every render by extracting a module-level style factory.
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
   return (
-    <View style={styles.shareRow}>
+    <View style={rowStatStyles.shareRow}>
       <Txt size={13} color={Colors.muted} style={{ flex: 1 }}>{label}</Txt>
-      <Txt size={bold ? 18 : 13} weight={bold ? 'bold' : 'regular'} color={bold ? Colors.white : Colors.white}>{value}</Txt>
+      <Txt size={bold ? 18 : 13} weight={bold ? 'bold' : 'regular'}>{value}</Txt>
     </View>
   )
 }
 
 function Stat({ icon, value }: { icon: string; value: string }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
   return (
-    <View style={styles.statCard}>
+    <View style={[rowStatStyles.statCard, { backgroundColor: Colors.dark3 }]}>
       <Icon name={icon} size={22} color={Colors.gold} />
       <Txt size={13}>{value}</Txt>
     </View>
@@ -217,3 +217,9 @@ function makeStyles(Colors: Palette) {
     bar: { width: 24, borderRadius: 4 },
   })
 }
+
+// Module-level styles for Row/Stat sub-components (no theme dependency)
+const rowStatStyles = StyleSheet.create({
+  shareRow: { flexDirection: 'row-reverse', alignItems: 'center', paddingVertical: 4 },
+  statCard: { width: '48.5%', borderRadius: Spacing.radiusMd, padding: Spacing.lg, flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+})

@@ -92,7 +92,7 @@ export default function VehicleSelect() {
         setLocalPrice(estimatePrice(selected, info.distanceKm))
         setRouteWaypoints(info.waypoints)
       })
-      .catch(console.warn)
+      .catch(() => {})
   }, [from?.lat, from?.lng, to?.lat, to?.lng])
 
   // Use ref so PanResponder closure always reads the latest height without stale state
@@ -214,7 +214,7 @@ export default function VehicleSelect() {
         router.push('/(passenger)/searching')
         return
       } catch (e) {
-        console.warn('[WinRak] createTrip failed, using mock:', e)
+        if (__DEV__) console.warn('[WinRak] createTrip failed, using mock:', e)
       }
     }
     // Mock fallback (dev mode or no profile)

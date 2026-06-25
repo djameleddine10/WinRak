@@ -55,8 +55,8 @@ export default function DriverRideActive() {
         lng:      coords.longitude,
         heading:  coords.heading ?? 0,
         speed:    coords.speed   ?? 0,
-      }).catch(console.warn),
-    ).then((s) => { sub = s }).catch(console.warn)
+      }).catch(() => {}),
+    ).then((s) => { sub = s }).catch(() => {})
     return () => { sub?.remove() }
   }, [profile?.id, ended])
 
@@ -68,7 +68,7 @@ export default function DriverRideActive() {
         setRouteWaypoints(info.waypoints)
         setEtaSec(info.durationMin * 60)
       })
-      .catch(console.warn)
+      .catch(() => {})
   }, [ride?.from.lat, ride?.to.lat])
 
   // ETA countdown
@@ -96,7 +96,7 @@ export default function DriverRideActive() {
           style: 'destructive',
           onPress: async () => {
             setEnded(true)
-            if (realTripId) completeTrip(realTripId).catch(console.warn)
+            if (realTripId) completeTrip(realTripId).catch(() => {})
             completeRide()
             router.replace('/(driver)/rating')
           },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View } from 'react-native'
 import Svg, { Circle, Ellipse, Rect } from 'react-native-svg'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -40,7 +40,7 @@ export default function Notifications() {
 
     fetchNotifications(profile.id)
       .then(setData)
-      .catch(console.warn)
+      .catch(() => {})
 
     markAllNotificationsRead(profile.id).catch(() => {})
 
@@ -68,11 +68,15 @@ export default function Notifications() {
           <Txt size={13} color={Colors.muted} center style={{ marginTop: 6 }}>{t('notifications.emptySub')}</Txt>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
-          {data.map((n) => {
+        <FlatList
+          data={data}
+          keyExtractor={(n) => n.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item: n }) => {
             const ti = TYPE_ICON[n.type] ?? TYPE_ICON.info
             return (
-              <View key={n.id} style={[styles.card, !n.is_read && styles.unread]}>
+              <View style={[styles.card, !n.is_read && styles.unread]}>
                 <View style={[styles.icon, { backgroundColor: Colors.dark3 }]}>
                   <Icon name={ti.icon} size={20} color={ti.color} />
                 </View>
@@ -83,8 +87,8 @@ export default function Notifications() {
                 <Txt size={11} color={Colors.muted}>{n.created_at.slice(11, 16)}</Txt>
               </View>
             )
-          })}
-        </ScrollView>
+          }}
+        />
       )}
     </View>
   )

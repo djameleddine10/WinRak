@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Image, StyleSheet, View } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
@@ -12,7 +12,7 @@ interface AvatarProps {
 }
 
 // Gold circle with initial (or image). Optional gold ring + red warning badge.
-export function Avatar({ initial, size = 48, imageUri, showBorder }: AvatarProps) {
+export const Avatar = memo(function Avatar({ initial, size = 48, imageUri, showBorder }: AvatarProps) {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   return (
@@ -37,7 +37,7 @@ export function Avatar({ initial, size = 48, imageUri, showBorder }: AvatarProps
       </View>
     </View>
   )
-}
+})
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({

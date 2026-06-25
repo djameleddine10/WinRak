@@ -73,7 +73,7 @@ export default function DriverDocuments() {
           uri:    match.file_url ?? undefined,
         }
       }))
-    }).catch(console.warn)
+    }).catch(() => {})
   }, [profile?.id])
 
   async function saveDocument(key: string, uri: string) {
@@ -83,7 +83,7 @@ export default function DriverDocuments() {
       driverId: profile.id,
       type:     DOC_TYPE[key],
       uri,
-    }).catch(console.warn)
+    }).catch(() => {})
   }
 
   async function openCamera(key: string) {
