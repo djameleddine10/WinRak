@@ -1,4 +1,4 @@
-﻿import { type Language } from '../store/settingsStore'
+import { type Language } from '../store/settingsStore'
 
 // Translation dictionaries for WinRak. Arabic (`ar`) is the source of truth: its keys
 // define `TranslationKey`, and `fr`/`en` are typed `Record<TranslationKey, string>` so a
@@ -79,6 +79,8 @@ const ar = {
   'otp.resendIn': 'إعادة الإرسال ({sec}ث)',
   'otp.resend': 'إعادة الإرسال',
   'otp.verify': 'تحقق',
+  'otp.enterCode': 'أدخل الرمز المكوّن من 6 أرقام',
+  'otp.verifying': 'جارٍ التحقق...',
   'otp.errorTitle': 'رمز غير صحيح',
   'otp.errorWrong': 'الرمز الذي أدخلته غير صحيح. حاول مرة أخرى.',
   'login.smsError': 'تعذّر إرسال الرمز. تحقق من الرقم وحاول مجدداً.',
@@ -857,6 +859,8 @@ const fr: Record<TranslationKey, string> = {
   'otp.resendIn': 'Renvoyer ({sec}s)',
   'otp.resend': 'Renvoyer',
   'otp.verify': 'Vérifier',
+  'otp.enterCode': 'Entrez le code à 6 chiffres',
+  'otp.verifying': 'Vérification en cours...',
   'otp.errorTitle': 'Code incorrect',
   'otp.errorWrong': 'Le code saisi est incorrect. Réessayez.',
   'login.smsError': "Impossible d'envoyer le code. Vérifiez le numéro et réessayez.",
@@ -1623,6 +1627,8 @@ const en: Record<TranslationKey, string> = {
   'otp.resendIn': 'Resend ({sec}s)',
   'otp.resend': 'Resend',
   'otp.verify': 'Verify',
+  'otp.enterCode': 'Enter the 6-digit code',
+  'otp.verifying': 'Verifying...',
   'otp.errorTitle': 'Incorrect code',
   'otp.errorWrong': 'The code you entered is incorrect. Please try again.',
   'login.smsError': 'Could not send the code. Check the number and try again.',

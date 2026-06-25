@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -34,9 +34,19 @@ export default function Otp() {
 
   const phone = paramPhone || storePhone
 
-  const [code, setCode] = useState('')
+  const [code, setCode]       = useState('')
   const [loading, setLoading] = useState(false)
   const [seconds, setSeconds] = useState(30)
+  const verifying             = useRef(false)
+
+  // Shake animation for wrong code
+  const shakeAnim = useRef(new Animated.Value(0)).current
+  // Fade-in on mount
+  const fadeAnim  = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start()
+  }, [])
 
   useEffect(() => {
     if (seconds <= 0) return
@@ -44,8 +54,20 @@ export default function Otp() {
     return () => clearInterval(interval)
   }, [seconds])
 
+  function shake() {
+    shakeAnim.setValue(0)
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10,  duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8,   duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8,  duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0,   duration: 50, useNativeDriver: true }),
+    ]).start()
+  }
+
   async function verify() {
-    if (code.length < 6) return
+    if (code.length < 6 || verifying.current) return
+    verifying.current = true
     setLoading(true)
     try {
       await verifyOTP(phone, code)
@@ -57,7 +79,6 @@ export default function Otp() {
         if (profile.role === 'driver') {
           setMode('driver')
           approveDriver()
-          // Load real driver stats (rating, trip count) in background
           getDriverStats(profile.id)
             .then((stats) => {
               if (stats) setDriverStats({ rating: stats.rating, totalTrips: stats.total_trips })
@@ -70,61 +91,92 @@ export default function Otp() {
           router.replace('/(passenger)/(tabs)/home')
         }
       } else {
-        // Nouvel utilisateur authentifié — il doit compléter son profil
-        // (nom + photo) sur l'écran profile-setup, qui persiste dans Supabase.
         login()
         setMode('passenger')
         router.replace('/(passenger)/profile-setup')
       }
     } catch (e: any) {
-      // En production, un code erroné est rejeté. En dev (DEV_AUTH_BYPASS),
-      // on laisse passer pour tester l'app sans SMS configuré.
       if (DEV_AUTH_BYPASS) {
         console.warn('[WinRak] verifyOTP failed — DEV bypass active:', e.message)
         login()
         router.replace('/(passenger)/(tabs)/home')
       } else {
+        shake()
         Alert.alert(t('otp.errorTitle'), t('otp.errorWrong'))
+        verifying.current = false
       }
     } finally {
       setLoading(false)
     }
   }
 
+  function handleCodeChange(val: string) {
+    setCode(val)
+    if (val.length === 6) verify()
+  }
+
+  const phoneDisplay = phone ? phone : t('otp.sentTo')
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + Spacing.lg }]}>
-      <Pressable style={styles.back} onPress={() => router.back()}>
+      {/* Back button */}
+      <Pressable style={styles.back} onPress={() => router.back()} hitSlop={8}>
         <DirIcon name="arrow-left" size={22} color={Colors.white} />
       </Pressable>
 
-      <View style={styles.center}>
-        <Icon name="message-text" size={40} color={Colors.gold} />
-        <Txt weight="black" size={22} center style={{ marginTop: Spacing.lg }}>{t('otp.title')}</Txt>
-        <Txt size={13} color={Colors.muted} center style={{ marginTop: Spacing.sm }}>
-          {phone ? phone : t('otp.sentTo')}
-        </Txt>
-
-        <View style={{ marginVertical: Spacing.xxxl, width: '100%' }}>
-          <Input type="otp" value={code} onChangeText={setCode} />
+      {/* Top section: icon + title */}
+      <Animated.View style={[styles.top, { opacity: fadeAnim }]}>
+        <View style={styles.iconWrap}>
+          <Icon name="message-text" size={32} color={Colors.gold} />
         </View>
+        <Txt weight="black" size={24} center style={{ marginTop: Spacing.lg }}>
+          {t('otp.title')}
+        </Txt>
+        <Txt size={14} weight="bold" color={Colors.white} center style={{ marginTop: Spacing.sm }}>
+          {phoneDisplay}
+        </Txt>
+        <Txt size={13} color={Colors.muted} center style={{ marginTop: 4 }}>
+          {t('otp.enterCode')}
+        </Txt>
+      </Animated.View>
 
-        <Txt size={13} color={Colors.muted}>{t('otp.noCode')}</Txt>
+      {/* OTP boxes */}
+      <Animated.View style={[styles.otpSection, { transform: [{ translateX: shakeAnim }] }]}>
+        <Input
+          type="otp"
+          value={code}
+          onChangeText={handleCodeChange}
+        />
+      </Animated.View>
+
+      {/* Resend */}
+      <View style={styles.resendRow}>
+        <Txt size={13} color={Colors.muted}>{t('otp.noCode')} </Txt>
         {seconds > 0 ? (
-          <Txt size={13} color={Colors.muted} style={{ marginTop: 4 }}>{t('otp.resendIn', { sec: seconds })}</Txt>
+          <Txt size={13} color={Colors.muted}>
+            {t('otp.resendIn', { sec: seconds })}
+          </Txt>
         ) : (
-          <Pressable onPress={() => setSeconds(30)}>
-            <Txt size={13} color={Colors.gold} style={{ marginTop: 4 }}>{t('otp.resend')}</Txt>
+          <Pressable onPress={() => { setSeconds(30); setCode('') }} hitSlop={8}>
+            <Txt size={13} color={Colors.gold} weight="bold">{t('otp.resend')}</Txt>
           </Pressable>
         )}
-
-        {loading && <ActivityIndicator color={Colors.gold} style={{ marginTop: Spacing.lg }} />}
       </View>
 
-      <View style={{ paddingBottom: insets.bottom + Spacing.lg }}>
+      {loading && (
+        <View style={styles.loadingRow}>
+          <ActivityIndicator color={Colors.gold} size="small" />
+          <Txt size={13} color={Colors.muted}>{t('otp.verifying')}</Txt>
+        </View>
+      )}
+
+      {/* CTA */}
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + Spacing.lg }]}>
         <Button
           label={t('otp.verify')}
           onPress={verify}
           disabled={code.length < 6 || loading}
+          loading={loading}
         />
       </View>
     </View>
@@ -133,8 +185,47 @@ export default function Otp() {
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
-    back: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.dark2, alignItems: 'center', justifyContent: 'center' },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    container: {
+      flex: 1,
+      backgroundColor: Colors.dark1,
+      paddingHorizontal: Spacing.screenPadding,
+    },
+    back: {
+      width: 40, height: 40, borderRadius: 20,
+      backgroundColor: Colors.dark2,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    top: {
+      alignItems: 'center',
+      marginTop: Spacing.xxxl,
+    },
+    iconWrap: {
+      width: 72, height: 72, borderRadius: 36,
+      backgroundColor: Colors.goldAlpha10,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    otpSection: {
+      marginTop: Spacing.xxxl,
+      marginBottom: Spacing.lg,
+    },
+    resendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: Spacing.md,
+    },
+    loadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      marginTop: Spacing.lg,
+    },
+    bottom: {
+      position: 'absolute',
+      bottom: 0,
+      left: Spacing.screenPadding,
+      right: Spacing.screenPadding,
+    },
   })
 }
