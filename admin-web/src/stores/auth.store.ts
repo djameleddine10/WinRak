@@ -2,19 +2,20 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 
 interface AuthState {
-  user: any | null
-  profile: any | null
-  loading: boolean
+  user:        any | null
+  profile:     any | null
+  loading:     boolean
   initialized: boolean
-  signIn: (email: string, password: string) => Promise<{ error?: string }>
-  signOut: () => Promise<void>
-  initialize: () => Promise<void>
+  sendOtp:     (email: string) => Promise<{ error?: string }>
+  verifyOtp:   (email: string, token: string) => Promise<{ error?: string }>
+  signOut:     () => Promise<void>
+  initialize:  () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  profile: null,
-  loading: false,
+  user:        null,
+  profile:     null,
+  loading:     false,
   initialized: false,
 
   initialize: async () => {
@@ -27,7 +28,6 @@ export const useAuthStore = create<AuthState>((set) => ({
           .select('*')
           .eq('id', session.user.id)
           .single()
-        
         if (profile?.role === 'admin') {
           set({ user: session.user, profile })
         } else {
@@ -41,22 +41,40 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_OUT') {
-        set({ user: null, profile: null })
-      }
+      if (event === 'SIGNED_OUT') set({ user: null, profile: null })
     })
   },
 
-  signIn: async (email, password) => {
+  sendOtp: async (email) => {
     set({ loading: true })
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      })
+      if (error) return { error: error.message }
+      return {}
+    } catch (err: any) {
+      return { error: err.message }
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  verifyOtp: async (email, token) => {
+    set({ loading: true })
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+      })
       if (error) return { error: error.message }
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', data.user.id)
+        .eq('id', data.user!.id)
         .single()
 
       if (!profile || profile.role !== 'admin') {

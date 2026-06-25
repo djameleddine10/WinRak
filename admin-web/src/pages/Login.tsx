@@ -1,20 +1,33 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react'
+import { Mail, Shield, KeyRound, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '../stores/auth.store'
 import { Logo } from '../components/Logo'
 import { toast } from 'sonner'
 
+type Step = 'email' | 'otp'
+
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const { signIn, loading } = useAuthStore()
+  const [step,    setStep]    = useState<Step>('email')
+  const [email,   setEmail]   = useState('')
+  const [token,   setToken]   = useState('')
+  const { sendOtp, verifyOtp, loading } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault()
-    const { error } = await signIn(email, password)
+    const { error } = await sendOtp(email)
+    if (error) {
+      toast.error(error)
+    } else {
+      toast.success('Code envoyé — vérifiez votre boîte mail')
+      setStep('otp')
+    }
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    const { error } = await verifyOtp(email, token)
     if (error) {
       toast.error(error)
     } else {
@@ -27,8 +40,6 @@ export default function Login() {
       {/* Background decoration */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-64 h-64 bg-winrak/5 rounded-full blur-3xl pointer-events-none" />
-      
-      {/* Grid pattern */}
       <div className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: 'linear-gradient(#6366F1 1px, transparent 1px), linear-gradient(90deg, #6366F1 1px, transparent 1px)',
@@ -37,7 +48,6 @@ export default function Login() {
       />
 
       <div className="relative w-full max-w-md px-6">
-        {/* Card */}
         <div className="bg-surface border border-border rounded-2xl p-8 shadow-card">
           {/* Header */}
           <div className="flex flex-col items-center mb-8">
@@ -48,74 +58,101 @@ export default function Login() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                Adresse email
-              </label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@winrak.dz"
-                  className="input-field pl-9"
-                  required
-                  autoComplete="email"
-                />
+          {step === 'email' ? (
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  Adresse email
+                </label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="admin@winrak.dz"
+                    className="input-field pl-9"
+                    required
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="input-field pl-9 pr-9"
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text-primary transition-colors"
-                >
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full justify-center py-2.5 mt-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Envoi...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Envoyer le code</span>
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerify} className="space-y-4">
+              <p className="text-sm text-text-secondary text-center">
+                Code envoyé à <span className="text-text-primary font-medium">{email}</span>
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  Code de vérification
+                </label>
+                <div className="relative">
+                  <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="text"
+                    value={token}
+                    onChange={e => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="123456"
+                    className="input-field pl-9 tracking-widest text-center text-lg font-mono"
+                    required
+                    autoFocus
+                    inputMode="numeric"
+                    maxLength={6}
+                  />
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full justify-center py-2.5 mt-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Connexion...</span>
-                </>
-              ) : (
-                'Se connecter'
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading || token.length < 6}
+                className="btn-primary w-full justify-center py-2.5 mt-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Vérification...</span>
+                  </>
+                ) : (
+                  'Confirmer'
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setStep('email'); setToken('') }}
+                className="w-full text-xs text-muted hover:text-text-primary transition-colors text-center"
+              >
+                ← Changer d'adresse email
+              </button>
+            </form>
+          )}
 
           <p className="text-center text-xs text-muted mt-6">
             WinRak Admin Panel — Usage interne uniquement
           </p>
         </div>
 
-        {/* Version */}
         <p className="text-center text-xs text-muted/50 mt-4">v1.0.0 · 2026</p>
       </div>
     </div>
