@@ -6,8 +6,10 @@ interface AuthState {
   profile:     any | null
   loading:     boolean
   initialized: boolean
-  sendOtp:     (email: string) => Promise<{ error?: string }>
-  verifyOtp:   (email: string, token: string) => Promise<{ error?: string }>
+  // Step 1: password check + triggers OTP send
+  signInStep1: (email: string, password: string) => Promise<{ error?: string }>
+  // Step 2: OTP verify + admin role check
+  signInStep2: (email: string, token: string) => Promise<{ error?: string }>
   signOut:     () => Promise<void>
   initialize:  () => Promise<void>
 }
@@ -45,14 +47,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     })
   },
 
-  sendOtp: async (email) => {
+  signInStep1: async (email, password) => {
     set({ loading: true })
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      // Verify password first
+      const { error: pwError } = await supabase.auth.signInWithPassword({ email, password })
+      if (pwError) return { error: 'Email ou mot de passe incorrect.' }
+
+      // Password OK — sign out the session immediately (we're not done yet)
+      await supabase.auth.signOut()
+
+      // Send OTP to email as second factor
+      const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false },
       })
-      if (error) return { error: error.message }
+      if (otpError) return { error: otpError.message }
+
       return {}
     } catch (err: any) {
       return { error: err.message }
@@ -61,7 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  verifyOtp: async (email, token) => {
+  signInStep2: async (email, token) => {
     set({ loading: true })
     try {
       const { data, error } = await supabase.auth.verifyOtp({
@@ -69,7 +80,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         token,
         type: 'email',
       })
-      if (error) return { error: error.message }
+      if (error) return { error: 'Code incorrect ou expiré.' }
 
       const { data: profile } = await supabase
         .from('profiles')
