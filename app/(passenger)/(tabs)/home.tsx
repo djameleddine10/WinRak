@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import * as Location from 'expo-location'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import { useEffect, useMemo, useState } from 'react'
+import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
 import { useColors } from '../../../hooks/useColors'
@@ -22,21 +20,28 @@ import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
+const { height: SCREEN_H } = Dimensions.get('window')
+const MAP_H = Math.round(SCREEN_H * 0.30)
+
+const GOLD   = '#FFB800'
+const PURPLE = '#7B4FD4'
+const TEAL   = '#00C2A8'
+const BG     = '#0a0b14'
+
 export default function Home() {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const displayName = usePassengerName()
   const photoStatus = useUserStore((s) => s.photoStatus)
-  const profile = useUserStore((s) => s.profile)
+  const profile     = useUserStore((s) => s.profile)
   const setRideMode = useUserStore((s) => s.setRideMode)
-  const setSheMode = useRideStore((s) => s.setSheMode)
+  const setSheMode  = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
-  const setTo = useRideStore((s) => s.setTo)
+  const setTo          = useRideStore((s) => s.setTo)
   const rideHistory    = useRideStore((s) => s.rideHistory)
   const setRideHistory = useRideStore((s) => s.setRideHistory)
   const mapDrivers     = useMapStore((s) => s.mapDrivers)
 
-  // Unique recent destinations from past rides (most recent first)
   const recentDestinations = useMemo(() => {
     const seen = new Set<string>()
     const out: { name: string; address: string; lat: number; lng: number }[] = []
@@ -45,7 +50,7 @@ export default function Home() {
       if (!d || seen.has(d.name)) continue
       seen.add(d.name)
       out.push(d)
-      if (out.length >= 4) break
+      if (out.length >= 3) break
     }
     return out
   }, [rideHistory])
@@ -57,65 +62,50 @@ export default function Home() {
     setTo(dest)
     router.push('/(passenger)/search')
   }
+
   const { errorMsg } = useLocation()
   const t = useT()
 
-  // Register this device for push notifications once the passenger is known.
   useEffect(() => {
     if (profile?.id) registerPushToken(profile.id).catch(() => {})
   }, [profile?.id])
 
-  // Load real ride history for recent destinations
   useEffect(() => {
     if (!profile?.id) return
     getMyTrips(profile.id, 'passenger', 20)
       .then((trips) => {
-        const rides = trips.map((t: any) => ({
-          id:            t.id,
+        const rides = trips.map((trip: any) => ({
+          id:            trip.id,
           rideType:      'city' as const,
-          from:          { name: t.from_address ?? '', address: t.from_address ?? '', lat: t.from_lat ?? 0, lng: t.from_lng ?? 0 },
-          to:            { name: t.to_address   ?? '', address: t.to_address   ?? '', lat: t.to_lat   ?? 0, lng: t.to_lng   ?? 0 },
-          price:         t.price         ?? 0,
-          suggestedPrice: t.price        ?? 0,
-          distance:      t.distance_km   ?? 0,
-          duration:      t.duration_min  ?? 0,
-          status:        t.status        ?? 'completed',
-          vehicleType:   t.vehicle_type  ?? 'sedan',
-          paymentMethod: t.payment_method ?? 'cash',
-          createdAt:     t.created_at,
-          startedAt:     t.started_at    ?? null,
-          completedAt:   t.completed_at  ?? null,
+          from:          { name: trip.from_address ?? '', address: trip.from_address ?? '', lat: trip.from_lat ?? 0, lng: trip.from_lng ?? 0 },
+          to:            { name: trip.to_address   ?? '', address: trip.to_address   ?? '', lat: trip.to_lat   ?? 0, lng: trip.to_lng   ?? 0 },
+          price:         trip.price          ?? 0,
+          suggestedPrice: trip.price         ?? 0,
+          distance:      trip.distance_km    ?? 0,
+          duration:      trip.duration_min   ?? 0,
+          status:        trip.status         ?? 'completed',
+          vehicleType:   trip.vehicle_type   ?? 'sedan',
+          paymentMethod: trip.payment_method ?? 'cash',
+          createdAt:     trip.created_at,
+          startedAt:     trip.started_at     ?? null,
+          completedAt:   trip.completed_at   ?? null,
           rating:        null,
           driverEta:     null,
-          cancelReason:  t.cancel_reason ?? null,
+          cancelReason:  trip.cancel_reason  ?? null,
           departureDate: null,
           departureTime: null,
           luggageAllowed: false,
-          passenger:     { id: t.passenger_id ?? '', name: '', nameLatin: '', firstName: '', lastName: '', avatar: '', phone: '', phoneMasked: '', email: '', rating: 5, totalRides: 0, gender: 'male', birthDate: '', city: '', photoStatus: 'missing', registrationStep: 1, savedPlaces: { home: null, work: null }, wallet: { balance: 0, points: 0 }, paymentMethods: [], emergencyContacts: [] },
-          driver:        { id: t.driver_id ?? '', name: '', nameLatin: '', avatar: '', phone: '', rating: 0, totalRides: 0, isVerified: true, isSheDriver: false, registrationStatus: 'approved', driverType: 'city', level: 'standard', vehicle: { type: 'sedan', brand: '', model: '', modelKey: 'veh.m301', color: '', colorKey: 'veh.colorWhite', plate: '', year: 0, seats: 4 }, documents: { licenseNumber: '', licenseExpiry: '', grayCardNumber: '', birthPlace: '' }, location: { lat: 0, lng: 0 }, heading: 0, isOnline: false, earnings: { today: 0, week: 0, month: 0 } },
+          passenger: { id: trip.passenger_id ?? '', name: '', nameLatin: '', firstName: '', lastName: '', avatar: '', phone: '', phoneMasked: '', email: '', rating: 5, totalRides: 0, gender: 'male', birthDate: '', city: '', photoStatus: 'missing', registrationStep: 1, savedPlaces: { home: null, work: null }, wallet: { balance: 0, points: 0 }, paymentMethods: [], emergencyContacts: [] },
+          driver:    { id: trip.driver_id ?? '', name: '', nameLatin: '', avatar: '', phone: '', rating: 0, totalRides: 0, isVerified: true, isSheDriver: false, registrationStatus: 'approved', driverType: 'city', level: 'standard', vehicle: { type: 'sedan', brand: '', model: '', modelKey: 'veh.m301', color: '', colorKey: 'veh.colorWhite', plate: '', year: 0, seats: 4 }, documents: { licenseNumber: '', licenseExpiry: '', grayCardNumber: '', birthPlace: '' }, location: { lat: 0, lng: 0 }, heading: 0, isOnline: false, earnings: { today: 0, week: 0, month: 0 } },
         }))
         setRideHistory(rides as any)
       })
       .catch(() => {})
   }, [profile?.id])
 
-  // Load real online drivers from Supabase and keep them live via Realtime
   useRealMapDrivers()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null)
-
-  async function locateMe() {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') return
-      const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-      setFlyTarget({ lat: coords.latitude, lng: coords.longitude })
-      setTimeout(() => setFlyTarget(null), 200)
-    } catch { /* GPS unavailable */ }
-  }
-  const sheetRef = useRef<BottomSheet>(null)
-  const snapPoints = useMemo(() => ['42%', '58%'], [])
 
   function openCity() {
     setSheMode(false)
@@ -134,134 +124,147 @@ export default function Home() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Map fills the entire screen — all UI floats on top */}
-      <WebMap
-        showUser
-        variant="explore"
-        flyToLocation={flyTarget}
-        markers={mapDrivers
-          .filter((d) => d.isOnline)
-          .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
-      />
+    <View style={styles.root}>
 
-      <TopBar
-        showMenu
-        onMenu={() => setDrawerOpen(true)}
-        showNotification
-        onNotification={() => router.push('/(passenger)/notifications')}
-        rightAction={<Txt weight="bold" size={18} color={Colors.gold}>WinRak</Txt>}
-      />
+      {/* Map — top portion, behind everything */}
+      <View style={styles.mapWrap}>
+        <WebMap
+          showUser
+          variant="explore"
+          markers={mapDrivers
+            .filter((d) => d.isOnline)
+            .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
+        />
+        <View style={styles.mapOverlay} pointerEvents="none" />
+      </View>
+
+      {/* TopBar floats on map */}
+      <View style={styles.topBarWrap}>
+        <TopBar
+          showMenu
+          onMenu={() => setDrawerOpen(true)}
+          showNotification
+          onNotification={() => router.push('/(passenger)/notifications')}
+          rightAction={<Txt weight="bold" size={20} color={GOLD}>WinRak</Txt>}
+        />
+      </View>
 
       {errorMsg && (
         <View style={styles.gpsBanner}>
-          <Txt size={11} color={Colors.dark1}>⚠️ {errorMsg}</Txt>
+          <Txt size={11} color="#fff">⚠️ {errorMsg}</Txt>
         </View>
       )}
 
-      {/* Locate-me — top-right corner of the map, out of the way */}
-      <Pressable style={styles.locateBtn} onPress={locateMe}>
-        <Icon name="crosshairs-gps" size={20} color={Colors.dark1} />
-      </Pressable>
-
-      <BottomSheet
-        ref={sheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        backgroundStyle={styles.sheetBg}
-        handleIndicatorStyle={styles.handle}
+      {/* Scrollable content starts overlapping the map bottom */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollBody}
+        showsVerticalScrollIndicator={false}
       >
-        <BottomSheetView style={styles.sheetContent}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
+        {/* Greeting */}
+        <Txt weight="bold" size={24} color="#fff" style={styles.greetText}>
+          {t('home.greeting', { name: displayName })}
+        </Txt>
 
-            {/* Greeting */}
-            <Txt weight="bold" size={18} style={{ marginTop: 2 }}>
-              {t('home.greeting', { name: displayName })}
+        {/* Photo warning */}
+        {photoStatus === 'missing' && (
+          <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
+            <Icon name="alert-circle-outline" size={14} color={GOLD} />
+            <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
+            <Txt size={11} color={GOLD} weight="bold">{t('home.takePhoto')}</Txt>
+          </Pressable>
+        )}
+
+        {/* Search bar */}
+        <Pressable style={styles.search} onPress={openCity}>
+          <Icon name="magnify" size={18} color={Colors.muted} />
+          <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
+          <View style={styles.searchPin}>
+            <Icon name="map-marker" size={16} color={GOLD} />
+          </View>
+        </Pressable>
+
+        {/* ── Service cards ── */}
+        <View style={styles.cardsWrap}>
+
+          {/* Ride */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.goldCard, pressed && styles.pressed]}
+            onPress={openCity}
+          >
+            <View style={styles.cardIcon}>
+              <Icon name="car-side" size={68} color={GOLD} />
+            </View>
+            <View style={styles.cardBody}>
+              <Txt weight="bold" size={18} color="#fff">{t('service.ride')}</Txt>
+              <Txt size={12} color="rgba(255,255,255,0.50)" style={{ marginTop: 3 }}>{t('service.rideSub')}</Txt>
+              <Txt size={12} color={GOLD} weight="bold" style={{ marginTop: 8 }}>250 DA</Txt>
+            </View>
+            <View style={[styles.arrowBtn, { backgroundColor: GOLD }]}>
+              <DirIcon name="chevron-right" size={18} color="#000" />
+            </View>
+          </Pressable>
+
+          {/* Women */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.purpleCard, pressed && styles.pressed]}
+            onPress={openShe}
+          >
+            <View style={styles.cardIcon}>
+              <Icon name="human-female" size={68} color={PURPLE} />
+            </View>
+            <View style={styles.cardBody}>
+              <Txt weight="bold" size={18} color="#fff">{t('service.women')}</Txt>
+              <Txt size={12} color="rgba(255,255,255,0.50)" style={{ marginTop: 3 }}>{t('service.womenOnly')}</Txt>
+            </View>
+            <View style={[styles.arrowBtn, { backgroundColor: PURPLE }]}>
+              <DirIcon name="chevron-right" size={18} color="#fff" />
+            </View>
+          </Pressable>
+
+          {/* Delivery */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
+            onPress={openDelivery}
+          >
+            <View style={styles.cardIcon}>
+              <Icon name="package-variant" size={68} color={TEAL} />
+            </View>
+            <View style={styles.cardBody}>
+              <Txt weight="bold" size={18} color="#fff">{t('service.delivery')}</Txt>
+              <Txt size={12} color="rgba(255,255,255,0.50)" style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
+            </View>
+            <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
+              <DirIcon name="chevron-right" size={18} color="#000" />
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Recent destinations */}
+        {recentDestinations.length > 0 && (
+          <View style={styles.recentWrap}>
+            <Txt weight="bold" size={13} color={Colors.muted} style={styles.recentTitle}>
+              {t('home.recentTitle')}
             </Txt>
-
-            {/* Photo warning — slim single line */}
-            {photoStatus === 'missing' && (
-              <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
-                <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
-                <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
-                <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
-              </Pressable>
-            )}
-
-            {/* Search bar */}
-            <Pressable style={styles.search} onPress={openCity}>
-              <Icon name="magnify" size={16} color={Colors.muted} />
-              <Txt size={13} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
-            </Pressable>
-
-            {/* Service cards — slim uniform rows */}
-            <View style={styles.services}>
-              <Pressable style={({ pressed }) => [styles.serviceRow, pressed && styles.pressed]} onPress={openCity}>
-                <View style={[styles.svcIcon, { backgroundColor: Colors.goldAlpha10 }]}>
-                  <Icon name="car" size={18} color={Colors.gold} />
+            {recentDestinations.map((d) => (
+              <Pressable
+                key={d.name}
+                style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
+                onPress={() => openRecent(d)}
+              >
+                <View style={styles.recentIcon}>
+                  <Icon name="history" size={18} color={Colors.muted} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Txt weight="bold" size={13}>{t('service.ride')}</Txt>
-                  <Txt size={10} color={Colors.muted}>{t('service.rideSub')}</Txt>
+                  <Txt weight="bold" size={14} color="#fff">{d.name}</Txt>
+                  <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
                 </View>
-                <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+                <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
               </Pressable>
-
-              <Pressable style={({ pressed }) => [styles.serviceRow, styles.serviceRowShe, pressed && styles.pressed]} onPress={openShe}>
-                <View style={[styles.svcIcon, { backgroundColor: Colors.purpleAlpha15 }]}>
-                  <Icon name="human-female" size={18} color={Colors.purple} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Txt weight="bold" size={13} color={Colors.purple}>{t('service.women')}</Txt>
-                  <Txt size={10} color={Colors.muted}>{t('service.womenOnly')}</Txt>
-                </View>
-                <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
-              </Pressable>
-
-              <Pressable style={({ pressed }) => [styles.serviceRow, pressed && styles.pressed]} onPress={openDelivery}>
-                <View style={[styles.svcIcon, { backgroundColor: Colors.goldAlpha10 }]}>
-                  <Icon name="package-variant" size={18} color={Colors.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Txt weight="bold" size={13}>{t('service.delivery')}</Txt>
-                  <Txt size={10} color={Colors.muted}>{t('service.deliverySub')}</Txt>
-                </View>
-                <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
-              </Pressable>
-            </View>
-
-            <View style={styles.recent}>
-              <Txt weight="bold" size={14} color={Colors.muted} style={styles.recentTitle}>
-                {t('home.recentTitle')}
-              </Txt>
-              {recentDestinations.length === 0 ? (
-                <View style={styles.recentEmpty}>
-                  <Icon name="map-marker-off-outline" size={22} color={Colors.dark4} />
-                  <Txt size={13} color={Colors.dark4}>{t('home.searchPlaceholder')}</Txt>
-                </View>
-              ) : recentDestinations.map((d) => (
-                  <Pressable
-                    key={d.name}
-                    style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
-                    onPress={() => openRecent(d)}
-                  >
-                    <View style={styles.recentIcon}>
-                      <Icon name="history" size={18} color={Colors.muted} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Txt weight="bold" size={14}>{d.name}</Txt>
-                      <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 1 }}>
-                        {d.address}
-                      </Txt>
-                    </View>
-                    <DirIcon name="chevron-right" size={20} color={Colors.dark4} />
-                  </Pressable>
-              ))}
-            </View>
-
-          </ScrollView>
-        </BottomSheetView>
-      </BottomSheet>
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
@@ -270,69 +273,114 @@ export default function Home() {
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.dark1 },
+    root: { flex: 1, backgroundColor: BG },
+
+    mapWrap: { position: 'absolute', top: 0, left: 0, right: 0, height: MAP_H },
+    mapOverlay: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(10,11,20,0.62)',
+    },
+    topBarWrap: {
+      position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+    },
     gpsBanner: {
-      position: 'absolute', top: 56, left: 0, right: 0,
+      position: 'absolute', top: Spacing.topBarHeight, left: 0, right: 0, zIndex: 15,
       backgroundColor: '#c87700', paddingVertical: 6, paddingHorizontal: Spacing.md,
-      alignItems: 'center', zIndex: 5,
+      alignItems: 'center',
     },
-    locateBtn: {
-      position: 'absolute', top: 130, right: Spacing.lg,
-      width: 40, height: 40, borderRadius: 20,
-      backgroundColor: Colors.white,
-      alignItems: 'center', justifyContent: 'center',
-      elevation: 4,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.18, shadowRadius: 4,
-      zIndex: 10,
+
+    scroll: { flex: 1 },
+    scrollBody: {
+      paddingTop: MAP_H - 20,
+      paddingHorizontal: Spacing.screenPadding,
+      paddingBottom: Spacing.xxxl,
     },
-    sheetBg: { backgroundColor: Colors.dark2 },
-    handle: { backgroundColor: Colors.dark4, width: 36 },
-    sheetContent: { flex: 1, paddingHorizontal: Spacing.screenPadding },
-    scrollBody: { paddingBottom: Spacing.xl },
+
+    greetText: { textAlign: 'right', marginBottom: Spacing.md },
 
     photoWarn: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: 8,
-      backgroundColor: Colors.goldAlpha10, borderRadius: Spacing.radiusMd,
-      borderWidth: 1, borderColor: Colors.goldAlpha10,
-      paddingVertical: 8, paddingHorizontal: Spacing.md, marginTop: Spacing.sm,
+      backgroundColor: 'rgba(255,184,0,0.10)',
+      borderRadius: Spacing.radiusMd, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)',
+      paddingVertical: 8, paddingHorizontal: Spacing.md, marginBottom: Spacing.md,
     },
 
     search: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
-      backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
-      height: 46, paddingHorizontal: Spacing.md, marginTop: Spacing.sm,
+      flexDirection: 'row-reverse', alignItems: 'center', gap: 10,
+      backgroundColor: 'rgba(255,255,255,0.07)',
+      borderRadius: Spacing.radiusMd, height: 52,
+      paddingHorizontal: Spacing.md, marginBottom: Spacing.xl,
+      borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
     },
-
-    services: { gap: 8, marginTop: Spacing.md },
-    serviceRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 12,
-      backgroundColor: Colors.dark3, borderRadius: 14,
-      paddingVertical: 11, paddingHorizontal: 14,
-    },
-    serviceRowShe: {
-      backgroundColor: Colors.purpleAlpha15,
-      borderWidth: 1, borderColor: Colors.purpleAlpha15,
-    },
-    svcIcon: {
-      width: 36, height: 36, borderRadius: 10,
+    searchPin: {
+      width: 32, height: 32, borderRadius: 16,
+      backgroundColor: 'rgba(255,184,0,0.15)',
       alignItems: 'center', justifyContent: 'center',
     },
 
-    recent: { marginTop: Spacing.md },
-    recentTitle: { marginBottom: Spacing.sm, textAlign: 'right' },
+    cardsWrap: { gap: 14 },
+
+    card: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      borderRadius: Spacing.radiusLg,
+      paddingVertical: 18,
+      paddingHorizontal: 18,
+      gap: 16,
+      borderWidth: 1,
+      overflow: 'hidden',
+    },
+    goldCard: {
+      backgroundColor: 'rgba(255,184,0,0.07)',
+      borderColor: 'rgba(255,184,0,0.30)',
+      shadowColor: GOLD,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.45,
+      shadowRadius: 22,
+      elevation: 14,
+    },
+    purpleCard: {
+      backgroundColor: 'rgba(123,79,212,0.10)',
+      borderColor: 'rgba(123,79,212,0.38)',
+      shadowColor: PURPLE,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.45,
+      shadowRadius: 22,
+      elevation: 14,
+    },
+    tealCard: {
+      backgroundColor: 'rgba(0,194,168,0.07)',
+      borderColor: 'rgba(0,194,168,0.30)',
+      shadowColor: TEAL,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.45,
+      shadowRadius: 22,
+      elevation: 14,
+    },
+
+    cardIcon: {
+      width: 82, alignItems: 'center', justifyContent: 'center',
+    },
+    cardBody: { flex: 1 },
+
+    arrowBtn: {
+      width: 38, height: 38, borderRadius: 19,
+      alignItems: 'center', justifyContent: 'center',
+    },
+
+    pressed: { opacity: 0.72 },
+
+    recentWrap: { marginTop: Spacing.xxl },
+    recentTitle: { textAlign: 'right', marginBottom: Spacing.sm },
     recentRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
-      paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border,
+      flexDirection: 'row-reverse', alignItems: 'center', gap: 14,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)',
     },
     recentIcon: {
-      width: 36, height: 36, borderRadius: 18,
-      backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center',
-    },
-    pressed: { opacity: 0.65 },
-    recentEmpty: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
-      paddingVertical: Spacing.md, opacity: 0.5,
+      width: 38, height: 38, borderRadius: 19,
+      backgroundColor: 'rgba(255,255,255,0.07)',
+      alignItems: 'center', justifyContent: 'center',
     },
   })
 }
