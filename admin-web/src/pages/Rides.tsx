@@ -22,11 +22,7 @@ export default function Rides() {
     try {
       let q = supabase
         .from('rides')
-        .select(`
-          *,
-          passenger:profiles!passenger_id(full_name, phone),
-          driver:profiles!driver_id(full_name, phone)
-        `, { count: 'exact' })
+        .select('*, passenger_name, passenger_phone, driver_name, driver_phone', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range((page - 1) * PER_PAGE, page * PER_PAGE - 1)
 
@@ -51,8 +47,8 @@ export default function Rides() {
       ['ID', 'Passager', 'Chauffeur', 'Type', 'Distance', 'Prix', 'Statut', 'Date'],
       ...rides.map(r => [
         r.id.slice(0, 8),
-        r.passenger?.full_name || '',
-        r.driver?.full_name || '',
+        r.passenger_name || '',
+        r.driver_name || '',
         r.ride_type,
         r.distance_km?.toFixed(2) + 'km',
         r.price,
@@ -125,8 +121,8 @@ export default function Rides() {
                     onClick={() => setSelected(ride)}
                   >
                     <td className="table-cell text-muted text-xs font-mono">{ride.id.slice(0, 8)}…</td>
-                    <td className="table-cell font-medium text-sm">{ride.passenger?.full_name || '—'}</td>
-                    <td className="table-cell text-muted text-sm">{ride.driver?.full_name || '—'}</td>
+                    <td className="table-cell font-medium text-sm">{ride.passenger_name || '—'}</td>
+                    <td className="table-cell text-muted text-sm">{ride.driver_name || '—'}</td>
                     <td className="table-cell">
                       <span className={getRideTypeColor(ride.ride_type)}>
                         {getStatusLabel(ride.ride_type)}
@@ -165,13 +161,13 @@ export default function Rides() {
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-bg rounded-xl p-3">
                 <p className="text-xs text-muted mb-1">Passager</p>
-                <p className="font-semibold">{selected.passenger?.full_name || '—'}</p>
-                <p className="text-xs text-muted">{selected.passenger?.phone}</p>
+                <p className="font-semibold">{selected.passenger_name || '—'}</p>
+                <p className="text-xs text-muted">{selected.passenger_phone}</p>
               </div>
               <div className="bg-bg rounded-xl p-3">
                 <p className="text-xs text-muted mb-1">Chauffeur</p>
-                <p className="font-semibold">{selected.driver?.full_name || 'Non assigné'}</p>
-                <p className="text-xs text-muted">{selected.driver?.phone}</p>
+                <p className="font-semibold">{selected.driver_name || 'Non assigné'}</p>
+                <p className="text-xs text-muted">{selected.driver_phone}</p>
               </div>
             </div>
 

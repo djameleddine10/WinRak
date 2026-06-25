@@ -80,7 +80,7 @@ export default function Dashboard() {
         supabase.from('rides').select('price').eq('status', 'completed'),
         supabase.from('rides').select('price').eq('status', 'completed').gte('created_at', todayStart),
         supabase.from('rides').select('price').eq('status', 'completed').gte('created_at', weekStart),
-        supabase.from('rides').select('id, ride_type, status, price, created_at, passenger:profiles!passenger_id(full_name), driver:profiles!driver_id(full_name)').order('created_at', { ascending: false }).limit(20),
+        supabase.from('rides').select('id, ride_type, status, price, created_at, passenger_name, driver_name').order('created_at', { ascending: false }).limit(20),
         supabase.from('rides').select('created_at, price, status').gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()).order('created_at', { ascending: true }),
         supabase.from('rides').select('ride_type').eq('status', 'completed'),
       ])
@@ -142,7 +142,7 @@ export default function Dashboard() {
     // Realtime
     const channel = supabase
       .channel('dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, fetchStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_locations' }, () => {})
       .subscribe()
 
@@ -317,8 +317,8 @@ export default function Dashboard() {
             <tbody>
               {recentRides.map(ride => (
                 <tr key={ride.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="table-cell font-medium">{ride.passenger?.full_name || '—'}</td>
-                  <td className="table-cell text-muted">{ride.driver?.full_name || '—'}</td>
+                  <td className="table-cell font-medium">{ride.passenger_name || '—'}</td>
+                  <td className="table-cell text-muted">{ride.driver_name || '—'}</td>
                   <td className="table-cell">
                     <span className={getRideTypeColor(ride.ride_type)}>
                       {getStatusLabel(ride.ride_type)}
