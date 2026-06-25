@@ -1,0 +1,33 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export type Theme = 'dark' | 'light'
+export type Lang  = 'fr'   | 'ar'
+
+interface UIState {
+  theme: Theme
+  lang:  Lang
+  setTheme: (t: Theme) => void
+  setLang:  (l: Lang)  => void
+}
+
+export function applyTheme(theme: Theme) {
+  document.documentElement.classList.toggle('light', theme === 'light')
+}
+
+export function applyLang(lang: Lang) {
+  document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr'
+  document.documentElement.lang = lang
+}
+
+export const useUIStore = create<UIState>()(
+  persist(
+    (set) => ({
+      theme: 'dark',
+      lang:  'fr',
+      setTheme: (theme) => { applyTheme(theme); set({ theme }) },
+      setLang:  (lang)  => { applyLang(lang);   set({ lang  }) },
+    }),
+    { name: 'winrak-ui' }
+  )
+)

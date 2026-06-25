@@ -1,12 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Theme CSS variables ─────────────────────────────────────────────────── */
+
+/* Dark (default) */
+:root {
+  --bg:             10 10 15;       /* #0A0A0F */
+  --surface:        17 17 24;       /* #111118 */
+  --border-c:       30 30 46;       /* #1E1E2E */
+  --muted:          107 114 128;    /* #6B7280 */
+  --text-primary:   249 250 251;    /* #F9FAFB */
+  --text-secondary: 156 163 175;    /* #9CA3AF */
+  --sidebar:        13 13 20;       /* #0D0D14 */
+}
+
+/* Light */
+.light {
+  --bg:             248 249 250;    /* #F8F9FA */
+  --surface:        255 255 255;    /* #FFFFFF */
+  --border-c:       229 231 235;    /* #E5E7EB */
+  --muted:          156 163 175;    /* #9CA3AF */
+  --text-primary:   17 24 39;       /* #111827 */
+  --text-secondary: 107 114 128;    /* #6B7280 */
+  --sidebar:        243 244 246;    /* #F3F4F6 */
+}
+
+/* ── RTL layout ──────────────────────────────────────────────────────────── */
+
+[dir="rtl"] #main-content {
+  margin-left: 0 !important;
+  margin-right: 16rem;
+}
+
+[dir="rtl"] aside.winrak-sidebar {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] aside.winrak-sidebar .sidebar-active-bar {
+  left: auto;
+  right: 0;
+  border-radius: 99px 0 0 99px;
+}
+
+[dir="rtl"] aside.winrak-sidebar .collapse-btn {
+  right: auto;
+  left: -0.75rem;
+}
+
+/* Arabic font */
+[dir="rtl"] body {
+  font-family: 'Cairo', sans-serif;
+}
 
 @layer base {
   * {
     box-sizing: border-box;
   }
-  
+
   body {
     @apply bg-bg text-text-primary font-sans antialiased;
     margin: 0;
@@ -107,6 +161,16 @@
   }
 }
 
+/* ── Light mode overrides ────────────────────────────────────────────────── */
+
+.light .btn-secondary:hover { background-color: rgba(0,0,0,0.04); }
+.light .glass-card           { background-color: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.08); }
+.light .table-header         { background-color: rgba(0,0,0,0.02); }
+.light .watermark            { color: #6366F1; }
+.light ::-webkit-scrollbar-track { background: #F3F4F6; }
+.light ::-webkit-scrollbar-thumb { background: #D1D5DB; }
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
