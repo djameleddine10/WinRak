@@ -62,11 +62,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         email,
         options: { shouldCreateUser: false },
       })
-      if (otpError) return { error: otpError.message }
+      if (otpError) return { error: otpError.message || 'Erreur lors de l\'envoi du code OTP.' }
 
       return {}
     } catch (err: any) {
-      return { error: err.message }
+      return { error: err?.message || 'Erreur inattendue.' }
     } finally {
       set({ loading: false })
     }
@@ -78,9 +78,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token,
-        type: 'email',
+        type: 'magiclink',
       })
-      if (error) return { error: 'Code incorrect ou expiré.' }
+      if (error) {
+        console.error('verifyOtp error:', error)
+        return { error: error.message || 'Code incorrect ou expiré.' }
+      }
 
       const { data: profile } = await supabase
         .from('profiles')

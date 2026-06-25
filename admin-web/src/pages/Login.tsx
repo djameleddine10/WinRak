@@ -155,19 +155,19 @@ export default function Login() {
                 <input
                   type="text"
                   value={token}
-                  onChange={e => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="123456"
+                  onChange={e => setToken(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="12345678"
                   className="input-field tracking-widest text-center text-xl font-mono"
                   required
                   autoFocus
                   inputMode="numeric"
-                  maxLength={6}
+                  maxLength={8}
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={loading || token.length < 6}
+                disabled={loading || token.length < 8}
                 className="btn-primary w-full justify-center py-2.5 mt-2"
               >
                 {loading ? (

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Toaster } from 'sonner'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuthStore } from './stores/auth.store'
@@ -25,6 +26,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster theme="dark" position="top-right" richColors />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
