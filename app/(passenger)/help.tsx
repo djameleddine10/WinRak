@@ -1,6 +1,7 @@
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { Spacing } from '../../constants/spacing'
+import { useColors } from '../../hooks/useColors'
 import { Txt } from '../../components/ui/Txt'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { TopBar } from '../../components/layout/TopBar'
@@ -8,10 +9,6 @@ import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { useIsRTL } from '../../i18n/locale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-const LIGHT_BG = '#f5f5f5'
-const DARK_TEXT = '#1a1a1a'
-const SEP = '#e0e0e0'
 
 const SECTIONS: {
   titleKey: TranslationKey
@@ -27,24 +24,25 @@ const SECTIONS: {
 ]
 
 export default function Help() {
+  const Colors = useColors()
   const insets = useSafeAreaInsets()
   const isRTL = useIsRTL()
   const t = useT()
   return (
-    <View style={{ flex: 1, backgroundColor: LIGHT_BG }}>
+    <View style={{ flex: 1, backgroundColor: Colors.dark1 }}>
       <TopBar title={t('drawer.support')} showBack />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
         {SECTIONS.map((s) => (
           <View key={s.titleKey} style={styles.section}>
-            <Txt size={12} color="#888" style={styles.label}>{t(s.titleKey)}</Txt>
+            <Txt size={12} color={Colors.muted} style={styles.label}>{t(s.titleKey)}</Txt>
             {s.items.map((item, i) => (
               <Pressable
                 key={item.key}
-                style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }, i < s.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: SEP }]}
+                style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }, i < s.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.border }]}
                 onPress={item.onPress}
               >
-                <Txt size={14} color={DARK_TEXT} style={{ flex: 1 }}>{t(item.key)}</Txt>
-                <DirIcon name="chevron-right" size={20} color="#999" />
+                <Txt size={14} color={Colors.white} style={{ flex: 1 }}>{t(item.key)}</Txt>
+                <DirIcon name="chevron-right" size={20} color={Colors.muted} />
               </Pressable>
             ))}
           </View>

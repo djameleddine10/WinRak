@@ -78,8 +78,8 @@ export default function RestaurantScreen() {
           <Txt size={13} color={Colors.muted}>{t('rest.etaDelivery', { n: r.etaMin, unit: t('common.min'), fee: r.deliveryFee, currency: t('common.currency') })}</Txt>
         </View>
 
-        {/* Reception */}
-        <View style={styles.reception}>
+        {/* Reception — tap anywhere to open the chat */}
+        <Pressable style={({ pressed }) => [styles.reception, pressed && { opacity: 0.7 }]} onPress={contactReception}>
           <View style={styles.recAvatar}>
             <Icon name="account-tie" size={24} color={Colors.gold} />
             <View style={styles.onlineDot} />
@@ -89,7 +89,7 @@ export default function RestaurantScreen() {
             <Txt size={12} color={Colors.success} style={{ marginTop: 2 }}>{t('rest.online')}</Txt>
           </View>
           <Icon name="message-text-outline" size={22} color={Colors.gold} />
-        </View>
+        </Pressable>
 
         {/* Menu */}
         <Txt size={12} color={Colors.muted} style={styles.section}>{t('rest.menu')}</Txt>
