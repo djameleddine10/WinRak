@@ -42,11 +42,16 @@ export default function Notifications() {
     }
     setSending(true)
     try {
+      let parsedData: unknown = null
+      if (form.data) {
+        try { parsedData = JSON.parse(form.data) }
+        catch { toast.error('Données JSON invalides'); setSending(false); return }
+      }
       const payload = {
         target: form.target,
         title:  form.title,
         body:   form.body,
-        data:   form.data ? JSON.parse(form.data) : null,
+        data:   parsedData,
       }
 
       const { data, error } = await supabase.functions.invoke('notify-broadcast', {

@@ -77,17 +77,17 @@ export default function Dashboard() {
         supabase.from('rides').select('*', { count: 'exact', head: true }).gte('created_at', weekStart),
         supabase.from('driver_locations').select('*', { count: 'exact', head: true }).eq('is_online', true),
         supabase.from('drivers').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('rides').select('price').eq('status', 'completed'),
-        supabase.from('rides').select('price').eq('status', 'completed').gte('created_at', todayStart),
-        supabase.from('rides').select('price').eq('status', 'completed').gte('created_at', weekStart),
+        supabase.from('rides').select('total:sum(price)').eq('status', 'completed'),
+        supabase.from('rides').select('total:sum(price)').eq('status', 'completed').gte('created_at', todayStart),
+        supabase.from('rides').select('total:sum(price)').eq('status', 'completed').gte('created_at', weekStart),
         supabase.from('rides').select('id, ride_type, status, price, created_at, passenger_name, driver_name').order('created_at', { ascending: false }).limit(20),
         supabase.from('rides').select('created_at, price, status').gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()).order('created_at', { ascending: true }),
         supabase.from('rides').select('ride_type').eq('status', 'completed'),
       ])
 
-      const totalRevenue = (revenueData || []).reduce((s: number, r: any) => s + (r.price || 0), 0)
-      const todayRevenue = (todayRevData || []).reduce((s: number, r: any) => s + (r.price || 0), 0)
-      const weekRevenue = (weekRevData || []).reduce((s: number, r: any) => s + (r.price || 0), 0)
+      const totalRevenue = Number((revenueData  as any)?.[0]?.total ?? 0)
+      const todayRevenue = Number((todayRevData as any)?.[0]?.total ?? 0)
+      const weekRevenue  = Number((weekRevData  as any)?.[0]?.total ?? 0)
 
       setStats({
         totalDrivers: totalDrivers || 0,
@@ -142,7 +142,7 @@ export default function Dashboard() {
     // Realtime
     const channel = supabase
       .channel('dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, fetchStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_locations' }, () => {})
       .subscribe()
 

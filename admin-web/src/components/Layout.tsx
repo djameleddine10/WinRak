@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Watermark } from './Logo'
-import { Toaster } from 'sonner'
 import { useSidebarStore } from '../stores/sidebar.store'
 import { useUIStore } from '../stores/ui.store'
 import { cn } from '../lib/utils'
@@ -26,16 +25,6 @@ export function Layout() {
         <Outlet />
       </main>
       <Watermark />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#111118',
-            border: '1px solid #1E1E2E',
-            color: '#F9FAFB',
-          },
-        }}
-      />
     </div>
   )
 }

@@ -15,7 +15,6 @@ export default function Drivers() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
-  const [selected, setSelected] = useState<string[]>([])
   const [confirm, setConfirm] = useState<{ open: boolean; action: string; id: string | null }>({ open: false, action: '', id: null })
   const [drawerDriver, setDrawerDriver] = useState<any>(null)
 
@@ -24,6 +23,23 @@ export default function Drivers() {
   const fetchDrivers = useCallback(async () => {
     setLoading(true)
     try {
+      // PostgREST doesn't support ilike on embedded relations.
+      // When search is active, resolve matching user_ids first, then filter.
+      let userIds: string[] | null = null
+      if (search) {
+        const { data: profileMatches } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('full_name', `%${search}%`)
+        userIds = (profileMatches || []).map((p: any) => p.id)
+        if (userIds.length === 0) {
+          setDrivers([])
+          setTotal(0)
+          setLoading(false)
+          return
+        }
+      }
+
       let q = supabase
         .from('drivers')
         .select(`
@@ -33,8 +49,8 @@ export default function Drivers() {
         .order('created_at', { ascending: false })
         .range((page - 1) * PER_PAGE, page * PER_PAGE - 1)
 
-      if (status) q = q.eq('status', status)
-      if (search) q = q.ilike('profile.full_name', `%${search}%`)
+      if (status)  q = q.eq('status', status)
+      if (userIds) q = q.in('user_id', userIds)
 
       const { data, count, error } = await q
       if (error) throw error
@@ -103,12 +119,6 @@ export default function Drivers() {
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="table-header w-8">
-                    <input type="checkbox"
-                      className="rounded border-border bg-surface"
-                      onChange={e => setSelected(e.target.checked ? drivers.map(d => d.id) : [])}
-                    />
-                  </th>
                   <th className="table-header">Chauffeur</th>
                   <th className="table-header">Téléphone</th>
                   <th className="table-header">Ville</th>
@@ -122,16 +132,6 @@ export default function Drivers() {
               <tbody>
                 {drivers.map(driver => (
                   <tr key={driver.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="table-cell">
-                      <input type="checkbox"
-                        className="rounded border-border bg-surface"
-                        checked={selected.includes(driver.id)}
-                        onChange={e => setSelected(e.target.checked
-                          ? [...selected, driver.id]
-                          : selected.filter(s => s !== driver.id)
-                        )}
-                      />
-                    </td>
                     <td className="table-cell">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
