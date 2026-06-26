@@ -12,11 +12,13 @@ import { Button } from '../../components/ui/Button'
 import { TopBar } from '../../components/layout/TopBar'
 import { useRestaurantStore, allRestaurants } from '../../store/restaurantStore'
 import { useDeliveryStore, foodCartCount, foodCartSubtotal } from '../../store/deliveryStore'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function RestaurantScreen() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
   const registered  = useRestaurantStore((s) => s.registered)
@@ -148,7 +150,8 @@ export default function RestaurantScreen() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     hero: { height: '26%', backgroundColor: Colors.dark2, alignItems: 'center', justifyContent: 'center' },
@@ -156,11 +159,11 @@ function makeStyles(Colors: Palette) {
       flex: 1, backgroundColor: Colors.dark1,
       borderTopLeftRadius: Spacing.radiusLg, borderTopRightRadius: Spacing.radiusLg, marginTop: -Spacing.radiusLg,
     },
-    titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    titleRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     statusPill: { borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 4 },
-    metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: Spacing.sm, flexWrap: 'wrap' },
+    metaRow: { flexDirection: row, alignItems: 'center', gap: 6, marginTop: Spacing.sm, flexWrap: 'wrap' },
     reception: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginTop: Spacing.lg,
     },
     recAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
@@ -171,12 +174,12 @@ function makeStyles(Colors: Palette) {
     section: { marginTop: Spacing.xl, marginBottom: Spacing.sm },
     emptyMenu: { backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.lg },
     menuRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md,
     },
     addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
     stepper: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.sm, paddingVertical: 4,
     },
     stepBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.goldAlpha15, alignItems: 'center', justifyContent: 'center' },
@@ -188,8 +191,8 @@ function makeStyles(Colors: Palette) {
     },
     cartBar: {
       backgroundColor: Colors.gold, borderRadius: Spacing.radiusMd,
-      padding: Spacing.md, flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      padding: Spacing.md, flexDirection: row, alignItems: 'center', gap: Spacing.md,
     },
-    footerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    footerRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
   })
 }

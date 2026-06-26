@@ -6,6 +6,7 @@ import { Spacing } from '../../constants/spacing'
 import { Txt } from '../ui/Txt'
 import { Button } from '../ui/Button'
 import { useT } from '../../hooks/useT'
+import { useIsRTL } from '../../i18n/locale'
 
 interface ExitConfirmDialogProps {
   visible: boolean
@@ -16,7 +17,8 @@ interface ExitConfirmDialogProps {
 // Bottom sheet modal confirming exit from a registration flow.
 export function ExitConfirmDialog({ visible, onConfirm, onCancel }: ExitConfirmDialogProps) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
@@ -41,7 +43,8 @@ export function ExitConfirmDialog({ visible, onConfirm, onCancel }: ExitConfirmD
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
     sheet: {
@@ -53,7 +56,7 @@ function makeStyles(Colors: Palette) {
       gap: Spacing.md,
     },
     handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.dark4, alignSelf: 'center', marginBottom: Spacing.sm },
-    actions: { flexDirection: 'row-reverse', gap: Spacing.md, marginTop: Spacing.md },
+    actions: { flexDirection: row, gap: Spacing.md, marginTop: Spacing.md },
     flex: { flex: 1 },
     noBtn: { backgroundColor: Colors.dark3 },
   })

@@ -17,13 +17,15 @@ import { useRideStore } from '../../store/rideStore'
 import { usePassengerName } from '../../i18n/locale'
 import { type TranslationKey } from '../../i18n/translations'
 import { rateTrip } from '../../services/trips.service'
+import { useIsRTL } from '../../i18n/locale'
 
 const COMPLIMENT_KEYS: TranslationKey[] = ['rating.p1', 'rating.p2', 'rating.p3', 'rating.p4', 'rating.p5']
 
 export default function DriverRating() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const completeRide            = useDriverStore((s) => s.completeRide)
   const realTripId              = useDriverStore((s) => s.realTripId)
@@ -155,7 +157,8 @@ export default function DriverRating() {
 
 function Star({ n, active, onPress }: { n: number; active: boolean; onPress: () => void }) {
   const Colors = useColors()
-  const scale = useRef(new Animated.Value(1)).current
+  const isRTL = useIsRTL()
+    const scale = useRef(new Animated.Value(1)).current
   function tap() {
     Animated.sequence([
       Animated.timing(scale, { toValue: 1.3, duration: 100, useNativeDriver: true }),
@@ -172,7 +175,8 @@ function Star({ n, active, onPress }: { n: number; active: boolean; onPress: () 
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
@@ -185,13 +189,13 @@ function makeStyles(Colors: Palette) {
       padding: Spacing.xxl, alignItems: 'center', marginHorizontal: Spacing.xxl,
       borderWidth: 1.5, borderColor: Colors.goldAlpha15,
     },
-    passengerCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
+    passengerCard: { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
     cardInfo: { flex: 1, gap: 4 },
-    starRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 2 },
-    stars: { flexDirection: 'row-reverse', justifyContent: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
-    chipsRow: { flexDirection: 'row-reverse', marginTop: Spacing.lg },
+    starRow: { flexDirection: row, alignItems: 'center', gap: 2 },
+    stars: { flexDirection: row, justifyContent: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
+    chipsRow: { flexDirection: row, marginTop: Spacing.lg },
     chip: { backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, marginLeft: Spacing.sm, borderWidth: 1.5, borderColor: 'transparent' },
     chipOn: { borderColor: Colors.gold, backgroundColor: Colors.goldAlpha10 },
-    receivedRating: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.goldAlpha10, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginTop: Spacing.lg },
+    receivedRating: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.goldAlpha10, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginTop: Spacing.lg },
   })
 }

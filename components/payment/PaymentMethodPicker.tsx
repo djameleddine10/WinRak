@@ -9,6 +9,7 @@ import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
 import { useT } from '../../hooks/useT'
 import {
+import { useIsRTL } from '../../i18n/locale'
   usePaymentStore, selectedMethod, methodIcon, methodLabelKey, methodBrand,
   type SavedMethod,
 } from '../../store/paymentStore'
@@ -24,8 +25,9 @@ interface Props {
 // radio list. Used in the ride request sheet and the delivery checkout.
 export function PaymentMethodPicker({ amount, label }: Props) {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const [open, setOpen] = useState(false)
 
@@ -118,11 +120,12 @@ export function PaymentMethodPicker({ amount, label }: Props) {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     label: { marginBottom: Spacing.sm },
     row: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md,
     },
     iconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
@@ -134,7 +137,7 @@ function makeStyles(Colors: Palette) {
     },
     handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.dark4, alignSelf: 'center', marginBottom: Spacing.md },
     optRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
       borderWidth: 1.5, borderColor: 'transparent', padding: Spacing.md, marginBottom: Spacing.sm,
     },
@@ -144,7 +147,7 @@ function makeStyles(Colors: Palette) {
     radioActive: { borderColor: Colors.gold },
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
     addRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
       borderWidth: 1.5, borderColor: Colors.gold, borderStyle: 'dashed',
       borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md, marginTop: 4,
     },

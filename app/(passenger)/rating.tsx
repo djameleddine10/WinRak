@@ -15,13 +15,15 @@ import { useRideStore } from '../../store/rideStore'
 import { useRatingStore } from '../../store/ratingStore'
 import { rateTrip } from '../../services/trips.service'
 import { type TranslationKey } from '../../i18n/translations'
+import { useIsRTL } from '../../i18n/locale'
 
 const COMPLIMENT_KEYS: TranslationKey[] = ['rating.c1', 'rating.c2', 'rating.c3', 'rating.c4', 'rating.c5', 'rating.c6']
 
 export default function Rating() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const ride         = useRideStore((s) => s.currentRide)
   const reset        = useRideStore((s) => s.reset)
@@ -90,7 +92,8 @@ export default function Rating() {
 
 function Star({ n, active, onPress }: { n: number; active: boolean; onPress: () => void }) {
   const Colors = useColors()
-  const scale = useRef(new Animated.Value(1)).current
+  const isRTL = useIsRTL()
+    const scale = useRef(new Animated.Value(1)).current
   function tap() {
     Animated.sequence([
       Animated.timing(scale, { toValue: 1.3, duration: 100, useNativeDriver: true }),
@@ -107,12 +110,13 @@ function Star({ n, active, onPress }: { n: number; active: boolean; onPress: () 
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
-    stars: { flexDirection: 'row-reverse', justifyContent: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
-    chipsRow: { flexDirection: 'row-reverse', marginTop: Spacing.lg },
+    stars: { flexDirection: row, justifyContent: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
+    chipsRow: { flexDirection: row, marginTop: Spacing.lg },
     chip: { backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, marginLeft: Spacing.sm, borderWidth: 1.5, borderColor: 'transparent' },
     chipOn: { borderColor: Colors.gold, backgroundColor: Colors.goldAlpha10 },
   })

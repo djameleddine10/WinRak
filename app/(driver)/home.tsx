@@ -19,13 +19,15 @@ import { supabase } from '../../lib/supabase'
 import { setDriverStatus, updateDriverLocation, subscribeToMyTripOffer } from '../../services/realtime.service'
 import { registerPushToken } from '../../services/notifications.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
+import { useIsRTL } from '../../i18n/locale'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const RADAR_SIZE = Math.min(SCREEN_W * 0.86, 360)
 
 export default function DriverHome() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const status = useDriverStore((s) => s.status)
   const goOnline = useDriverStore((s) => s.goOnline)
@@ -261,7 +263,8 @@ export default function DriverHome() {
 
 function StatChip({ icon, label, value, gold }: { icon: string; label: string; value: string; gold?: boolean }) {
   const Colors = useColors()
-  return (
+  const isRTL = useIsRTL()
+    return (
     <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
       <Icon name={icon} size={18} color={gold ? Colors.gold : Colors.muted} />
       <Txt weight="bold" size={16} color={gold ? Colors.gold : Colors.white}>{value}</Txt>
@@ -270,7 +273,8 @@ function StatChip({ icon, label, value, gold }: { icon: string; label: string; v
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     radarWrap: {
@@ -279,7 +283,7 @@ function makeStyles(Colors: Palette) {
       justifyContent: 'center',
     },
     topBar: {
-      flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between',
+      flexDirection: row, alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, gap: Spacing.md,
     },
     iconBtn: {
@@ -288,18 +292,18 @@ function makeStyles(Colors: Palette) {
       backgroundColor: Colors.dark3,
     },
     toggle: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.xl, paddingVertical: 10,
     },
     statsBar: {
-      flexDirection: 'row-reverse', alignItems: 'center',
+      flexDirection: row, alignItems: 'center',
       backgroundColor: Colors.dark2, marginHorizontal: Spacing.screenPadding,
       borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md,
       marginBottom: Spacing.sm,
     },
     statsDivider: { width: 1, height: 32, backgroundColor: Colors.dark3 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    sheBadge: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.purpleAlpha15, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 6, marginBottom: Spacing.lg },
+    sheBadge: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.purpleAlpha15, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 6, marginBottom: Spacing.lg },
     statusText: { marginBottom: Spacing.xxl, paddingHorizontal: Spacing.xl },
     devBtn: {
       marginTop: Spacing.lg,

@@ -8,6 +8,7 @@ import { useSettingsStore, type Language } from '../../store/settingsStore'
 import { useT } from '../../hooks/useT'
 import { Txt } from '../../components/ui/Txt'
 import { TopBar } from '../../components/layout/TopBar'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Mock legal copy (placeholder), localized per language. Replace with real text before launch.
 const BODIES: Record<Language, Record<string, string[]>> = {
@@ -66,6 +67,7 @@ const BODIES: Record<Language, Record<string, string[]>> = {
 
 export default function LegalDoc() {
   const Colors = useColors()
+  const insets = useSafeAreaInsets()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const lang = useSettingsStore((s) => s.language)
   const t = useT()
@@ -76,7 +78,7 @@ export default function LegalDoc() {
   return (
     <View style={styles.container}>
       <TopBar title={title ?? t('settings.legal')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         {paragraphs.map((p, i) => (
           <Txt key={i} size={14} color={Colors.muted} style={styles.para}>{p}</Txt>
         ))}

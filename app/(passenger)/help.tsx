@@ -6,6 +6,8 @@ import { DirIcon } from '../../components/ui/DirIcon'
 import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const LIGHT_BG = '#f5f5f5'
 const DARK_TEXT = '#1a1a1a'
@@ -25,11 +27,12 @@ const SECTIONS: {
 ]
 
 export default function Help() {
+  const insets = useSafeAreaInsets()
   const t = useT()
   return (
     <View style={{ flex: 1, backgroundColor: LIGHT_BG }}>
       <TopBar title={t('drawer.support')} showBack />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
         {SECTIONS.map((s) => (
           <View key={s.titleKey} style={styles.section}>
             <Txt size={12} color="#888" style={styles.label}>{t(s.titleKey)}</Txt>
@@ -54,5 +57,5 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.screenPadding },
   section: { marginBottom: Spacing.xl },
   label: { marginBottom: Spacing.sm },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', paddingVertical: Spacing.md },
+  row: { flexDirection: row, alignItems: 'center', paddingVertical: Spacing.md },
 })

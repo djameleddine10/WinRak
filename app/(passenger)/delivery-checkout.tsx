@@ -15,11 +15,13 @@ import { TopBar } from '../../components/layout/TopBar'
 import { SERVICE_FEE } from '../../mock/delivery'
 import { useDeliveryStore, cartSubtotal, orderTotal, foodCartSubtotal } from '../../store/deliveryStore'
 import { usePaymentStore, selectedMethod } from '../../store/paymentStore'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function DeliveryCheckout() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
 
   const service        = useDeliveryStore((s) => s.service)
@@ -162,26 +164,27 @@ export default function DeliveryCheckout() {
 
 function Row({ label, value, Colors }: { label: string; value: string; Colors: Palette }) {
   return (
-    <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', paddingVertical: 4 }}>
+    <View style={{ flexDirection: row, justifyContent: 'space-between', paddingVertical: 4 }}>
       <Txt size={13} color={Colors.muted}>{label}</Txt>
       <Txt size={13}>{value}</Txt>
     </View>
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     section: { marginTop: Spacing.lg, marginBottom: Spacing.sm },
     block: { backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
-    blockRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    blockRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
     phIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.successAlpha15, alignItems: 'center', justifyContent: 'center' },
-    rxSummary: { flexDirection: 'row-reverse', gap: Spacing.md },
+    rxSummary: { flexDirection: row, gap: Spacing.md },
     rxThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: Colors.dark3 },
-    itemRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, paddingVertical: 6 },
+    itemRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, paddingVertical: 6 },
     divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm },
-    totalRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+    totalRow: { flexDirection: row, justifyContent: 'space-between', alignItems: 'center' },
     footer: {
       backgroundColor: Colors.dark2, borderTopWidth: 1, borderTopColor: Colors.border,
       paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.md,

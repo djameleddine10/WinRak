@@ -19,11 +19,13 @@ import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
 import { supabase } from '../../lib/supabase'
 import { subscribeToTripStatus, subscribeToDriverLocation } from '../../services/realtime.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function RideActive() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const ride            = useRideStore((s) => s.currentRide)
   const completeRide    = useRideStore((s) => s.completeRide)
@@ -124,7 +126,8 @@ export default function RideActive() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     map: { height: '64%' },
@@ -141,10 +144,10 @@ function makeStyles(Colors: Palette) {
       height: 4, backgroundColor: Colors.gold, borderRadius: 2,
     },
     destRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
     },
     metaRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 4,
+      flexDirection: row, alignItems: 'center', gap: 4, marginTop: 4,
     },
   })
 }

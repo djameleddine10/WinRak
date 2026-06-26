@@ -18,10 +18,12 @@ import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
 import { usePassengerName } from '../../i18n/locale'
 import { acceptTrip, advanceTripOffer } from '../../services/trips.service'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function IncomingRequest() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const distanceUnit = useSettingsStore((s) => s.distanceUnit)
   const insets = useSafeAreaInsets()
   const t = useT()
@@ -160,7 +162,8 @@ export default function IncomingRequest() {
 
 function TripRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <View style={styles.tripRow}>
       <Icon name={icon} size={16} color={Colors.gold} />
@@ -170,18 +173,19 @@ function TripRow({ icon, label, value }: { icon: string; label: string; value: s
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
     sheet: { backgroundColor: Colors.dark2, borderTopLeftRadius: Spacing.radiusLg, borderTopRightRadius: Spacing.radiusLg, padding: Spacing.screenPadding },
     track: { height: 4, backgroundColor: Colors.dark3, borderRadius: 2, overflow: 'hidden', marginTop: Spacing.sm },
     fill: { height: 4 },
-    passengerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
-    metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
+    passengerRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
+    metaRow: { flexDirection: row, alignItems: 'center', gap: 4 },
     tripCard: { backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, padding: Spacing.md, gap: Spacing.sm, marginTop: Spacing.md },
-    tripRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
-    tripMeta: { flexDirection: 'row-reverse', gap: Spacing.lg, marginTop: 4 },
-    actions: { flexDirection: 'row-reverse', gap: Spacing.md, marginTop: Spacing.lg },
+    tripRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
+    tripMeta: { flexDirection: row, gap: Spacing.lg, marginTop: 4 },
+    actions: { flexDirection: row, gap: Spacing.md, marginTop: Spacing.lg },
     priceBlock: { alignItems: 'flex-end', marginBottom: Spacing.sm },
     rejectBtn: { backgroundColor: Colors.dark3, borderWidth: 1.5, borderColor: Colors.danger },
   })

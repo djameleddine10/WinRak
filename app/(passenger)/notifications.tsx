@@ -10,6 +10,8 @@ import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { useUserStore } from '../../store/userStore'
 import {
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
   fetchNotifications,
   markAllNotificationsRead,
   subscribeNotifications,
@@ -27,8 +29,9 @@ function makeTypeIcon(Colors: Palette): Record<string, { icon: string; color: st
 }
 
 export default function Notifications() {
+  const insets = useSafeAreaInsets()
   const Colors  = useColors()
-  const styles  = useMemo(() => makeStyles(Colors), [Colors])
+  const styles  = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const TYPE_ICON = useMemo(() => makeTypeIcon(Colors), [Colors])
   const t       = useT()
   const profile = useUserStore((s) => s.profile)
@@ -71,7 +74,7 @@ export default function Notifications() {
         <FlatList
           data={data}
           keyExtractor={(n) => n.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
           renderItem={({ item: n }) => {
             const ti = TYPE_ICON[n.type] ?? TYPE_ICON.info
@@ -94,12 +97,13 @@ export default function Notifications() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     empty:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.screenPadding },
     list:      { padding: Spacing.screenPadding, gap: Spacing.sm },
-    card:      { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
+    card:      { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
     unread:    { borderRightWidth: 3, borderRightColor: Colors.gold, backgroundColor: Colors.dark3 },
     icon:      { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   })

@@ -8,6 +8,7 @@ import { formatDistance } from '../../utils/distance'
 import { Spacing } from '../../constants/spacing'
 import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
+import { useIsRTL } from '../../i18n/locale'
 
 interface RideInfoRowProps {
   distanceKm: number
@@ -18,8 +19,9 @@ interface RideInfoRowProps {
 // Three pill chips: distance / duration / price.
 export function RideInfoRow({ distanceKm, durationMin, price }: RideInfoRowProps) {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const distanceUnit = useSettingsStore((s) => s.distanceUnit)
   const chips = [
     { icon: 'map-marker-distance', label: formatDistance(distanceKm, distanceUnit) },
@@ -38,12 +40,13 @@ export function RideInfoRow({ distanceKm, durationMin, price }: RideInfoRowProps
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
-    row: { flexDirection: 'row-reverse', gap: Spacing.sm },
+    row: { flexDirection: row, gap: Spacing.sm },
     chip: {
       flex: 1,
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       alignItems: 'center',
       justifyContent: 'center',
       gap: 4,

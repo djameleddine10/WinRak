@@ -12,6 +12,7 @@ import { SOSButton } from '../../components/ui/SOSButton'
 import { WebMap } from '../../components/map/WebMap'
 import { useUserStore } from '../../store/userStore'
 import * as Location from 'expo-location'
+import { useIsRTL } from '../../i18n/locale'
 
 const EMERGENCY_SERVICES = [
   { label: 'الشرطة',      number: '17'   },
@@ -21,8 +22,9 @@ const EMERGENCY_SERVICES = [
 
 export default function Sos() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const emergencyContacts = useUserStore((s) => s.emergencyContacts)
   const [triggered, setTriggered] = useState(false)
@@ -76,7 +78,7 @@ export default function Sos() {
         <Txt size={14} color={Colors.white}>{t('common.close')}</Txt>
       </Pressable>
 
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingBottom: insets.bottom + Spacing.xl }]}>
         {!triggered ? (
           <>
             <SOSButton size={140} onSOSTrigger={handleSOSTrigger} />
@@ -132,7 +134,8 @@ export default function Sos() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     mapBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.25 },
@@ -140,7 +143,7 @@ function makeStyles(Colors: Palette) {
     close: { position: 'absolute', right: Spacing.xl, zIndex: 10 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.screenPadding },
     emergencyRow: {
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       gap: Spacing.sm,
       width: '100%',
       marginTop: Spacing.sm,
@@ -155,7 +158,7 @@ function makeStyles(Colors: Palette) {
       paddingVertical: Spacing.md,
     },
     contactRow: {
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       alignItems: 'center',
       gap: Spacing.sm,
       backgroundColor: Colors.dark2,

@@ -5,6 +5,7 @@ import { useColors } from '../../hooks/useColors'
 import { Spacing } from '../../constants/spacing'
 import { Txt } from './Txt'
 import { Icon } from './Icon'
+import { useIsRTL } from '../../i18n/locale'
 
 type BadgeVariant = 'gold' | 'green' | 'red' | 'blue' | 'purple' | 'gray'
 
@@ -17,7 +18,8 @@ interface BadgeProps {
 
 export const Badge = memo(function Badge({ label, variant = 'gold', size = 'md', icon }: BadgeProps) {
   const Colors = useColors()
-  const v = makeVariants(Colors)[variant]
+  const isRTL = useIsRTL()
+    const v = makeVariants(Colors)[variant]
   const fontSize = size === 'sm' ? 10 : 12
   return (
     <View style={[styles.base, { backgroundColor: v.bg }]}>
@@ -40,7 +42,7 @@ function makeVariants(Colors: Palette): Record<BadgeVariant, { bg: string; text:
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: 'row-reverse',
+    flexDirection: row,
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: Spacing.sm,

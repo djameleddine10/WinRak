@@ -18,6 +18,7 @@ import { DirIcon } from '../../components/ui/DirIcon'
 import { useUserStore } from '../../store/userStore'
 import { useDriverName } from '../../i18n/locale'
 import { useState } from 'react'
+import { useIsRTL } from '../../i18n/locale'
 
 const LEVEL_KEY: Record<string, TranslationKey> = {
   bronze: 'driver.levelBronze', silver: 'driver.levelSilver', gold: 'driver.levelGold', platinum: 'driver.levelPlatinum',
@@ -25,7 +26,8 @@ const LEVEL_KEY: Record<string, TranslationKey> = {
 
 export default function Performance() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const driver      = useUserStore((s) => s.driver)
   const driverStats = useUserStore((s) => s.driverStats)
@@ -126,21 +128,22 @@ export default function Performance() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     header: { backgroundColor: Colors.dark2, paddingHorizontal: Spacing.screenPadding, paddingBottom: Spacing.lg, gap: Spacing.lg, borderBottomLeftRadius: Spacing.radiusLg, borderBottomRightRadius: Spacing.radiusLg },
-    levelRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
-    nameRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
-    ratingPill: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, backgroundColor: Colors.dark4, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    levelRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
+    nameRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
+    ratingPill: { flexDirection: row, alignItems: 'center', gap: 4, backgroundColor: Colors.dark4, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 6 },
     progressCard: { gap: Spacing.sm, backgroundColor: Colors.dark3 },
     track: { height: 8, backgroundColor: Colors.dark4, borderRadius: 4, justifyContent: 'center' },
     fill: { position: 'absolute', right: 0, top: 0, bottom: 0, backgroundColor: Colors.white, borderRadius: 4 },
     diamondTip: { position: 'absolute', left: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.dark1, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.purple },
     benefitsBtn: { backgroundColor: Colors.dark1, borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md, alignItems: 'center' },
     body: { padding: Spacing.screenPadding, gap: Spacing.md },
-    rowBetween: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-    goalBtn: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md, marginTop: Spacing.md },
-    achRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    rowBetween: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
+    goalBtn: { flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md, marginTop: Spacing.md },
+    achRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
   })
 }

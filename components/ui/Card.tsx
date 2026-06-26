@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
+import { useIsRTL } from '../../i18n/locale'
 import { Spacing } from '../../constants/spacing'
 import { Shadows } from '../../constants/shadows'
 
@@ -21,7 +22,8 @@ export const Card = memo(function Card({
   border, leftAccent, onPress, style,
 }: CardProps) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const content = (
     <View
       style={[
@@ -34,7 +36,9 @@ export const Card = memo(function Card({
         style,
       ]}
     >
-      {leftAccent && <View style={[styles.accent, { backgroundColor: leftAccent, borderTopRightRadius: radius, borderBottomRightRadius: radius }]} />}
+      {leftAccent && <View style={[styles.accent, isRTL
+          ? { backgroundColor: leftAccent, borderTopRightRadius: radius, borderBottomRightRadius: radius }
+          : { backgroundColor: leftAccent, borderTopLeftRadius: radius, borderBottomLeftRadius: radius, right: undefined, left: 0 }]} />}
       {children}
     </View>
   )
@@ -49,7 +53,7 @@ export const Card = memo(function Card({
   return content
 })
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
   return StyleSheet.create({
     base: {
       backgroundColor: Colors.dark2,
@@ -57,6 +61,6 @@ function makeStyles(Colors: Palette) {
       overflow: 'hidden',
       ...Shadows.sm,
     },
-    accent: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 4 },
+    accent: { position: 'absolute', top: 0, bottom: 0, width: 4 },
   })
 }

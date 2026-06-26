@@ -14,11 +14,15 @@ import { Button } from '../../components/ui/Button'
 import { Divider } from '../../components/ui/Divider'
 import { useRideStore } from '../../store/rideStore'
 import { useDriverName } from '../../i18n/locale'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function RideCompleted() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const distanceUnit = useSettingsStore((s) => s.distanceUnit)
   const ride = useRideStore((s) => s.currentRide)
   const driverName = useDriverName()
@@ -49,7 +53,7 @@ export default function RideCompleted() {
   if (!ride) return null
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
       <Animated.View style={[styles.check, { transform: [{ scale }], opacity }]}>
         <Icon name="check-circle" size={64} color={Colors.success} />
       </Animated.View>
@@ -83,7 +87,8 @@ export default function RideCompleted() {
 
 function Row({ icon, label, value, gold }: { icon: string; label: string; value: string; gold?: boolean }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <View style={styles.row}>
       <Icon name={icon} size={18} color={gold ? Colors.gold : Colors.muted} />
@@ -93,12 +98,13 @@ function Row({ icon, label, value, gold }: { icon: string; label: string; value:
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding, paddingTop: Spacing.xxxl, alignItems: 'center' },
     check: { width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.successAlpha15, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.lg },
     receipt: { width: '100%', marginTop: Spacing.xl, gap: Spacing.sm },
-    row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
   })
 }

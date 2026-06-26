@@ -7,6 +7,7 @@ import { Spacing } from '../../constants/spacing'
 import { Typography } from '../../constants/typography'
 import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
+import { useIsRTL } from '../../i18n/locale'
 
 interface PriceInputProps {
   value: number
@@ -22,8 +23,9 @@ export function PriceInput({
   value, onChange, suggestedPrices = [], min = 300, max = 3000, step = 50, compact,
 }: PriceInputProps) {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
 
   const clamp = useCallback((v: number) => Math.max(min, Math.min(max, v)), [min, max])
   const dec = useCallback(() => onChange(clamp(value - step)), [onChange, clamp, value, step])
@@ -93,16 +95,17 @@ export function PriceInput({
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     wrap: { gap: Spacing.md },
-    amountRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+    amountRow: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
     stepper: {
       width: 44, height: 44, borderRadius: 22,
       backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center',
     },
     stepperDisabled: { opacity: 0.4 },
-    amount: { flexDirection: 'row-reverse', alignItems: 'baseline', gap: 6 },
+    amount: { flexDirection: row, alignItems: 'baseline', gap: 6 },
     input: {
       fontFamily: Typography.fonts.black,
       color: Colors.gold,
@@ -110,7 +113,7 @@ function makeStyles(Colors: Palette) {
       textAlign: 'center',
       padding: 0,
     },
-    chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'center' },
+    chips: { flexDirection: row, flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'center' },
     chip: {
       paddingHorizontal: Spacing.md, paddingVertical: 6,
       borderRadius: Spacing.radiusFull, borderWidth: 1.5, borderColor: 'transparent',

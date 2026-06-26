@@ -18,10 +18,12 @@ import { usePassengerName } from '../../i18n/locale'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { supabase } from '../../lib/supabase'
 import { createProfile, getMyProfile } from '../../services/auth.service'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function ProfileSetup() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const passenger = useUserStore((s) => s.passenger)
   const setPhotoUri = useUserStore((s) => s.setPhotoUri)
@@ -141,19 +143,20 @@ export default function ProfileSetup() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
-    header: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: Spacing.lg },
+    header: { flexDirection: row, alignItems: 'center', marginBottom: Spacing.lg },
     content: { paddingVertical: Spacing.lg },
-    examples: { flexDirection: 'row-reverse', gap: Spacing.md },
+    examples: { flexDirection: row, gap: Spacing.md },
     exGood: { width: 130, height: 130, borderRadius: Spacing.radiusMd, borderWidth: 2, borderColor: Colors.success, backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center' },
     exBad: { width: 90, height: 38, borderRadius: Spacing.radiusSm, borderWidth: 1.5, borderColor: Colors.danger, backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center' },
     footer: { paddingTop: Spacing.md },
     track: { height: 3, backgroundColor: Colors.dark3, borderRadius: 2, overflow: 'hidden', marginBottom: Spacing.md },
     fill: { height: 3, backgroundColor: Colors.gold },
-    footRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-    footBtns: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    footRow: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
+    footBtns: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     smallBtn: { height: 44, paddingHorizontal: Spacing.lg, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, alignItems: 'center', justifyContent: 'center' },
     nextBtn: { paddingHorizontal: Spacing.xxxl },
   })

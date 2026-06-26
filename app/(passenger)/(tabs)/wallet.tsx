@@ -11,12 +11,14 @@ import { Badge } from '../../../components/ui/Badge'
 import { TopBar } from '../../../components/layout/TopBar'
 import { useT } from '../../../hooks/useT'
 import {
+import { useIsRTL } from '../../../i18n/locale'
   usePaymentStore, methodIcon, methodLabelKey, methodBrand, type SavedMethod, type LocalTx,
 } from '../../../store/paymentStore'
 
 export default function Wallet() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
   const cur = t('common.currency')
 
@@ -96,7 +98,8 @@ export default function Wallet() {
 
 function Action({ icon, label, color, onPress }: { icon: string; label: string; color: string; onPress: () => void }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <Pressable style={styles.action} onPress={onPress}>
       <Icon name={icon} size={24} color={color} />
@@ -105,17 +108,18 @@ function Action({ icon, label, color, onPress }: { icon: string; label: string; 
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding, gap: Spacing.md },
-    actions: { flexDirection: 'row-reverse', gap: Spacing.sm },
+    actions: { flexDirection: row, gap: Spacing.sm },
     action: { flex: 1, height: 64, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, alignItems: 'center', justifyContent: 'center', gap: 4 },
-    sectionRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md },
-    pmRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
-    addPm: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, borderWidth: 1.5, borderColor: Colors.gold, borderStyle: 'dashed', borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md },
-    txHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md },
-    txRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
+    sectionRow: { flexDirection: row, justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md },
+    pmRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
+    addPm: { flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, borderWidth: 1.5, borderColor: Colors.gold, borderStyle: 'dashed', borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md },
+    txHeader: { flexDirection: row, justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md },
+    txRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
     txIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   })
 }

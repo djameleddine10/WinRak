@@ -10,6 +10,8 @@ import { TopBar } from '../../components/layout/TopBar'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const GRID: { icon: string; labelKey: TranslationKey; detailKey: string }[] = [
   { icon: 'shield-check',         labelKey: 'security.g1', detailKey: 'g1' },
@@ -24,13 +26,15 @@ function goDetail(key: string) {
 
 export default function Security() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
 
   return (
     <View style={styles.container}>
       <TopBar title={t('drawer.safety')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
 
         {/* Top action row */}
         <View style={styles.topRow}>
@@ -96,21 +100,22 @@ export default function Security() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding, gap: Spacing.md },
-    topRow: { flexDirection: 'row-reverse', gap: Spacing.sm },
+    topRow: { flexDirection: row, gap: Spacing.sm },
     topCard: {
       flex: 1, height: 60, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
-      flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
     },
     sosCall: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: 'rgba(220,60,60,0.9)', borderRadius: Spacing.radiusMd,
       height: 56, paddingHorizontal: Spacing.lg,
     },
-    grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.sm },
+    grid: { flexDirection: row, flexWrap: 'wrap', gap: Spacing.sm },
     gridCard: {
       width: '48.5%', height: 120, backgroundColor: Colors.dark3,
       borderRadius: Spacing.radiusMd, padding: Spacing.md, justifyContent: 'space-between',

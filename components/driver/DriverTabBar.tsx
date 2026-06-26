@@ -9,6 +9,7 @@ import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
+import { useIsRTL } from '../../i18n/locale'
 
 type DriverTab = 'orders' | 'performance'
 
@@ -24,8 +25,9 @@ const TABS: { key: DriverTab; icon: string; labelKey: TranslationKey; route: str
 // Bottom bar shared by the driver radar (orders) and performance screens.
 export function DriverTabBar({ active }: DriverTabBarProps) {
   const Colors = useColors()
-  const insets = useSafeAreaInsets()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const insets = useSafeAreaInsets()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
 
   return (
@@ -48,10 +50,11 @@ export function DriverTabBar({ active }: DriverTabBarProps) {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     bar: {
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       backgroundColor: Colors.dark2,
       borderTopWidth: 1,
       borderTopColor: Colors.border,

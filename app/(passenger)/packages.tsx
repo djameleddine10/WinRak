@@ -13,10 +13,12 @@ import { TopBar } from '../../components/layout/TopBar'
 import { parcelTypes, SERVICE_FEE } from '../../mock/delivery'
 import { useDeliveryStore, parcelTotal } from '../../store/deliveryStore'
 import { useT } from '../../hooks/useT'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function Packages() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
 
   const parcelFrom = useDeliveryStore((s) => s.parcelFrom)
@@ -118,23 +120,24 @@ export default function Packages() {
 
 function Row({ label, value, Colors }: { label: string; value: string; Colors: Palette }) {
   return (
-    <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', paddingVertical: 4 }}>
+    <View style={{ flexDirection: row, justifyContent: 'space-between', paddingVertical: 4 }}>
       <Txt size={13} color={Colors.muted}>{label}</Txt>
       <Txt size={13}>{value}</Txt>
     </View>
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     routeCard: { backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
-    routeRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    routeRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     routeLine: { width: 1, height: 16, backgroundColor: Colors.dark4, marginRight: 8, marginVertical: 2 },
     section: { marginTop: Spacing.lg, marginBottom: Spacing.sm },
     typeRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd,
       borderWidth: 1.5, borderColor: 'transparent', padding: Spacing.md,
     },
@@ -148,7 +151,7 @@ function makeStyles(Colors: Palette) {
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
     priceCard: { backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md },
     divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm },
-    totalRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+    totalRow: { flexDirection: row, justifyContent: 'space-between', alignItems: 'center' },
     footer: {
       backgroundColor: Colors.dark2, borderTopWidth: 1, borderTopColor: Colors.border,
       paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.md,

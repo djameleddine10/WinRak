@@ -19,13 +19,15 @@ import { mockRoutePoints } from '../../mock/map'
 import { supabase } from '../../lib/supabase'
 import { subscribeToTripStatus } from '../../services/realtime.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
+import { useIsRTL } from '../../i18n/locale'
 
 const MOCK_ARRIVAL_SECONDS = 8  // simulate driver arriving after 8 s in mock mode
 
 export default function RideConfirmed() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const ride           = useRideStore((s) => s.currentRide)
   const startRide      = useRideStore((s) => s.startRide)
@@ -132,7 +134,8 @@ export default function RideConfirmed() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     map: { height: '52%' },
@@ -148,7 +151,7 @@ function makeStyles(Colors: Palette) {
     },
     content: { padding: Spacing.screenPadding },
     sosBtn: {
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       alignItems: 'center',
       justifyContent: 'center',
       gap: Spacing.sm,

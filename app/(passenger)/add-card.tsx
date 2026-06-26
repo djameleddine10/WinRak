@@ -12,12 +12,14 @@ import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { TopBar } from '../../components/layout/TopBar'
 import { usePaymentStore } from '../../store/paymentStore'
+import { useIsRTL } from '../../i18n/locale'
 
 // Mock BaridiMob linkage — only last 4 digits of phone are stored for display.
 export default function AddCard() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const addCard = usePaymentStore((s) => s.addCard)
 
@@ -46,7 +48,7 @@ export default function AddCard() {
       <TopBar title={t('card.title')} showBack />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Visual card preview */}
-        <View style={[styles.preview, { backgroundColor: '#FFC107' }]}>
+        <View style={[styles.preview, { backgroundColor: Colors.gold }]}>
           <View style={styles.previewTop}>
             <Icon name="bank-transfer" size={28} color={Colors.dark1} />
             <Txt weight="black" size={18} color={Colors.dark1}>BaridiMob</Txt>
@@ -86,17 +88,18 @@ export default function AddCard() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     preview: {
       borderRadius: Spacing.radiusLg, padding: Spacing.lg, height: 160, justifyContent: 'space-between',
     },
-    previewTop: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-    previewBottom: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+    previewTop: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
+    previewBottom: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
     secureNote: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.successAlpha15, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginTop: Spacing.xl,
     },
     footer: {

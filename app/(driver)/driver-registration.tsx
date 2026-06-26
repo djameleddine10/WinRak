@@ -15,6 +15,7 @@ import { useDriverStore } from '../../store/driverStore'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { useIsRTL } from '../../i18n/locale'
 
 const VEHICLE_TYPES: { type: string; icon: string; labelKey: TranslationKey }[] = [
   { type: 'sedan', icon: 'car',          labelKey: 'driverReg.sedan' },
@@ -25,7 +26,8 @@ const VEHICLE_TYPES: { type: string; icon: string; labelKey: TranslationKey }[] 
 
 export default function DriverRegistration() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const { registrationStep, formData, nextStep, prevStep, updateForm, setPhoto, submitRegistration } = useDriverStore()
   const step = registrationStep
@@ -164,7 +166,8 @@ export default function DriverRegistration() {
 
 function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <Pressable style={styles.checkRow} onPress={onToggle}>
       <View style={[styles.box, checked && styles.boxOn]}>
@@ -175,24 +178,25 @@ function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: ()
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
-    header: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
+    header: { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
     content: { paddingVertical: Spacing.sm },
-    docRow: { flexDirection: 'row-reverse', gap: Spacing.md, justifyContent: 'center' },
-    infoBanner: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.goldAlpha15, borderRadius: 10, padding: Spacing.md },
-    typeRow: { flexDirection: 'row-reverse', gap: Spacing.sm },
+    docRow: { flexDirection: row, gap: Spacing.md, justifyContent: 'center' },
+    infoBanner: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.goldAlpha15, borderRadius: 10, padding: Spacing.md },
+    typeRow: { flexDirection: row, gap: Spacing.sm },
     typeChip: { flex: 1, height: 60, borderRadius: Spacing.radiusMd, borderWidth: 1.5, borderColor: 'transparent', backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center', gap: 4 },
     typeChipOn: { borderColor: Colors.gold, backgroundColor: Colors.goldAlpha10 },
-    checkRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusSm, padding: Spacing.md },
+    checkRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusSm, padding: Spacing.md },
     box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: Colors.muted, alignItems: 'center', justifyContent: 'center' },
     boxOn: { backgroundColor: Colors.gold, borderColor: Colors.gold },
     footer: { paddingTop: Spacing.md },
     track: { height: 3, backgroundColor: Colors.dark3, borderRadius: 2, overflow: 'hidden', marginBottom: Spacing.md },
     fill: { height: 3, backgroundColor: Colors.gold },
-    footRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-    footBtns: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    footRow: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
+    footBtns: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     backBtn: { height: 44, paddingHorizontal: Spacing.lg, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, alignItems: 'center', justifyContent: 'center' },
     nextBtn: { paddingHorizontal: Spacing.xxl },
   })

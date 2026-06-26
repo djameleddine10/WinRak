@@ -12,14 +12,16 @@ import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { TopBar } from '../../components/layout/TopBar'
 import { usePaymentStore, methodBrand, type SavedMethod } from '../../store/paymentStore'
+import { useIsRTL } from '../../i18n/locale'
 
 const PRESETS = [500, 1000, 2000, 5000]
 const MIN_TOPUP = 200
 
 export default function TopUp() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const cur = t('common.currency')
 
@@ -133,24 +135,25 @@ export default function TopUp() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     balanceCard: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusLg, padding: Spacing.lg,
       borderWidth: 1.5, borderColor: Colors.goldAlpha15,
     },
     section: { marginTop: Spacing.xl, marginBottom: Spacing.sm },
-    presetGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.sm },
+    presetGrid: { flexDirection: row, flexWrap: 'wrap', gap: Spacing.sm },
     preset: {
       width: '48.5%', backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
       paddingVertical: Spacing.md, alignItems: 'center', borderWidth: 1.5, borderColor: 'transparent',
     },
     presetActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
     srcRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd,
       borderWidth: 1.5, borderColor: 'transparent', padding: Spacing.md,
     },
@@ -159,7 +162,7 @@ function makeStyles(Colors: Palette) {
     radioActive: { borderColor: Colors.gold },
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
     addRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
       borderWidth: 1.5, borderColor: Colors.gold, borderStyle: 'dashed',
       borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md,
     },

@@ -13,6 +13,7 @@ import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { getDriverWallet, getDriverTransactions, requestPayout } from '../../services/finance.service'
+import { useIsRTL } from '../../i18n/locale'
 
 type Period = 'today' | 'week' | 'month'
 const PERIODS: Period[] = ['today', 'week', 'month']
@@ -28,7 +29,8 @@ const DAY_KEYS: TranslationKey[] = [
 
 export default function Earnings() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const driver      = useUserStore((s) => s.driver)
   const driverStats = useUserStore((s) => s.driverStats)
   const profile     = useUserStore((s) => s.profile)
@@ -184,7 +186,8 @@ export default function Earnings() {
 // re-creating them on every render by extracting a module-level style factory.
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   const Colors = useColors()
-  return (
+  const isRTL = useIsRTL()
+    return (
     <View style={rowStatStyles.shareRow}>
       <Txt size={13} color={Colors.muted} style={{ flex: 1 }}>{label}</Txt>
       <Txt size={bold ? 18 : 13} weight={bold ? 'bold' : 'regular'}>{value}</Txt>
@@ -194,7 +197,8 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
 
 function Stat({ icon, value }: { icon: string; value: string }) {
   const Colors = useColors()
-  return (
+  const isRTL = useIsRTL()
+    return (
     <View style={[rowStatStyles.statCard, { backgroundColor: Colors.dark3 }]}>
       <Icon name={icon} size={22} color={Colors.gold} />
       <Txt size={13}>{value}</Txt>
@@ -202,17 +206,18 @@ function Stat({ icon, value }: { icon: string; value: string }) {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding, gap: Spacing.md },
-    tabs: { flexDirection: 'row-reverse', gap: Spacing.lg, justifyContent: 'center' },
+    tabs: { flexDirection: row, gap: Spacing.lg, justifyContent: 'center' },
     tabWrap: { alignItems: 'center', gap: 4 },
     tabUnderline: { width: 24, height: 3, borderRadius: 2, backgroundColor: Colors.gold },
-    grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.sm },
-    statCard: { width: '48.5%', backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, padding: Spacing.lg, flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
-    shareRow: { flexDirection: 'row-reverse', alignItems: 'center', paddingVertical: 4 },
-    chart: { flexDirection: 'row-reverse', alignItems: 'flex-end', justifyContent: 'space-between', height: 160 },
+    grid: { flexDirection: row, flexWrap: 'wrap', gap: Spacing.sm },
+    statCard: { width: '48.5%', backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, padding: Spacing.lg, flexDirection: row, alignItems: 'center', gap: Spacing.sm },
+    shareRow: { flexDirection: row, alignItems: 'center', paddingVertical: 4 },
+    chart: { flexDirection: row, alignItems: 'flex-end', justifyContent: 'space-between', height: 160 },
     barCol: { alignItems: 'center', gap: 4, flex: 1 },
     bar: { width: 24, borderRadius: 4 },
   })
@@ -220,6 +225,6 @@ function makeStyles(Colors: Palette) {
 
 // Module-level styles for Row/Stat sub-components (no theme dependency)
 const rowStatStyles = StyleSheet.create({
-  shareRow: { flexDirection: 'row-reverse', alignItems: 'center', paddingVertical: 4 },
-  statCard: { width: '48.5%', borderRadius: Spacing.radiusMd, padding: Spacing.lg, flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+  shareRow: { flexDirection: row, alignItems: 'center', paddingVertical: 4 },
+  statCard: { width: '48.5%', borderRadius: Spacing.radiusMd, padding: Spacing.lg, flexDirection: row, alignItems: 'center', gap: Spacing.sm },
 })

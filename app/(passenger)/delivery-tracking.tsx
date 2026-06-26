@@ -16,6 +16,7 @@ import { mockCourier } from '../../mock/delivery'
 import { useDeliveryStore, type DeliveryStatus } from '../../store/deliveryStore'
 import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
 import { supabase } from '../../lib/supabase'
+import { useIsRTL } from '../../i18n/locale'
 
 const ORDER: DeliveryStatus[] = ['finding', 'confirmed', 'preparing', 'on_the_way', 'delivered']
 
@@ -30,8 +31,9 @@ interface CourierInfo {
 
 export default function DeliveryTracking() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
 
   const status        = useDeliveryStore((s) => s.status)
@@ -277,7 +279,8 @@ export default function DeliveryTracking() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     map: { height: '42%' },
@@ -286,24 +289,24 @@ function makeStyles(Colors: Palette) {
       borderTopLeftRadius: Spacing.radiusLg, borderTopRightRadius: Spacing.radiusLg,
       marginTop: -Spacing.radiusLg, padding: Spacing.screenPadding,
     },
-    finding: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
+    finding: { flexDirection: row, alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
     doneBanner: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.successAlpha15, borderRadius: Spacing.radiusMd, padding: Spacing.md,
     },
-    headerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    headerRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
     etaPill: { backgroundColor: Colors.gold, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.md, paddingVertical: 6 },
     steps: { marginTop: Spacing.lg, gap: Spacing.md },
-    step: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    step: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
     stepIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
     activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.gold },
     courier: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginTop: Spacing.lg,
     },
     courierAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
-    courierMeta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 4 },
-    courierRating: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
+    courierMeta: { flexDirection: row, alignItems: 'center', gap: 4, marginTop: 4 },
+    courierRating: { flexDirection: row, alignItems: 'center', gap: 4 },
     callBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
   })
 }

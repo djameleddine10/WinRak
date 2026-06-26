@@ -15,6 +15,7 @@ import { useDriverStore } from '../../store/driverStore'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { useIsRTL } from '../../i18n/locale'
 
 const PERKS: { icon: string; textKey: TranslationKey }[] = [
   { icon: 'clock-outline', textKey: 'driver.perk1' },
@@ -24,7 +25,8 @@ const PERKS: { icon: string; textKey: TranslationKey }[] = [
 
 export default function DriverSignup() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const setMode = useUserStore((s) => s.setMode)
   const approveRegistration = useDriverStore((s) => s.approveRegistration)
@@ -99,13 +101,14 @@ export default function DriverSignup() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
-    topRow: { flexDirection: 'row-reverse', marginBottom: Spacing.lg },
+    topRow: { flexDirection: row, marginBottom: Spacing.lg },
     hero: { backgroundColor: Colors.driverGreen, borderRadius: 16, padding: Spacing.xl },
-    perk: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
-    driverCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.lg },
+    perk: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
+    driverCard: { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginTop: Spacing.lg },
     carIcon:    { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
     carIconShe: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.purpleAlpha15, alignItems: 'center', justifyContent: 'center' },
   })

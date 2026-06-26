@@ -11,13 +11,15 @@ import { Icon } from '../../components/ui/Icon'
 import { Badge } from '../../components/ui/Badge'
 import { TopBar } from '../../components/layout/TopBar'
 import {
+import { useIsRTL } from '../../i18n/locale'
   usePaymentStore, methodIcon, methodLabelKey, methodBrand, type SavedMethod,
 } from '../../store/paymentStore'
 
 export default function PaymentMethods() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
 
   const methods    = usePaymentStore((s) => s.methods)
@@ -82,21 +84,22 @@ export default function PaymentMethods() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding, gap: Spacing.sm },
     row: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md,
     },
     iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
-    titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    titleRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     addRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
       borderWidth: 1.5, borderColor: Colors.gold, borderStyle: 'dashed',
       borderRadius: Spacing.radiusMd, paddingVertical: Spacing.md, marginTop: Spacing.sm,
     },
-    note: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
+    note: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
   })
 }

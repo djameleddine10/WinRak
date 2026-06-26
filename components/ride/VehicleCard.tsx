@@ -6,6 +6,7 @@ import { Txt } from '../ui/Txt'
 import { Badge } from '../ui/Badge'
 import { Icon } from '../ui/Icon'
 import type { VehicleType } from '../../store/rideStore'
+import { useIsRTL } from '../../i18n/locale'
 
 interface VehicleCardProps {
   type: VehicleType
@@ -22,7 +23,8 @@ export function VehicleCard({
   type, title, seats, eta, price, isSelected, onPress, isRecommended,
 }: VehicleCardProps) {
   const Colors = useColors()
-  const t = useT()
+  const isRTL = useIsRTL()
+    const t = useT()
   const isShe = type === 'she'
   const borderColor = isSelected
     ? (isShe ? Colors.purple : Colors.gold)
@@ -69,11 +71,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   contentRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: row,
     alignItems: 'center',
     gap: Spacing.md,
   },
   iconWrap: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1 },
-  priceWrap: { flexDirection: 'row-reverse', alignItems: 'baseline', gap: 3 },
+  priceWrap: { flexDirection: row, alignItems: 'baseline', gap: 3 },
 })

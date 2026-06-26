@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card'
 import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const OPTIONS: { lang: Language; label: string; sub: string; flag: string }[] = [
   { lang: 'ar', label: 'العربية',  sub: 'Arabic',   flag: '🇩🇿' },
@@ -20,6 +21,7 @@ const OPTIONS: { lang: Language; label: string; sub: string; flag: string }[] = 
 export default function LanguageScreen() {
   const Colors = useColors()
   const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const language = useSettingsStore((s) => s.language)
   const setLanguage = useSettingsStore((s) => s.setLanguage)
@@ -28,7 +30,7 @@ export default function LanguageScreen() {
   return (
     <View style={styles.container}>
       <TopBar title={t('settings.language')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <Card radius={14} padding={0}>
           {OPTIONS.map((o, i) => {
             const selected = language === o.lang

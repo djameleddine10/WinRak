@@ -21,10 +21,12 @@ import { updateDriverLocation } from '../../services/realtime.service'
 import { useDriverRouteSimulator } from '../../hooks/useDriverRouteSimulator'
 import { ALGIERS_CENTER } from '../../mock/map'
 import * as Location from 'expo-location'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function GoingToPickup() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const ride              = useDriverStore((s) => s.activeRide)
   const startRide         = useDriverStore((s) => s.startRide)
@@ -148,7 +150,8 @@ export default function GoingToPickup() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     map:       { height: '58%' },
@@ -162,11 +165,11 @@ function makeStyles(Colors: Palette) {
       borderTopLeftRadius: Spacing.radiusLg, borderTopRightRadius: Spacing.radiusLg,
       marginTop: -Spacing.radiusLg, padding: Spacing.screenPadding, gap: Spacing.md,
     },
-    passengerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
-    actions:      { flexDirection: 'row-reverse', gap: Spacing.sm },
+    passengerRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
+    actions:      { flexDirection: row, gap: Spacing.sm },
     actionBtn: {
       flex: 1, height: 48, backgroundColor: Colors.dark3,
-      borderRadius: Spacing.radiusMd, flexDirection: 'row-reverse',
+      borderRadius: Spacing.radiusMd, flexDirection: row,
       alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
     },
   })

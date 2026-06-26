@@ -17,10 +17,12 @@ import { useDeliveryStore } from '../../store/deliveryStore'
 import { useT } from '../../hooks/useT'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { fetchPharmacies } from '../../services/pharmacy.service'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function DeliveryPharmacy() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const t = useT()
   const cur = t('common.currency')
@@ -169,22 +171,23 @@ export default function DeliveryPharmacy() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     hero: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.successAlpha15, borderRadius: Spacing.radiusLg, padding: Spacing.md,
     },
     heroIcon: {
       width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.dark2,
       alignItems: 'center', justifyContent: 'center',
     },
-    heroTitle: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    heroTitle: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     section: { marginTop: Spacing.xl, marginBottom: Spacing.sm },
     phRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd,
       borderWidth: 1.5, borderColor: 'transparent', padding: Spacing.md,
     },
@@ -196,11 +199,11 @@ function makeStyles(Colors: Palette) {
     },
     radioActive: { borderColor: Colors.gold },
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
-    phTitle: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
-    phMeta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 4 },
+    phTitle: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
+    phMeta: { flexDirection: row, alignItems: 'center', gap: 4, marginTop: 4 },
     phRight: { alignItems: 'center', gap: 2 },
     method: { padding: Spacing.lg, marginBottom: Spacing.md },
-    methodRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    methodRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
     methodIcon: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     rxCard: {
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.lg, gap: Spacing.md,

@@ -15,9 +15,10 @@ import { useIsRTL } from '../../i18n/locale'
 
 export default function RestaurantChat() {
   const Colors = useColors()
-  const t = useT()
   const isRTL = useIsRTL()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+    const t = useT()
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
 
@@ -101,11 +102,12 @@ export default function RestaurantChat() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     subHeader: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+      flexDirection: row, alignItems: 'center', gap: 6,
       backgroundColor: Colors.dark2, paddingHorizontal: Spacing.screenPadding, paddingBottom: Spacing.sm,
       borderBottomWidth: 1, borderBottomColor: Colors.border,
     },
@@ -116,14 +118,14 @@ function makeStyles(Colors: Palette) {
     theirs: { alignSelf: 'flex-start', backgroundColor: Colors.dark3, borderBottomLeftRadius: 4 },
     time: { marginTop: 4, textAlign: 'left' },
     quickRow: { flexGrow: 0, backgroundColor: Colors.dark1 },
-    quickContent: { flexDirection: 'row-reverse', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
+    quickContent: { flexDirection: row, gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
     quickChip: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 4,
+      flexDirection: row, alignItems: 'center', gap: 4,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull,
       paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     },
     inputBar: {
-      flexDirection: 'row-reverse', alignItems: 'flex-end', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'flex-end', gap: Spacing.sm,
       backgroundColor: Colors.dark2, borderTopWidth: 1, borderTopColor: Colors.border,
       paddingHorizontal: Spacing.md, paddingTop: Spacing.sm,
     },

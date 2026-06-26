@@ -14,6 +14,8 @@ import { useSettingsStore, type ThemeMode, type DistanceUnit, type Language } fr
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const THEME_KEY: Record<ThemeMode, TranslationKey> = { light: 'theme.light', dark: 'theme.dark', system: 'theme.system' }
 const DISTANCE_KEY: Record<DistanceUnit, TranslationKey> = { km: 'distance.km', mi: 'distance.mi' }
@@ -21,7 +23,9 @@ const LANG_LABEL: Record<Language, string> = { ar: 'العربية', fr: 'Franç
 
 export default function Settings() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const logout = useUserStore((s) => s.logout)
   const mode = useUserStore((s) => s.mode)
   const themeMode = useThemeMode()
@@ -44,7 +48,7 @@ export default function Settings() {
   return (
     <View style={styles.container}>
       <TopBar title={t('settings.title')} showBack onBack={() => mode === 'driver' ? router.replace('/(driver)/home') : router.back()} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <Card radius={14} padding={0}>
           <Row icon="weather-night" label={t('settings.appearance')} value={t(THEME_KEY[themeMode])} onPress={() => router.push('/(passenger)/appearance')} />
           <Row icon="map-marker-distance" label={t('settings.distanceUnit')} value={t(DISTANCE_KEY[distanceUnit])} onPress={() => router.push('/(passenger)/distance-unit')} />
@@ -113,7 +117,8 @@ export default function Settings() {
 
 function Row({ icon, label, value, last, noChevron, onPress }: { icon: string; label: string; value?: string; last?: boolean; noChevron?: boolean; onPress?: () => void }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const body = (
     <View style={[styles.row, !last && styles.borderBottom]}>
       <Icon name={icon} size={22} color={Colors.gold} />
@@ -128,11 +133,12 @@ function Row({ icon, label, value, last, noChevron, onPress }: { icon: string; l
   return body
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
-    row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, padding: Spacing.md },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.md, padding: Spacing.md },
     borderBottom: { borderBottomWidth: 1, borderBottomColor: Colors.border },
     borderTop: { borderTopWidth: 1, borderTopColor: Colors.border },
     info: { backgroundColor: Colors.blue, borderRadius: 14, padding: Spacing.lg, marginTop: Spacing.lg, gap: Spacing.md },

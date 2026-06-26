@@ -10,6 +10,7 @@ import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { useIsRTL } from '../../i18n/locale'
 
 const LOCKED: { icon: string; titleKey: TranslationKey; subKey: TranslationKey }[] = [
   { icon: 'sort-ascending', titleKey: 'benefits.priorityTitle', subKey: 'benefits.prioritySub' },
@@ -20,7 +21,8 @@ const LOCKED: { icon: string; titleKey: TranslationKey; subKey: TranslationKey }
 
 export default function Benefits() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
   return (
     <View style={styles.container}>
@@ -65,11 +67,12 @@ export default function Benefits() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
-    row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
     iconBox: { width: 48, height: 48, borderRadius: Spacing.radiusMd, backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center' },
     lockBadge: { position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: Colors.muted, alignItems: 'center', justifyContent: 'center' },
     lockedCard: { backgroundColor: Colors.purple, borderRadius: Spacing.radiusLg, padding: Spacing.xxl, alignItems: 'center', marginTop: Spacing.lg },

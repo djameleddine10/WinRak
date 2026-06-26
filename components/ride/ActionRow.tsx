@@ -6,6 +6,7 @@ import { useT } from '../../hooks/useT'
 import { Spacing } from '../../constants/spacing'
 import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
+import { useIsRTL } from '../../i18n/locale'
 
 interface ActionRowProps {
   onCall?: () => void
@@ -16,8 +17,9 @@ interface ActionRowProps {
 // Three equal action buttons: call / message / SOS.
 export function ActionRow({ onCall, onMessage, onSOS }: ActionRowProps) {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <View style={styles.row}>
       <Pressable style={styles.btn} onPress={onCall}>
@@ -36,9 +38,10 @@ export function ActionRow({ onCall, onMessage, onSOS }: ActionRowProps) {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
-    row: { flexDirection: 'row-reverse', gap: Spacing.sm },
+    row: { flexDirection: row, gap: Spacing.sm },
     btn: {
       flex: 1, height: 52, borderRadius: Spacing.radiusMd,
       backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center', gap: 2,

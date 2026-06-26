@@ -12,9 +12,11 @@ import { useRideStore } from '../../store/rideStore'
 import { supabase } from '../../lib/supabase'
 import { subscribeToTripStatus } from '../../services/realtime.service'
 import { getTripDriverInfo } from '../../services/trips.service'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Searching() {
   const Colors = useColors()
+  const insets = useSafeAreaInsets()
   const t = useT()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const status         = useRideStore((s) => s.status)

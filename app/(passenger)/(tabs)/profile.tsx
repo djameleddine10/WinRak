@@ -15,6 +15,7 @@ import { useT } from '../../../hooks/useT'
 import { usePassengerName } from '../../../i18n/locale'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { type TranslationKey } from '../../../i18n/translations'
+import { useIsRTL } from '../../../i18n/locale'
 
 interface MenuItem { icon: string; labelKey: TranslationKey; route: string; danger?: boolean }
 
@@ -31,7 +32,8 @@ const MENU: MenuItem[] = [
 
 export default function Profile() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const passenger = useUserStore((s) => s.passenger)
   const photoStatus = useUserStore((s) => s.photoStatus)
   const photoUri = useUserStore((s) => s.photoUri)
@@ -75,13 +77,14 @@ export default function Profile() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
-    head: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
-    metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 4 },
-    row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, padding: Spacing.md },
+    head: { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
+    metaRow: { flexDirection: row, alignItems: 'center', gap: 4, marginTop: 4 },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.md, padding: Spacing.md },
     rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
   })
 }

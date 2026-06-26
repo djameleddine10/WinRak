@@ -11,6 +11,7 @@ import { type TranslationKey } from '../../../i18n/translations'
 import { useSettingsStore, type Language } from '../../../store/settingsStore'
 import { useUserStore } from '../../../store/userStore'
 import { getMyTrips } from '../../../services/trips.service'
+import { useIsRTL } from '../../../i18n/locale'
 
 type Filter = 'all' | 'city'
 const FILTERS: { key: Filter; labelKey: TranslationKey }[] = [
@@ -55,7 +56,8 @@ function dbToDisplay(trip: any): DisplayRide {
 
 export default function RidesHistory() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const [filter, setFilter] = useState<Filter>('all')
   const t = useT()
   const lang    = useSettingsStore((s) => s.language)
@@ -157,16 +159,17 @@ export default function RidesHistory() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
-    filters: { flexDirection: 'row-reverse', gap: Spacing.sm, padding: Spacing.screenPadding, paddingBottom: 0 },
+    filters: { flexDirection: row, gap: Spacing.sm, padding: Spacing.screenPadding, paddingBottom: 0 },
     pill: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Spacing.radiusFull },
     pillOn: { backgroundColor: Colors.white },
     pillOff: { backgroundColor: Colors.dark3 },
-    card: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: 14, padding: Spacing.md },
+    card: { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: 14, padding: Spacing.md },
     thumb: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    fromRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 3, marginTop: 1 },
+    fromRow: { flexDirection: row, alignItems: 'center', gap: 3, marginTop: 1 },
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
   })
 }

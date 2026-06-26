@@ -8,6 +8,7 @@ import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import type { Driver } from '../../mock/drivers'
+import { useIsRTL } from '../../i18n/locale'
 
 interface DriverCardProps {
   driver: Driver
@@ -19,7 +20,8 @@ interface DriverCardProps {
 
 export function DriverCard({ driver, showActions, compact, onCall, onMessage }: DriverCardProps) {
   const Colors = useColors()
-  const t = useT()
+  const isRTL = useIsRTL()
+    const t = useT()
   const lang = useSettingsStore((s) => s.language)
 
   // Language-reactive name: Arabic script in Arabic mode, Latin transliteration otherwise
@@ -64,10 +66,10 @@ export function DriverCard({ driver, showActions, compact, onCall, onMessage }: 
 
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.md },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+  row: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
   info: { flex: 1, gap: 2 },
-  nameRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
-  metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
-  actions: { flexDirection: 'row-reverse', gap: Spacing.sm },
+  nameRow: { flexDirection: row, alignItems: 'center', gap: 6 },
+  metaRow: { flexDirection: row, alignItems: 'center', gap: 4 },
+  actions: { flexDirection: row, gap: Spacing.sm },
   action: { flex: 1 },
 })

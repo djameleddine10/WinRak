@@ -18,14 +18,16 @@ import { useUserStore } from '../../store/userStore'
 import { recentPlaces } from '../../mock/places'
 import type { Place } from '../../mock/places'
 import { GOOGLE_MAPS_KEY } from '../../constants/config'
+import { useIsRTL } from '../../i18n/locale'
 
 const MOCK_LAT = 36.7538
 const MOCK_LNG = 3.0588
 
 export default function Search() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const setFrom = useRideStore((s) => s.setFrom)
   const setTo = useRideStore((s) => s.setTo)
@@ -153,7 +155,7 @@ export default function Search() {
         <Icon name="chevron-left" size={20} color={Colors.muted} />
       </Pressable>
 
-      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}>
         <Txt size={12} color={Colors.muted} style={styles.section}>{t('search.recentSearch')}</Txt>
         {recentPlaces.map((p) => (
           <Row key={p.id} place={p} icon="clock-outline" onPress={() => selectSaved(p as Place)} />
@@ -181,7 +183,8 @@ function Row({ place, icon = 'map-marker', onPress }: {
   onPress: () => void
 }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <Pressable style={styles.row} onPress={onPress}>
       <Icon name={icon} size={20} color={Colors.gold} />
@@ -193,20 +196,21 @@ function Row({ place, icon = 'map-marker', onPress }: {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container:  { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
-    header:     { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
+    header:     { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
     closeBtn:   { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center' },
     fields:     { gap: Spacing.md, marginBottom: Spacing.md },
-    fieldRow:   { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    fieldRow:   { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     bullet:     { width: 10, height: 10, borderRadius: 5 },
-    toSection:  { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md, zIndex: 100 },
+    toSection:  { flexDirection: row, alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md, zIndex: 100 },
     toField:    { flex: 1, zIndex: 100 },
     section:    { marginTop: Spacing.lg, marginBottom: Spacing.sm },
-    row:        { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md },
+    row:        { flexDirection: row, alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md },
     mapPickBtn: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
       paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
       marginBottom: Spacing.sm,

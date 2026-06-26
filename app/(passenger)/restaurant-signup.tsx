@@ -15,11 +15,13 @@ import { PhotoUpload } from '../../components/ui/PhotoUpload'
 import { TopBar } from '../../components/layout/TopBar'
 import { cuisines } from '../../mock/restaurants'
 import { useRestaurantStore } from '../../store/restaurantStore'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function RestaurantSignup() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
 
   const form = useRestaurantStore((s) => s.form)
@@ -115,8 +117,9 @@ export default function RestaurantSignup() {
 
 function StatusRow({ icon, color, label, value }: { icon: string; color: string; label: string; value: string }) {
   const Colors = useColors()
-  return (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md }}>
+  const isRTL = useIsRTL()
+    return (
+    <View style={{ flexDirection: row, alignItems: 'center', gap: Spacing.md }}>
       <Icon name={icon} size={20} color={color} />
       <Txt size={14} style={{ flex: 1 }}>{label}</Txt>
       <Txt size={13} color={color}>{value}</Txt>
@@ -124,20 +127,21 @@ function StatusRow({ icon, color, label, value }: { icon: string; color: string;
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     logoWrap: { alignItems: 'center', marginBottom: Spacing.lg },
-    cuisineGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.sm },
+    cuisineGrid: { flexDirection: row, flexWrap: 'wrap', gap: Spacing.sm },
     cuisineChip: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+      flexDirection: row, alignItems: 'center', gap: 6,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull,
       paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     },
     cuisineChipActive: { backgroundColor: Colors.gold },
     note: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginTop: Spacing.lg,
     },
     pending: { alignItems: 'center', padding: Spacing.screenPadding, paddingTop: Spacing.xxxl },

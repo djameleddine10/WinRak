@@ -12,10 +12,12 @@ import { Button } from '../../components/ui/Button'
 import { useUserStore } from '../../store/userStore'
 import { useDriverStore } from '../../store/driverStore'
 import { useT } from '../../hooks/useT'
+import { useIsRTL } from '../../i18n/locale'
 
 export default function DriverPending() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const setMode = useUserStore((s) => s.setMode)
   const approveRegistration = useDriverStore((s) => s.approveRegistration)
@@ -59,7 +61,8 @@ export default function DriverPending() {
 
 function StatusRow({ icon, color, label, value }: { icon: string; color: string; label: string; value: string }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <View style={styles.statusRow}>
       <Icon name={icon} size={20} color={color} />
@@ -69,11 +72,12 @@ function StatusRow({ icon, color, label, value }: { icon: string; color: string;
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
     content: { alignItems: 'center', paddingBottom: Spacing.xl },
     statusCard: { width: '100%', marginTop: Spacing.xxl, gap: Spacing.md },
-    statusRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    statusRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
   })
 }

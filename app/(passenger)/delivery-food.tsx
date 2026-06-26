@@ -12,12 +12,16 @@ import { Badge } from '../../components/ui/Badge'
 import { TopBar } from '../../components/layout/TopBar'
 import { useRestaurantStore, allRestaurants } from '../../store/restaurantStore'
 import { type Restaurant } from '../../mock/restaurants'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function DeliveryFood() {
   const Colors = useColors()
-  const t = useT()
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+    const t = useT()
 
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const registered      = useRestaurantStore((s) => s.registered)
   const restaurants     = useRestaurantStore((s) => s.restaurants)
   const loadRestaurants = useRestaurantStore((s) => s.loadRestaurants)
@@ -54,7 +58,7 @@ export default function DeliveryFood() {
       <FlatList
         data={loading ? [] : list}
         keyExtractor={(r) => r.id}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={!loading ? (
@@ -91,12 +95,13 @@ export default function DeliveryFood() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding, paddingBottom: Spacing.xl },
     banner: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.gold, borderRadius: Spacing.radiusLg, padding: Spacing.lg,
     },
     bannerIcon: {
@@ -105,12 +110,12 @@ function makeStyles(Colors: Palette) {
     },
     section: { marginTop: Spacing.xl, marginBottom: Spacing.sm },
     card: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md,
     },
     thumb: { width: 60, height: 60, borderRadius: 14, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
-    titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
-    meta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 6 },
+    titleRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
+    meta: { flexDirection: row, alignItems: 'center', gap: 4, marginTop: 6 },
     empty: { alignItems: 'center', gap: Spacing.md, paddingTop: Spacing.xxl, opacity: 0.5 },
   })
 }

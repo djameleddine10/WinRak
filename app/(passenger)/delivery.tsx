@@ -13,6 +13,8 @@ import { useDeliveryStore, type DeliveryService } from '../../store/deliveryStor
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface ServiceDef {
   service:  DeliveryService
@@ -55,7 +57,9 @@ const SERVICES: ServiceDef[] = [
 
 export default function Delivery() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const reset = useDeliveryStore((s) => s.reset)
   const setService = useDeliveryStore((s) => s.setService)
   const t = useT()
@@ -72,7 +76,7 @@ export default function Delivery() {
   return (
     <View style={styles.container}>
       <TopBar title={t('service.delivery')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
             <Icon name="moped" size={34} color={Colors.gold} />
@@ -118,12 +122,13 @@ export default function Delivery() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
     hero: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusLg, padding: Spacing.lg,
     },
     heroIcon: {
@@ -132,11 +137,11 @@ function makeStyles(Colors: Palette) {
     },
     section: { marginTop: Spacing.xl, marginBottom: Spacing.sm },
     card: { padding: Spacing.lg },
-    cardRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md },
+    cardRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
     iconWrap: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-    titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm },
+    titleRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
     nightBanner: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.successAlpha15, borderRadius: Spacing.radiusMd,
       padding: Spacing.md, marginTop: Spacing.xl,
     },

@@ -14,10 +14,14 @@ import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
 import { usePassengerName } from '../../i18n/locale'
 import { DirIcon } from '../../components/ui/DirIcon'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ProfileSettings() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const passenger = useUserStore((s) => s.passenger)
   const photoStatus = useUserStore((s) => s.photoStatus)
   const photoUri = useUserStore((s) => s.photoUri)
@@ -32,7 +36,7 @@ export default function ProfileSettings() {
   return (
     <View style={styles.container}>
       <TopBar title={t('profile.editProfile')} showBack onBack={() => mode === 'driver' ? router.replace('/(driver)/home') : router.back()} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <Pressable style={styles.avatarWrap} onPress={() => router.push('/(passenger)/profile-setup')}>
           <Avatar initial={passengerName.charAt(0).toUpperCase()} size={90} imageUri={photoUri} showBorder />
           <View style={styles.editBadge}>
@@ -71,7 +75,8 @@ export default function ProfileSettings() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
@@ -80,6 +85,6 @@ function makeStyles(Colors: Palette) {
     warn: { backgroundColor: Colors.dangerAlpha10, borderRadius: Spacing.radiusMd, padding: Spacing.md, marginBottom: Spacing.lg },
     warnBtn: { backgroundColor: Colors.white, alignSelf: 'flex-start', borderRadius: Spacing.radiusSm, paddingHorizontal: Spacing.md, paddingVertical: 6, marginTop: Spacing.sm },
     fields: { gap: Spacing.md, marginBottom: Spacing.xl },
-    linkRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.dark3, borderRadius: 10, height: 52, paddingHorizontal: Spacing.md },
+    linkRow: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.dark3, borderRadius: 10, height: 52, paddingHorizontal: Spacing.md },
   })
 }

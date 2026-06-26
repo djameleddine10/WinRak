@@ -14,13 +14,15 @@ import { TopBar } from '../../components/layout/TopBar'
 import { commonMeds as seedMeds, medCategories, type MedCategory, type Med } from '../../mock/delivery'
 import { useDeliveryStore, cartCount, cartSubtotal } from '../../store/deliveryStore'
 import { fetchMedicines } from '../../services/pharmacy.service'
+import { useIsRTL } from '../../i18n/locale'
 
 type Filter = 'all' | MedCategory
 
 export default function DeliveryMeds() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
 
   const cart = useDeliveryStore((s) => s.cart)
@@ -103,7 +105,8 @@ export default function DeliveryMeds() {
 
 function CategoryChip({ label, icon, active, onPress }: { label: string; icon: string; active: boolean; onPress: () => void }) {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
       <Icon name={icon} size={16} color={active ? Colors.dark1 : Colors.muted} />
@@ -112,32 +115,33 @@ function CategoryChip({ label, icon, active, onPress }: { label: string; icon: s
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
-    chipsWrap: { flexGrow: 0, flexDirection: 'row-reverse' },
-    chips: { flexDirection: 'row-reverse', gap: Spacing.sm, paddingHorizontal: Spacing.screenPadding, paddingVertical: Spacing.md },
+    chipsWrap: { flexGrow: 0, flexDirection: row },
+    chips: { flexDirection: row, gap: Spacing.sm, paddingHorizontal: Spacing.screenPadding, paddingVertical: Spacing.md },
     chip: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+      flexDirection: row, alignItems: 'center', gap: 6,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull,
       paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     },
     chipActive: { backgroundColor: Colors.gold },
     list: { paddingHorizontal: Spacing.screenPadding, gap: Spacing.sm },
     medRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderRadius: Spacing.radiusMd, padding: Spacing.md,
     },
     medIcon: { width: 50, height: 50, borderRadius: 12, backgroundColor: Colors.goldAlpha10, alignItems: 'center', justifyContent: 'center' },
     addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
     stepper: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.dark3, borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.sm, paddingVertical: 4,
     },
     stepBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.goldAlpha15, alignItems: 'center', justifyContent: 'center' },
     bar: {
       position: 'absolute', bottom: 0, left: 0, right: 0,
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md,
+      flexDirection: row, alignItems: 'center', gap: Spacing.md,
       backgroundColor: Colors.dark2, borderTopWidth: 1, borderTopColor: Colors.border,
       paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.md,
     },

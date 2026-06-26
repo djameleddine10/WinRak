@@ -23,6 +23,7 @@ import { getRouteInfo, estimatePrice } from '../../services/route.service'
 import { mockRoutePoints } from '../../mock/map'
 import { type TranslationKey } from '../../i18n/translations'
 import type { VehicleType as DbVehicleType, PaymentMethod as DbPaymentMethod } from '../../lib/supabase'
+import { useIsRTL } from '../../i18n/locale'
 
 const DB_VEHICLE: Record<VehicleType, DbVehicleType> = {
   sedan:   'economique',
@@ -59,8 +60,9 @@ const DISMISS_VY = 0.5
 
 export default function VehicleSelect() {
   const Colors = useColors()
-  const t = useT()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+    const t = useT()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const setVehicleType    = useRideStore((s) => s.setVehicleType)
   const setPrice          = useRideStore((s) => s.setPrice)
@@ -334,7 +336,8 @@ export default function VehicleSelect() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     eta: {
@@ -343,7 +346,7 @@ function makeStyles(Colors: Palette) {
       paddingHorizontal: Spacing.md, paddingVertical: 6,
     },
     sheBanner: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.sm,
+      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
       backgroundColor: Colors.purpleAlpha15, borderRadius: Spacing.radiusMd,
       padding: Spacing.md, marginBottom: Spacing.md,
     },

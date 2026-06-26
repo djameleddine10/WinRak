@@ -10,6 +10,8 @@ import { Card } from '../../components/ui/Card'
 import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const OPTIONS: { mode: ThemeMode; labelKey: TranslationKey }[] = [
   { mode: 'light',  labelKey: 'theme.light' },
@@ -19,15 +21,17 @@ const OPTIONS: { mode: ThemeMode; labelKey: TranslationKey }[] = [
 
 export default function Appearance() {
   const Colors = useColors()
-  const mode = useThemeMode()
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+    const mode = useThemeMode()
   const setThemeMode = useSettingsStore((s) => s.setThemeMode)
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
 
   return (
     <View style={styles.container}>
       <TopBar title={t('settings.appearance')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.note}>
           <Txt size={14} color={Colors.muted}>{t('appearance.note')}</Txt>
         </View>
@@ -56,7 +60,8 @@ export default function Appearance() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
@@ -66,7 +71,7 @@ function makeStyles(Colors: Palette) {
       padding: Spacing.lg,
       marginBottom: Spacing.lg,
     },
-    row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
     borderBottom: { borderBottomWidth: 1, borderBottomColor: Colors.border },
   })
 }

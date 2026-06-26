@@ -11,6 +11,8 @@ import { Card } from '../../components/ui/Card'
 import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
+import { useIsRTL } from '../../i18n/locale'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const DOCS: { key: string; labelKey: TranslationKey }[] = [
   { key: 'terms',   labelKey: 'login.terms' },
@@ -20,12 +22,14 @@ const DOCS: { key: string; labelKey: TranslationKey }[] = [
 
 export default function Legal() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const insets = useSafeAreaInsets()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const t = useT()
   return (
     <View style={styles.container}>
       <TopBar title={t('settings.legal')} showBack />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <Card radius={14} padding={0}>
           {DOCS.map((d, i) => (
             <Pressable
@@ -44,11 +48,12 @@ export default function Legal() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.dark1 },
     content: { padding: Spacing.screenPadding },
-    row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
     borderBottom: { borderBottomWidth: 1, borderBottomColor: Colors.border },
   })
 }
