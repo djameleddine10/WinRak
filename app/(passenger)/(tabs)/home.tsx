@@ -32,12 +32,11 @@ import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
 const { height: SCREEN_H } = Dimensions.get('window')
-
-// الخريطة تأخذ 52% من ارتفاع الشاشة — الـ sheet يبدأ من تحتها
 const MAP_H = Math.round(SCREEN_H * 0.52)
 
 const PURPLE = '#7B4FD4'
 const TEAL   = '#00C2A8'
+const GOLD   = '#ffbc07'
 
 export default function Home() {
   const Colors      = useColors()
@@ -45,15 +44,18 @@ export default function Home() {
   const isDark      = scheme === 'dark'
   const isRTL       = useIsRTL()
   const styles      = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
+
   const photoStatus    = useUserStore((s) => s.photoStatus)
   const profile        = useUserStore((s) => s.profile)
   const setRideMode    = useUserStore((s) => s.setRideMode)
   const setSheMode     = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
+  const setFrom        = useRideStore((s) => s.setFrom)
   const setTo          = useRideStore((s) => s.setTo)
   const rideHistory    = useRideStore((s) => s.rideHistory)
   const setRideHistory = useRideStore((s) => s.setRideHistory)
   const mapDrivers     = useMapStore((s) => s.mapDrivers)
+  const userLocation   = useMapStore((s) => s.userLocation)
 
   const recentDestinations = useMemo(() => {
     const seen = new Set<string>()
@@ -121,10 +123,15 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   // ── دبوس الخريطة ─────────────────────────────────────────────────
-  const [mapMoving, setMapMoving] = useState(false)
-  const [pinLabel,  setPinLabel]  = useState<string | null>(null)
+  const [mapMoving,  setMapMoving]  = useState(false)
+  const [pinLabel,   setPinLabel]   = useState<string | null>(null)
+  const [pinLat,     setPinLat]     = useState(ALGIERS_CENTER.lat)
+  const [pinLng,     setPinLng]     = useState(ALGIERS_CENTER.lng)
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const labelAnim    = useRef(new Animated.Value(0)).current
+
+  // flyTo لزر الموقع
+  const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null)
 
   const handleRegionChange = useCallback(() => {
     setMapMoving(true)
@@ -135,6 +142,8 @@ export default function Home() {
 
   const handleRegionChangeComplete = useCallback((lat: number, lng: number) => {
     setMapMoving(false)
+    setPinLat(lat)
+    setPinLng(lng)
     geocodeTimer.current = setTimeout(() => {
       fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`,
@@ -145,11 +154,26 @@ export default function Home() {
           const raw: string = d.display_name ?? ''
           const short = raw.split(',')[0]?.trim() ?? raw
           setPinLabel(short || null)
-          Animated.timing(labelAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()
+          Animated.timing(labelAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start()
         })
         .catch(() => {})
     }, 350)
   }, [labelAnim])
+
+  // عند الضغط على chip الشارع: يملأ "من أين" ويفتح البحث نحو الوجهة
+  function handlePinChipPress() {
+    if (!pinLabel) return
+    setSheMode(false)
+    setVehicleType('sedan')
+    setRideMode('city')
+    setFrom({
+      name:    pinLabel,
+      address: pinLabel,
+      lat:     pinLat,
+      lng:     pinLng,
+    })
+    router.push('/(passenger)/search')
+  }
 
   // ── Navigation ────────────────────────────────────────────────────
   function openCity() {
@@ -171,43 +195,65 @@ export default function Home() {
   return (
     <View style={styles.root}>
 
-      {/* ── الخريطة: تغطي الجزء العلوي بالكامل ── */}
+      {/* ── الخريطة: الجزء العلوي بدون تعتيم ── */}
       <View style={styles.mapWrap}>
         <WebMap
           showUser
           variant="explore"
+          flyToLocation={flyTo}
           markers={mapDrivers
             .filter((d) => d.isOnline)
             .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
           onRegionChange={handleRegionChange}
           onRegionChangeComplete={handleRegionChangeComplete}
         />
-        <View style={styles.mapOverlay} pointerEvents="none" />
 
-        {/* الدبوس في مركز الخريطة + label الشارع تحته */}
-        <View style={styles.pinWrap} pointerEvents="none">
-          <MapPin moving={mapMoving} />
-          <Animated.View
-            style={[
-              styles.pinLabel,
-              isDark ? styles.pinLabelDark : styles.pinLabelLight,
-              { opacity: labelAnim },
-            ]}
+        {/* الدبوس الذهبي في مركز الخريطة */}
+        <View style={styles.pinWrap} pointerEvents="box-none">
+          <View pointerEvents="none">
+            <MapPin moving={mapMoving} />
+          </View>
+
+          {/* Chip الشارع — قابل للضغط */}
+          {pinLabel ? (
+            <Animated.View style={{ opacity: labelAnim }}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.pinChip,
+                  isDark ? styles.pinChipDark : styles.pinChipLight,
+                  pressed && styles.pinChipPressed,
+                ]}
+                onPress={handlePinChipPress}
+              >
+                <Icon name="map-marker" size={11} color={GOLD} />
+                <Txt
+                  size={10}
+                  weight="bold"
+                  color={isDark ? '#111' : '#fff'}
+                  numberOfLines={1}
+                  style={{ flex: 1, letterSpacing: 0.2 }}
+                >
+                  {pinLabel}
+                </Txt>
+                <Icon name="chevron-right" size={11} color={isDark ? '#555' : 'rgba(255,255,255,0.7)'} />
+              </Pressable>
+            </Animated.View>
+          ) : null}
+        </View>
+
+        {/* زر موقعي — يمين أعلى الخريطة تحت TopBar */}
+        <View style={styles.locateBtnWrap} pointerEvents="box-none">
+          <Pressable
+            style={({ pressed }) => [styles.locateBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => setFlyTo({ lat: userLocation.lat, lng: userLocation.lng })}
+            hitSlop={8}
           >
-            <Txt
-              size={10}
-              weight="bold"
-              color={isDark ? '#000' : '#fff'}
-              numberOfLines={1}
-              style={{ letterSpacing: 0.2 }}
-            >
-              {pinLabel ?? ''}
-            </Txt>
-          </Animated.View>
+            <Icon name="crosshairs-gps" size={20} color={GOLD} />
+          </Pressable>
         </View>
       </View>
 
-      {/* ── TopBar فوق الخريطة ── */}
+      {/* ── TopBar ── */}
       <View style={styles.topBarWrap} pointerEvents="box-none">
         <TopBar
           showMenu
@@ -224,7 +270,7 @@ export default function Home() {
         </View>
       )}
 
-      {/* ── الـ Sheet: ثابت دائماً، لا يتحرك أبداً ── */}
+      {/* ── الـ Sheet: ثابت دائماً ── */}
       <View style={styles.sheet}>
         <ScrollView
           contentContainerStyle={styles.scrollBody}
@@ -243,14 +289,29 @@ export default function Home() {
             </Pressable>
           )}
 
-          {/* شريط البحث */}
-          <Pressable style={styles.search} onPress={openCity}>
-            <Icon name="magnify" size={18} color={Colors.muted} />
-            <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
-            <View style={styles.searchPin}>
-              <Icon name="map-marker" size={16} color={Colors.gold} />
+          {/* ── حقلا البحث: من أين + إلى أين ── */}
+          <View style={styles.searchCard}>
+            {/* من أين */}
+            <Pressable style={styles.searchRow} onPress={openCity}>
+              <View style={styles.searchDotFrom} />
+              <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchFrom')}</Txt>
+              <Icon name="crosshairs-gps" size={16} color={Colors.gold} />
+            </Pressable>
+
+            {/* فاصل */}
+            <View style={styles.searchDivider}>
+              <View style={styles.searchLine} />
             </View>
-          </Pressable>
+
+            {/* إلى أين */}
+            <Pressable style={styles.searchRow} onPress={openCity}>
+              <View style={styles.searchDotTo} />
+              <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
+              <View style={styles.searchPinBtn}>
+                <Icon name="map-marker" size={15} color={GOLD} />
+              </View>
+            </Pressable>
+          </View>
 
           <View style={{ height: Spacing.lg }} />
 
@@ -336,18 +397,13 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.dark1 },
 
-    // الخريطة تحتل 52% من الشاشة في الأعلى
+    // الخريطة — 52% العلوية، بدون تعتيم
     mapWrap: {
       position: 'absolute',
       top: 0, left: 0, right: 0,
       height: MAP_H,
     },
-    // تعتيم خفيف فوق الخريطة
-    mapOverlay: {
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: Colors.dark1,
-      opacity: 0.18,
-    },
+
     // الدبوس في مركز منطقة الخريطة
     pinWrap: {
       position: 'absolute',
@@ -355,24 +411,56 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       height: MAP_H,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingBottom: 26, // تعويض ليكون طرف الدبوس على مركز الخريطة
+      paddingBottom: 26,
     },
-    // label الشارع تحت الدبوس
-    pinLabel: {
-      marginTop: 6,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: 10,
-      maxWidth: 170,
+
+    // Chip الشارع تحت الدبوس
+    pinChip: {
+      flexDirection: row,
       alignItems: 'center',
+      gap: 5,
+      marginTop: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 20,
+      maxWidth: 180,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 6,
     },
-    pinLabelDark: {
+    pinChipDark: {
       backgroundColor: '#fff',
     },
-    pinLabelLight: {
-      backgroundColor: 'transparent',
+    pinChipLight: {
+      backgroundColor: 'rgba(0,0,0,0.65)',
+    },
+    pinChipPressed: {
+      opacity: 0.75,
+      transform: [{ scale: 0.97 }],
+    },
+
+    // زر موقعي — يمين أعلى الخريطة تحت TopBar
+    locateBtnWrap: {
+      position: 'absolute',
+      top: 72,
+      right: 14,
+    },
+    locateBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: Colors.dark2,
+      alignItems: 'center',
+      justifyContent: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.6)',
+      borderColor: Colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
     },
 
     topBarWrap: {
@@ -384,11 +472,11 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       alignItems: 'center',
     },
 
-    // الـ sheet: view ثابت يبدأ من أسفل الخريطة حتى نهاية الشاشة
+    // الـ sheet — ثابت، لا يتحرك
     sheet: {
       position: 'absolute',
       left: 0, right: 0,
-      top: MAP_H - 28,   // يتداخل مع الخريطة 28px ليعطي انسيابية
+      top: MAP_H - 28,
       bottom: 0,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
@@ -416,20 +504,50 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       paddingVertical: 8, paddingHorizontal: Spacing.md, marginBottom: Spacing.md,
     },
 
-    search: {
-      flexDirection: row, alignItems: 'center', gap: 10,
+    // ── حقلا البحث ──
+    searchCard: {
       backgroundColor: Colors.dark2,
-      borderRadius: Spacing.radiusMd, height: 52,
-      paddingHorizontal: Spacing.md, marginBottom: Spacing.lg,
-      borderWidth: 1, borderColor: Colors.border,
+      borderRadius: Spacing.radiusMd,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      overflow: 'hidden',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.18,
       shadowRadius: 14,
       elevation: 8,
     },
-    searchPin: {
-      width: 32, height: 32, borderRadius: 16,
+    searchRow: {
+      flexDirection: row,
+      alignItems: 'center',
+      gap: 12,
+      height: 52,
+      paddingHorizontal: Spacing.md,
+    },
+    searchDotFrom: {
+      width: 10, height: 10, borderRadius: 5,
+      backgroundColor: GOLD,
+      borderWidth: 2,
+      borderColor: Colors.dark2,
+      shadowColor: GOLD,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.8,
+      shadowRadius: 4,
+    },
+    searchDotTo: {
+      width: 10, height: 10, borderRadius: 2,
+      backgroundColor: PURPLE,
+    },
+    searchDivider: {
+      paddingLeft: Spacing.md + 5,
+      paddingRight: Spacing.md,
+    },
+    searchLine: {
+      height: 1,
+      backgroundColor: Colors.border,
+    },
+    searchPinBtn: {
+      width: 30, height: 30, borderRadius: 15,
       backgroundColor: Colors.goldAlpha15,
       alignItems: 'center', justifyContent: 'center',
     },
