@@ -84,8 +84,8 @@ export default function DriverRideActive() {
 
   if (!ride) return null
 
-  function callPassenger()    { Linking.openURL(`tel:${ride!.passenger.phone}`) }
-  function messagePassenger() { Linking.openURL(`sms:${ride!.passenger.phone}`) }
+  function callPassenger()    { Linking.openURL(`tel:${ride!.passengerPhone}`) }
+  function messagePassenger() { Linking.openURL(`sms:${ride!.passengerPhone}`) }
 
   function handleEndRide() {
     Alert.alert(
@@ -108,7 +108,7 @@ export default function DriverRideActive() {
   }
 
   const etaMin       = etaSec !== null ? Math.max(0, Math.ceil(etaSec / 60)) : null
-  const minRemaining = etaMin ?? Math.max(1, Math.round((1 - progress) * ride.duration))
+  const minRemaining = etaMin ?? Math.max(1, Math.round((1 - progress) * ride.durationMin))
 
   return (
     <View style={styles.container}>
@@ -136,7 +136,7 @@ export default function DriverRideActive() {
             <Txt weight="bold" size={14}>{passengerName}</Txt>
             <View style={styles.metaRow}>
               <Icon name="star" size={13} color={Colors.gold} />
-              <Txt size={12} color={Colors.gold}>{ride.passenger.rating}</Txt>
+              <Txt size={12} color={Colors.gold}>{ride.passengerRating}</Txt>
             </View>
           </View>
           <Txt weight="bold" size={18} color={Colors.gold}>
@@ -149,8 +149,8 @@ export default function DriverRideActive() {
           <Txt weight="bold" size={15}>{ride.to.name}</Txt>
         </View>
         <View style={styles.info}>
-          <Txt size={13} color={Colors.muted}>{formatDistance(ride.distance, distanceUnit)}</Txt>
-          <Txt size={13} color={Colors.muted}>{ride.duration} {t('common.min')}</Txt>
+          <Txt size={13} color={Colors.muted}>{formatDistance(ride.distanceKm, distanceUnit)}</Txt>
+          <Txt size={13} color={Colors.muted}>{ride.durationMin} {t('common.min')}</Txt>
         </View>
 
         <View style={styles.actions}>

@@ -2,8 +2,6 @@ import { I18nManager } from 'react-native'
 import { useSettingsStore, type Language } from '../store/settingsStore'
 import { useUserStore } from '../store/userStore'
 import { useDriverStore } from '../store/driverStore'
-import { currentUser } from '../mock/passengers'
-import { mockDrivers } from '../mock/drivers'
 
 // Arabic is the only right-to-left language; French and English are left-to-right.
 export const isRTLLang = (lang: Language) => lang === 'ar'
@@ -53,15 +51,22 @@ export function usePassengerName(): string {
   const incomingRide = useDriverStore((s) => s.incomingRide)
   const activeRide   = useDriverStore((s) => s.activeRide)
   const profile      = useUserStore((s) => s.profile)
-  // Driver context: return the trip passenger's name (real or mock)
-  const tripName = (incomingRide ?? activeRide)?.passenger?.name
+  const passenger    = useUserStore((s) => s.passenger)
+  // Driver context: return the trip passenger's name from real Supabase offer
+  const tripName = (incomingRide ?? activeRide)?.passengerName
   if (tripName) return tripName
-  // Passenger context: respect the active language — use Latin fallback if profile is in Arabic but UI is not
+  // Passenger context: respect the active language
   if (profile?.full_name) {
-    if (lang !== 'ar' && hasArabic(profile.full_name)) return currentUser.nameLatin
+    if (lang !== 'ar' && hasArabic(profile.full_name) && profile.full_name_latin) {
+      return profile.full_name_latin
+    }
     return profile.full_name
   }
-  return lang === 'ar' ? currentUser.name : currentUser.nameLatin
+  if (passenger.fullName) {
+    if (lang !== 'ar' && hasArabic(passenger.fullName)) return passenger.fullName
+    return passenger.fullName
+  }
+  return ''
 }
 
 // Driver display name, localized: Arabic in Arabic mode, Latin in fr/en.
@@ -69,12 +74,11 @@ export function usePassengerName(): string {
 export function useDriverName(): string {
   const lang    = useSettingsStore((s) => s.language)
   const profile = useUserStore((s) => s.profile)
-  const driver  = mockDrivers[0]
+  const driver  = useUserStore((s) => s.driver)
   if (profile?.full_name) {
-    if (lang !== 'ar' && hasArabic(profile.full_name)) return driver.nameLatin ?? driver.name
     return profile.full_name
   }
-  return lang === 'ar' ? driver.name : (driver.nameLatin ?? driver.name)
+  return driver.fullName ?? ''
 }
 
 // Algerian wilaya / place names — Arabic kept as-is, Latin transliterations for fr/en.

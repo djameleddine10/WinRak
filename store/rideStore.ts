@@ -1,5 +1,45 @@
 import { create } from 'zustand'
-import { type Ride } from '../mock/rides'
+
+import type { DriverCardData } from '../components/ride/DriverCard'
+
+/** Course Supabase — reflète la table `trips` */
+export interface Ride {
+  id:             string
+  trip_code?:     string
+  passenger_id?:  string
+  driver_id?:     string
+  rideType?:      string
+  from: {
+    name:    string
+    address: string
+    lat:     number
+    lng:     number
+  }
+  to: {
+    name:    string
+    address: string
+    lat:     number
+    lng:     number
+  }
+  distance:       number
+  duration?:      number
+  price:          number
+  suggestedPrice?: number
+  status:         string
+  vehicleType?:   string
+  paymentMethod?: string
+  createdAt?:     string
+  startedAt?:     string
+  completedAt?:   string
+  rating?:        number
+  driverEta?:     number
+  cancelReason?:  string | null
+  departureDate?: string | null
+  departureTime?: string | null
+  luggageAllowed?: boolean
+  /** Données chauffeur chargées avec la course (pour l'affichage passager) */
+  driver?:        DriverCardData
+}
 
 export type RideStatus =
   | 'idle' | 'searching' | 'driver_found'

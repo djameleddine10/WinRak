@@ -1,20 +1,21 @@
-# Performance Audit Tasks
+# Phase 3 — Supabase Real Data
 
-## 🔴 Direct Performance Impact
-- [x] useMemo on makeStyles — ALL files already have it ✅
-- [ ] console.log/warn — wrap in __DEV__ guard in babel.config or create __DEV__ util
-- [ ] React.memo on: Button, Card, Txt, Icon, Avatar, DirIcon, Badge (heavy primitives used everywhere)
-- [ ] earnings.tsx Row + Stat sub-components — makeStyles called inside = re-create on every render → extract styles or use React.memo
-- [ ] re-render selectors — no major issues found, all use (s) => s.field pattern ✅
+## Files
+1. [x] userStore.ts — remove mock, define interfaces, login fetches profile
+2. [ ] driverStore.ts — remove mockRides, RideOffer interface, Realtime subscription
+3. [ ] wallet.tsx — call loadWallet() in useEffect (paymentStore already has it)
+4. [ ] search.tsx — recent places via profiles.recent_searches JSONB (migration needed)
 
-## 🟡 Meaningful Improvements
-- [ ] FlatList in notifications.tsx (ScrollView with list)
-- [ ] FlatList in delivery-food.tsx (ScrollView with list)
-- [ ] earnings.tsx stays ScrollView (mixed content, not pure list)
-- [ ] Haptics — add expo-haptics to Button, driver accept/reject
+## Key DB Info
+- profiles: id, phone, role, full_name, full_name_ar, avatar_url, is_active
+- passengers: id, rating, total_trips, total_spent
+- trips: id, trip_code, passenger_id, driver_id, from_address, from_lat/lng, to_address, to_lat/lng, distance_km, price, vehicle_type, status
+- trip_offers: id, trip_id, driver_id, offer_rank, distance_m, status, created_at, responded_at
+  - Realtime enabled on trip_offers
+- No recent_searches column in profiles yet — need migration
 
-## 🟢 Polish
-- [ ] console statements wrap in __DEV__ 
-
-## STATUS
-- earnings.tsx Row/Stat: makeStyles called inside sub-component = BIG issue, fix first
+## Decisions
+- recent_searches stored as JSONB on profiles table (max 10 items)
+- RideOffer interface defined independently from mockRides
+- userStore: passenger/driver typed as independent interfaces
+- driverStore: Realtime subscription on trip_offers with filter driver_id=eq.{uid}

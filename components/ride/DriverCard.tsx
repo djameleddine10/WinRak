@@ -8,11 +8,29 @@ import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
-import type { Driver } from '../../mock/drivers'
 import { useIsRTL } from '../../i18n/locale'
 
+/** Interface chauffeur pour DriverCard — indépendante des mocks */
+export interface DriverCardData {
+  id:          string
+  name:        string
+  nameLatin?:  string
+  phone?:      string
+  rating:      number
+  totalRides:  number
+  isVerified?: boolean
+  vehicle: {
+    type:      string
+    brand?:    string
+    model?:    string
+    color?:    string
+    plate:     string
+    year?:     number
+  }
+}
+
 interface DriverCardProps {
-  driver: Driver
+  driver: DriverCardData
   showActions?: boolean
   compact?: boolean
   onCall?: () => void
@@ -30,6 +48,9 @@ export function DriverCard({ driver, showActions, compact, onCall, onMessage }: 
   const displayName = lang === 'ar' ? driver.name : (driver.nameLatin ?? driver.name)
   const initial = displayName.charAt(0).toUpperCase()
 
+  const vehicleLabel = [driver.vehicle.brand, driver.vehicle.model].filter(Boolean).join(' ')
+  const vehicleDetail = [vehicleLabel, driver.vehicle.color, driver.vehicle.plate].filter(Boolean).join(' • ')
+
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
@@ -44,11 +65,9 @@ export function DriverCard({ driver, showActions, compact, onCall, onMessage }: 
             <Txt size={12} color={Colors.gold}>{driver.rating}</Txt>
             <Txt size={12} color={Colors.muted}>• {t('profile.rides', { n: driver.totalRides })}</Txt>
           </View>
-          {!compact && (
-            <Txt size={12} color={Colors.muted}>
-              {t(driver.vehicle.modelKey)} • {t(driver.vehicle.colorKey)} • {driver.vehicle.plate}
-            </Txt>
-          )}
+          {!compact && vehicleDetail ? (
+            <Txt size={12} color={Colors.muted}>{vehicleDetail}</Txt>
+          ) : null}
         </View>
       </View>
 

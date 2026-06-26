@@ -86,8 +86,8 @@ export default function GoingToPickup() {
 
   if (!ride) return null
 
-  function callPassenger()    { Linking.openURL(`tel:${ride!.passenger.phone}`) }
-  function messagePassenger() { Linking.openURL(`sms:${ride!.passenger.phone}`) }
+  function callPassenger()    { Linking.openURL(`tel:${ride!.passengerPhone}`) }
+  function messagePassenger() { Linking.openURL(`sms:${ride!.passengerPhone}`) }
 
   async function handleStartRide() {
     if (realTripId) startTrip(realTripId).catch(() => {})

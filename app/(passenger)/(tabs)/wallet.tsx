@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
@@ -14,6 +14,8 @@ import { useIsRTL } from '../../../i18n/locale'
 import {
   usePaymentStore, methodIcon, methodLabelKey, methodBrand, type SavedMethod, type LocalTx,
 } from '../../../store/paymentStore'
+import { useUserStore } from '../../../store/userStore'
+import { supabase } from '../../../lib/supabase'
 
 export default function Wallet() {
   const Colors = useColors()
@@ -26,6 +28,19 @@ export default function Wallet() {
   const points       = usePaymentStore((s) => s.points)
   const methods      = usePaymentStore((s) => s.methods)
   const transactions = usePaymentStore((s) => s.transactions)
+  const loadWallet   = usePaymentStore((s) => s.loadWallet)
+  const profile      = useUserStore((s) => s.profile)
+
+  // Charge le solde et les transactions depuis Supabase au montage
+  useEffect(() => {
+    if (profile?.id) {
+      loadWallet(profile.id)
+    } else {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) loadWallet(data.user.id)
+      })
+    }
+  }, [profile?.id])
 
   function methodTitle(m: SavedMethod): string {
     const key = methodLabelKey(m.type)

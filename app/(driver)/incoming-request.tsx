@@ -132,7 +132,7 @@ export default function IncomingRequest() {
             <Txt weight="bold" size={14}>{passengerName}</Txt>
             <View style={styles.metaRow}>
               <Icon name="star" size={13} color={Colors.gold} />
-              <Txt size={12} color={Colors.gold}>{ride.passenger.rating}</Txt>
+              <Txt size={12} color={Colors.gold}>{ride.passengerRating}</Txt>
             </View>
           </View>
         </View>
@@ -142,9 +142,9 @@ export default function IncomingRequest() {
           <TripRow icon="flag" label={t('driver.destination')} value={ride.to.address} />
           <View style={styles.tripMeta}>
             <Icon name="car" size={13} color={Colors.muted} />
-            <Txt size={12} color={Colors.muted}>{formatDistance(ride.distance, distanceUnit)}</Txt>
+            <Txt size={12} color={Colors.muted}>{formatDistance(ride.distanceKm, distanceUnit)}</Txt>
             <Icon name="clock-outline" size={13} color={Colors.muted} />
-            <Txt size={12} color={Colors.muted}>{ride.duration} {t('common.min')}</Txt>
+            <Txt size={12} color={Colors.muted}>{ride.durationMin} {t('common.min')}</Txt>
           </View>
         </View>
 

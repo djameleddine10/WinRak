@@ -39,7 +39,7 @@ export default function DriverHome() {
   const setIncomingRide   = useDriverStore((s) => s.setIncomingRide)
   const setRealTripId     = useDriverStore((s) => s.setRealTripId)
   const setOfferId        = useDriverStore((s) => s.setOfferId)
-  const simulateRequest   = useDriverStore((s) => s.simulateRequest)
+  const subscribeToOffers = useDriverStore((s) => s.subscribeToOffers)
   const driverStats     = useUserStore((s) => s.driverStats)
   const driverMock      = useUserStore((s) => s.driver)
   const channelRef      = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -237,11 +237,11 @@ export default function DriverHome() {
         </Txt>
         {DEV_AUTH_BYPASS && online && (
           <Pressable
-            onPress={simulateRequest}
+            onPress={subscribeToOffers}
             style={styles.devBtn}
             hitSlop={8}
           >
-            <Txt size={12} color={Colors.dark1} weight="bold">محاكاة طلب</Txt>
+            <Txt size={12} color={Colors.dark1} weight="bold">تفعيل الاستقبال</Txt>
           </Pressable>
         )}
       </View>
