@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { Dimensions, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
-import { useColors, useResolvedScheme } from '../../../hooks/useColors'
+import { useColors } from '../../../hooks/useColors'
 import { Spacing } from '../../../constants/spacing'
 import { Shadows } from '../../../constants/shadows'
 import { Txt } from '../../../components/ui/Txt'
@@ -17,15 +17,11 @@ import { useLocation } from '../../../hooks/useLocation'
 import { useT } from '../../../hooks/useT'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { useIsRTL } from '../../../i18n/locale'
-import { MapPin } from '../../../components/map/MapPin'
-import { ALGIERS_CENTER } from '../../../mock/map'
 import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
 const { height: SCREEN_H } = Dimensions.get('window')
-
-// Map takes exactly the top half — sheet is ALWAYS visible below, never moves
 const MAP_H = Math.round(SCREEN_H * 0.52)
 
 const PURPLE = '#7B4FD4'
@@ -33,14 +29,12 @@ const TEAL   = '#00C2A8'
 
 export default function Home() {
   const Colors = useColors()
-  const scheme = useResolvedScheme()
-  const isDark = scheme === 'dark'
   const isRTL = useIsRTL()
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
-  const photoStatus    = useUserStore((s) => s.photoStatus)
-  const profile        = useUserStore((s) => s.profile)
-  const setRideMode    = useUserStore((s) => s.setRideMode)
-  const setSheMode     = useRideStore((s) => s.setSheMode)
+  const photoStatus = useUserStore((s) => s.photoStatus)
+  const profile     = useUserStore((s) => s.profile)
+  const setRideMode = useUserStore((s) => s.setRideMode)
+  const setSheMode  = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
   const setTo          = useRideStore((s) => s.setTo)
   const rideHistory    = useRideStore((s) => s.rideHistory)
@@ -80,25 +74,25 @@ export default function Home() {
     getMyTrips(profile.id, 'passenger', 20)
       .then((trips) => {
         const rides = trips.map((trip: any) => ({
-          id:             trip.id,
-          rideType:       'city' as const,
-          from:           { name: trip.from_address ?? '', address: trip.from_address ?? '', lat: trip.from_lat ?? 0, lng: trip.from_lng ?? 0 },
-          to:             { name: trip.to_address   ?? '', address: trip.to_address   ?? '', lat: trip.to_lat   ?? 0, lng: trip.to_lng   ?? 0 },
-          price:          trip.price          ?? 0,
-          suggestedPrice: trip.price          ?? 0,
-          distance:       trip.distance_km    ?? 0,
-          duration:       trip.duration_min   ?? 0,
-          status:         trip.status         ?? 'completed',
-          vehicleType:    trip.vehicle_type   ?? 'sedan',
-          paymentMethod:  trip.payment_method ?? 'cash',
-          createdAt:      trip.created_at,
-          startedAt:      trip.started_at     ?? null,
-          completedAt:    trip.completed_at   ?? null,
-          rating:         null,
-          driverEta:      null,
-          cancelReason:   trip.cancel_reason  ?? null,
-          departureDate:  null,
-          departureTime:  null,
+          id:            trip.id,
+          rideType:      'city' as const,
+          from:          { name: trip.from_address ?? '', address: trip.from_address ?? '', lat: trip.from_lat ?? 0, lng: trip.from_lng ?? 0 },
+          to:            { name: trip.to_address   ?? '', address: trip.to_address   ?? '', lat: trip.to_lat   ?? 0, lng: trip.to_lng   ?? 0 },
+          price:         trip.price          ?? 0,
+          suggestedPrice: trip.price         ?? 0,
+          distance:      trip.distance_km    ?? 0,
+          duration:      trip.duration_min   ?? 0,
+          status:        trip.status         ?? 'completed',
+          vehicleType:   trip.vehicle_type   ?? 'sedan',
+          paymentMethod: trip.payment_method ?? 'cash',
+          createdAt:     trip.created_at,
+          startedAt:     trip.started_at     ?? null,
+          completedAt:   trip.completed_at   ?? null,
+          rating:        null,
+          driverEta:     null,
+          cancelReason:  trip.cancel_reason  ?? null,
+          departureDate: null,
+          departureTime: null,
           luggageAllowed: false,
           passenger: { id: trip.passenger_id ?? '', name: '', nameLatin: '', firstName: '', lastName: '', avatar: '', phone: '', phoneMasked: '', email: '', rating: 5, totalRides: 0, gender: 'male', birthDate: '', city: '', photoStatus: 'missing', registrationStep: 1, savedPlaces: { home: null, work: null }, wallet: { balance: 0, points: 0 }, paymentMethods: [], emergencyContacts: [] },
           driver:    { id: trip.driver_id ?? '', name: '', nameLatin: '', avatar: '', phone: '', rating: 0, totalRides: 0, isVerified: true, isSheDriver: false, registrationStatus: 'approved', driverType: 'city', level: 'standard', vehicle: { type: 'sedan', brand: '', model: '', modelKey: 'veh.m301', color: '', colorKey: 'veh.colorWhite', plate: '', year: 0, seats: 4 }, documents: { licenseNumber: '', licenseExpiry: '', grayCardNumber: '', birthPlace: '' }, location: { lat: 0, lng: 0 }, heading: 0, isOnline: false, earnings: { today: 0, week: 0, month: 0 } },
@@ -111,39 +105,6 @@ export default function Home() {
   useRealMapDrivers()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
-
-  // ── Map pin / reverse-geocode ──────────────────────────────────────
-  const [mapMoving, setMapMoving] = useState(false)
-  const [pinLabel,  setPinLabel]  = useState<string | null>(null)
-  const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Label fades in when pin settles
-  const labelAnim = useRef(new Animated.Value(0)).current
-
-  const handleRegionChange = useCallback(() => {
-    setMapMoving(true)
-    setPinLabel(null)
-    Animated.timing(labelAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start()
-    if (geocodeTimer.current) clearTimeout(geocodeTimer.current)
-  }, [labelAnim])
-
-  const handleRegionChangeComplete = useCallback((lat: number, lng: number) => {
-    setMapMoving(false)
-    geocodeTimer.current = setTimeout(() => {
-      fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`,
-        { headers: { 'User-Agent': 'WinRakApp/1.0' } }
-      )
-        .then((r) => r.json())
-        .then((d) => {
-          const raw: string = d.display_name ?? ''
-          const short = raw.split(',')[0]?.trim() ?? raw
-          setPinLabel(short || null)
-          Animated.timing(labelAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()
-        })
-        .catch(() => {})
-    }, 350)
-  }, [labelAnim])
 
   function openCity() {
     setSheMode(false)
@@ -164,7 +125,7 @@ export default function Home() {
   return (
     <View style={styles.root}>
 
-      {/* ── Full-screen map layer — always behind everything ── */}
+      {/* Map — top portion, behind everything */}
       <View style={styles.mapWrap}>
         <WebMap
           showUser
@@ -172,35 +133,12 @@ export default function Home() {
           markers={mapDrivers
             .filter((d) => d.isOnline)
             .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
-          onRegionChange={handleRegionChange}
-          onRegionChangeComplete={handleRegionChangeComplete}
         />
-
-        {/* Pin centered on map — non-interactive overlay */}
-        <View style={styles.pinWrap} pointerEvents="none">
-          <MapPin moving={mapMoving} />
-          <Animated.View
-            style={[
-              styles.pinLabel,
-              isDark ? styles.pinLabelDark : styles.pinLabelLight,
-              { opacity: labelAnim },
-            ]}
-          >
-            <Txt
-              size={10}
-              weight="bold"
-              color={isDark ? '#000' : '#fff'}
-              numberOfLines={1}
-              style={{ letterSpacing: 0.2 }}
-            >
-              {pinLabel ?? ''}
-            </Txt>
-          </Animated.View>
-        </View>
+        <View style={styles.mapOverlay} pointerEvents="none" />
       </View>
 
-      {/* ── TopBar floats on top of map ── */}
-      <View style={styles.topBarWrap} pointerEvents="box-none">
+      {/* TopBar floats on map */}
+      <View style={styles.topBarWrap}>
         <TopBar
           showMenu
           onMenu={() => setDrawerOpen(true)}
@@ -216,108 +154,111 @@ export default function Home() {
         </View>
       )}
 
-      {/* ── Bottom sheet — STATIC, never hides, never moves ── */}
-      <View style={styles.sheet}>
-        <ScrollView
-          contentContainerStyle={styles.scrollBody}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Drag handle */}
-          <View style={styles.handle} />
-
-          {/* Photo warning */}
-          {photoStatus === 'missing' && (
-            <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
-              <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
-              <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
-              <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
-            </Pressable>
-          )}
-
-          {/* Search bar */}
-          <Pressable style={styles.search} onPress={openCity}>
-            <Icon name="magnify" size={18} color={Colors.muted} />
-            <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
-            <View style={styles.searchPin}>
-              <Icon name="map-marker" size={16} color={Colors.gold} />
-            </View>
+      {/* Scrollable content starts overlapping the map bottom */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollBody}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Photo warning */}
+        {photoStatus === 'missing' && (
+          <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
+            <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
+            <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
+            <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
           </Pressable>
+        )}
 
-          <View style={{ height: Spacing.lg }} />
+        {/* Search bar */}
+        <Pressable style={styles.search} onPress={openCity}>
+          <Icon name="magnify" size={18} color={Colors.muted} />
+          <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
+          <View style={styles.searchPin}>
+            <Icon name="map-marker" size={16} color={Colors.gold} />
+          </View>
+        </Pressable>
 
-          {/* Service cards */}
-          <View style={styles.cardsWrap}>
-            <View style={styles.cardRow}>
-              <Pressable
-                style={({ pressed }) => [styles.cardSm, styles.goldCard, pressed && styles.pressed]}
-                onPress={openCity}
-              >
-                <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImgSm} resizeMode="contain" />
-                <View style={styles.cardSmFooter}>
-                  <Txt weight="bold" size={15} color={Colors.white}>{t('service.ride')}</Txt>
-                  <View style={[styles.arrowBtnSm, { backgroundColor: Colors.gold }]}>
-                    <DirIcon name="chevron-right" size={15} color="#000" />
-                  </View>
-                </View>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.cardSm, styles.purpleCard, pressed && styles.pressed]}
-                onPress={openShe}
-              >
-                <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImgSm} resizeMode="contain" />
-                <View style={styles.cardSmFooter}>
-                  <Txt weight="bold" size={15} color={Colors.white}>{t('service.women')}</Txt>
-                  <View style={[styles.arrowBtnSm, { backgroundColor: PURPLE }]}>
-                    <DirIcon name="chevron-right" size={15} color="#fff" />
-                  </View>
-                </View>
-              </Pressable>
-            </View>
+        {/* Tight, fixed gap — keeps the cards grouped right under the search bar */}
+        <View style={{ height: Spacing.lg }} />
+
+        {/* ── Service cards ── */}
+        <View style={styles.cardsWrap}>
+
+          {/* Row: Ride + Women side by side */}
+          <View style={styles.cardRow}>
+
+            {/* Ride */}
             <Pressable
-              style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
-              onPress={openDelivery}
+              style={({ pressed }) => [styles.cardSm, styles.goldCard, pressed && styles.pressed]}
+              onPress={openCity}
             >
-              <View style={styles.cardImgWrap}>
-                <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
+              <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImgSm} resizeMode="contain" />
+              <View style={styles.cardSmFooter}>
+                <Txt weight="bold" size={15} color={Colors.white}>{t('service.ride')}</Txt>
+                <View style={[styles.arrowBtnSm, { backgroundColor: Colors.gold }]}>
+                  <DirIcon name="chevron-right" size={15} color="#000" />
+                </View>
               </View>
-              <View style={styles.cardBody}>
-                <Txt weight="bold" size={17} color={Colors.white}>{t('service.delivery')}</Txt>
-                <Txt size={11} color={Colors.muted} style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
-              </View>
-              <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
-                <DirIcon name="chevron-right" size={18} color="#000" />
+            </Pressable>
+
+            {/* Women */}
+            <Pressable
+              style={({ pressed }) => [styles.cardSm, styles.purpleCard, pressed && styles.pressed]}
+              onPress={openShe}
+            >
+              <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImgSm} resizeMode="contain" />
+              <View style={styles.cardSmFooter}>
+                <Txt weight="bold" size={15} color={Colors.white}>{t('service.women')}</Txt>
+                <View style={[styles.arrowBtnSm, { backgroundColor: PURPLE }]}>
+                  <DirIcon name="chevron-right" size={15} color="#fff" />
+                </View>
               </View>
             </Pressable>
           </View>
 
-          {/* Recent destinations */}
-          {recentDestinations.length > 0 && (
-            <View style={styles.recentWrap}>
-              <Txt weight="bold" size={13} color={Colors.muted} style={styles.recentTitle}>
-                {t('home.recentTitle')}
-              </Txt>
-              {recentDestinations.map((d) => (
-                <Pressable
-                  key={d.name}
-                  style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
-                  onPress={() => openRecent(d)}
-                >
-                  <View style={styles.recentIcon}>
-                    <Icon name="history" size={18} color={Colors.muted} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Txt weight="bold" size={14} color={Colors.white}>{d.name}</Txt>
-                    <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
-                  </View>
-                  <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
-                </Pressable>
-              ))}
+          {/* Delivery — wide */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
+            onPress={openDelivery}
+          >
+            <View style={styles.cardImgWrap}>
+              <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
             </View>
-          )}
-        </ScrollView>
-      </View>
+            <View style={styles.cardBody}>
+              <Txt weight="bold" size={17} color={Colors.white}>{t('service.delivery')}</Txt>
+              <Txt size={11} color={Colors.muted} style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
+            </View>
+            <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
+              <DirIcon name="chevron-right" size={18} color="#000" />
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Recent destinations */}
+        {recentDestinations.length > 0 && (
+          <View style={styles.recentWrap}>
+            <Txt weight="bold" size={13} color={Colors.muted} style={styles.recentTitle}>
+              {t('home.recentTitle')}
+            </Txt>
+            {recentDestinations.map((d) => (
+              <Pressable
+                key={d.name}
+                style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
+                onPress={() => openRecent(d)}
+              >
+                <View style={styles.recentIcon}>
+                  <Icon name="history" size={18} color={Colors.muted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Txt weight="bold" size={14} color={Colors.white}>{d.name}</Txt>
+                  <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
+                </View>
+                <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
@@ -329,61 +270,26 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.dark1 },
 
-    // Map covers the FULL screen — sheet sits on top of it, map is still touchable above the sheet
-    mapWrap: {
-      position: 'absolute',
-      top: 0, left: 0, right: 0, bottom: 0,
+    mapWrap: { position: 'absolute', top: 0, left: 0, right: 0, height: MAP_H },
+    mapOverlay: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: Colors.dark1,
+      opacity: 0.55,
     },
-
-    // Pin is centered in the map area above the sheet
-    pinWrap: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      // Pin lives in the upper MAP_H portion only
-      height: MAP_H,
-      alignItems: 'center',
-      justifyContent: 'center',
-      // Nudge up so the pin tip lands on the visual center, not the icon center
-      paddingBottom: 26,
-    },
-
     topBarWrap: {
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
     },
-
     gpsBanner: {
       position: 'absolute', top: Spacing.topBarHeight, left: 0, right: 0, zIndex: 15,
       backgroundColor: '#c87700', paddingVertical: 6, paddingHorizontal: Spacing.md,
       alignItems: 'center',
     },
 
-    // Sheet: sits at bottom, fixed height, plain View — no animation, no opacity tricks
-    sheet: {
-      position: 'absolute',
-      left: 0, right: 0,
-      // Overlap map by 28px so the rounded top looks connected
-      top: MAP_H - 28,
-      bottom: 0,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      backgroundColor: Colors.dark1,
-      overflow: 'hidden',
-    },
-
+    scroll: { flex: 1 },
     scrollBody: {
-      paddingTop: 20,
+      paddingTop: MAP_H - 24,
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: 100,
-    },
-
-    handle: {
-      width: 40, height: 4,
-      borderRadius: 2,
-      backgroundColor: Colors.dark4,
-      alignSelf: 'center',
-      marginBottom: Spacing.md,
     },
 
     photoWarn: {
@@ -412,48 +318,69 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     },
 
     cardsWrap: { gap: 12 },
-    cardRow:   { flexDirection: row, gap: 12 },
+
+    cardRow: { flexDirection: row, gap: 12 },
 
     cardSm: {
       flex: 1,
       borderRadius: Spacing.radiusLg,
-      paddingTop: 10, paddingBottom: 12, paddingHorizontal: 12,
+      paddingTop: 10,
+      paddingBottom: 12,
+      paddingHorizontal: 12,
       borderWidth: 1,
       overflow: 'hidden',
     },
-    cardImgSm:    { width: '100%', height: 54, marginBottom: 6 },
-    cardSmFooter: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
-    arrowBtnSm:   { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+    cardImgSm: { width: '100%', height: 54, marginBottom: 6 },
+    cardSmFooter: {
+      flexDirection: row,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    arrowBtnSm: {
+      width: 30, height: 30, borderRadius: 15,
+      alignItems: 'center', justifyContent: 'center',
+    },
 
     card: {
-      flexDirection: row, alignItems: 'center',
+      flexDirection: row,
+      alignItems: 'center',
       borderRadius: Spacing.radiusLg,
-      paddingVertical: 14, paddingHorizontal: 16,
-      gap: 14, borderWidth: 1, overflow: 'hidden',
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      gap: 14,
+      borderWidth: 1,
+      overflow: 'hidden',
     },
-    goldCard:   { backgroundColor: Colors.dark2, borderColor: Colors.goldAlpha20,          ...Shadows.md },
-    purpleCard: { backgroundColor: Colors.dark2, borderColor: 'rgba(123,79,212,0.40)',      ...Shadows.md },
-    tealCard:   { backgroundColor: Colors.dark2, borderColor: 'rgba(0,194,168,0.40)',       ...Shadows.md },
+    goldCard: {
+      backgroundColor: Colors.dark2,
+      borderColor: Colors.goldAlpha20,
+      ...Shadows.md,
+    },
+    purpleCard: {
+      backgroundColor: Colors.dark2,
+      borderColor: 'rgba(123,79,212,0.40)',
+      ...Shadows.md,
+    },
+    tealCard: {
+      backgroundColor: Colors.dark2,
+      borderColor: 'rgba(0,194,168,0.40)',
+      ...Shadows.md,
+    },
 
-    cardImgWrap:  { width: 76, height: 56, alignItems: 'center', justifyContent: 'center' },
-    cardImgParcel:{ width: 52, height: 50 },
-    cardBody:     { flex: 1 },
-    arrowBtn:     { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+    cardImgWrap: {
+      width: 76, height: 56, alignItems: 'center', justifyContent: 'center',
+    },
+    cardImgParcel: { width: 52, height: 50 },
+    cardBody: { flex: 1 },
+
+    arrowBtn: {
+      width: 38, height: 38, borderRadius: 19,
+      alignItems: 'center', justifyContent: 'center',
+    },
 
     pressed: { opacity: 0.72 },
 
-    // Pin label
-    pinLabel: {
-      marginTop: 6,
-      paddingHorizontal: 8, paddingVertical: 3,
-      borderRadius: 10,
-      maxWidth: 160,
-      alignItems: 'center',
-    },
-    pinLabelDark:  { backgroundColor: '#fff', borderWidth: 0 },
-    pinLabelLight: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' },
-
-    recentWrap:  { marginTop: Spacing.xxl },
+    recentWrap: { marginTop: Spacing.xxl },
     recentTitle: { textAlign: 'right', marginBottom: Spacing.sm },
     recentRow: {
       flexDirection: row, alignItems: 'center', gap: 14,
