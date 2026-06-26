@@ -25,6 +25,7 @@ export function Layout() {
         <Outlet />
       </main>
       <Watermark />
+      {/* Toaster is rendered once in App.tsx — removed duplicate here */}
     </div>
   )
 }

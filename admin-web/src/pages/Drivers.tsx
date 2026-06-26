@@ -51,11 +51,17 @@ export default function Drivers() {
 
       if (status)  q = q.eq('status', status)
       if (userIds) q = q.in('user_id', userIds)
+      // ilike on nested relations is not supported by PostgREST — filter client-side after fetch
 
       const { data, count, error } = await q
       if (error) throw error
-      setDrivers(data || [])
-      setTotal(count || 0)
+      const filtered = search
+        ? (data || []).filter((d: any) =>
+            d.profile?.full_name?.toLowerCase().includes(search.toLowerCase())
+          )
+        : (data || [])
+      setDrivers(filtered)
+      setTotal(search ? filtered.length : (count || 0))
     } catch (err: any) {
       toast.error(err.message)
     } finally {
