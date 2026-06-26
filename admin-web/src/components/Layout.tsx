@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Watermark } from './Logo'
-
 import { useSidebarStore } from '../stores/sidebar.store'
 import { useUIStore } from '../stores/ui.store'
 import { cn } from '../lib/utils'

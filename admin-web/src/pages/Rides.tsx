@@ -42,25 +42,52 @@ export default function Rides() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  const exportCSV = () => {
-    const csv = [
-      ['ID', 'Passager', 'Chauffeur', 'Type', 'Distance', 'Prix', 'Statut', 'Date'],
-      ...rides.map(r => [
-        r.id.slice(0, 8),
-        r.passenger_name || '',
-        r.driver_name || '',
-        r.ride_type,
-        r.distance_km?.toFixed(2) + 'km',
-        r.price,
-        r.status,
-        formatDate(r.created_at),
-      ])
-    ].map(row => row.join(',')).join('\n')
+  const exportCSV = async () => {
+    const tid = toast.loading('Export en cours…')
+    try {
+      const BATCH = 1000
+      let allRows: any[] = []
+      let from = 0
+      while (true) {
+        let q = supabase
+          .from('rides')
+          .select('id, passenger_name, driver_name, ride_type, distance_km, price, status, created_at')
+          .order('created_at', { ascending: false })
+          .range(from, from + BATCH - 1)
+        if (status) q = q.eq('status', status)
+        if (type)   q = q.eq('ride_type', type)
+        const { data, error } = await q
+        if (error) throw error
+        allRows = [...allRows, ...(data || [])]
+        if (!data || data.length < BATCH) break
+        from += BATCH
+      }
 
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'winrak-rides.csv'; a.click()
+      const rows = [
+        ['ID', 'Passager', 'Chauffeur', 'Type', 'Distance', 'Prix', 'Statut', 'Date'],
+        ...allRows.map(r => [
+          r.id.slice(0, 8),
+          r.passenger_name || '',
+          r.driver_name || '',
+          r.ride_type,
+          (r.distance_km?.toFixed(2) ?? '0') + ' km',
+          r.price ?? 0,
+          r.status,
+          formatDate(r.created_at),
+        ]),
+      ].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+
+      const blob = new Blob(['﻿' + rows], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = 'winrak-rides.csv'; a.click()
+      URL.revokeObjectURL(url)
+      toast.dismiss(tid)
+      toast.success(`${allRows.length} courses exportées`)
+    } catch (err: any) {
+      toast.dismiss(tid)
+      toast.error(err.message)
+    }
   }
 
   return (

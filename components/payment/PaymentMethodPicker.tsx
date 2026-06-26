@@ -8,8 +8,8 @@ import { Spacing } from '../../constants/spacing'
 import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
 import { useT } from '../../hooks/useT'
-import {
 import { useIsRTL } from '../../i18n/locale'
+import {
   usePaymentStore, selectedMethod, methodIcon, methodLabelKey, methodBrand,
   type SavedMethod,
 } from '../../store/paymentStore'

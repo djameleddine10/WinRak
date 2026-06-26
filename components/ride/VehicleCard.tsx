@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useColors } from '../../hooks/useColors'
 import { useT } from '../../hooks/useT'
@@ -24,7 +25,8 @@ export function VehicleCard({
 }: VehicleCardProps) {
   const Colors = useColors()
   const isRTL = useIsRTL()
-    const t = useT()
+  const styles = useMemo(() => makeStyles(isRTL), [isRTL])
+  const t = useT()
   const isShe = type === 'she'
   const borderColor = isSelected
     ? (isShe ? Colors.purple : Colors.gold)
@@ -59,23 +61,26 @@ export function VehicleCard({
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 14,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  chipRow: {
-    alignSelf: 'flex-start',
-  },
-  contentRow: {
-    flexDirection: row,
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  iconWrap: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  info: { flex: 1 },
-  priceWrap: { flexDirection: row, alignItems: 'baseline', gap: 3 },
-})
+function makeStyles(isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
+  return StyleSheet.create({
+    card: {
+      borderRadius: 14,
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.lg,
+      gap: Spacing.sm,
+    },
+    chipRow: {
+      alignSelf: 'flex-start',
+    },
+    contentRow: {
+      flexDirection: row,
+      alignItems: 'center',
+      gap: Spacing.md,
+    },
+    iconWrap: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    info: { flex: 1 },
+    priceWrap: { flexDirection: row, alignItems: 'baseline', gap: 3 },
+  })
+}

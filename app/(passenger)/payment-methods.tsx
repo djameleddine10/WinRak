@@ -10,8 +10,8 @@ import { Txt } from '../../components/ui/Txt'
 import { Icon } from '../../components/ui/Icon'
 import { Badge } from '../../components/ui/Badge'
 import { TopBar } from '../../components/layout/TopBar'
-import {
 import { useIsRTL } from '../../i18n/locale'
+import {
   usePaymentStore, methodIcon, methodLabelKey, methodBrand, type SavedMethod,
 } from '../../store/paymentStore'
 

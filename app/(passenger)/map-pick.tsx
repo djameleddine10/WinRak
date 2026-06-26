@@ -12,11 +12,13 @@ import { WebMap } from '../../components/map/WebMap'
 import { MapPin } from '../../components/map/MapPin'
 import { useRideStore } from '../../store/rideStore'
 import { useT } from '../../hooks/useT'
+import { useIsRTL } from '../../i18n/locale'
 import { ALGIERS_CENTER } from '../../mock/map'
 
 export default function MapPick() {
   const Colors  = useColors()
-  const styles  = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL   = useIsRTL()
+  const styles  = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets  = useSafeAreaInsets()
   const t       = useT()
   const params  = useLocalSearchParams<{ field?: 'from' | 'to' }>()
@@ -113,7 +115,8 @@ export default function MapPick() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const dir: 'row' | 'row-reverse' = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     root:    { flex: 1 },
     pinWrap: {
@@ -127,7 +130,7 @@ function makeStyles(Colors: Palette) {
     topBar: {
       position:        'absolute',
       top: 0, left: 0, right: 0,
-      flexDirection:   'row-reverse',
+      flexDirection:   dir,
       alignItems:      'center',
       paddingHorizontal: Spacing.md,
       paddingBottom:   Spacing.sm,
@@ -143,7 +146,7 @@ function makeStyles(Colors: Palette) {
       bottom:          100,
       left:            Spacing.lg,
       right:           Spacing.lg,
-      flexDirection:   'row-reverse',
+      flexDirection:   dir,
       alignItems:      'center',
       gap:             Spacing.sm,
       backgroundColor: 'rgba(0,0,0,0.75)',

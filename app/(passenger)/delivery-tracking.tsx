@@ -217,9 +217,9 @@ export default function DeliveryTracking() {
             <View style={styles.headerRow}>
               <View style={{ flex: 1 }}>
                 <Txt weight="black" size={18}>{copy.header}</Txt>
-                <Txt size={13} color={Colors.muted} style={{ marginTop: 2 }}>{t('tracking.arrivalEta', { n: String(etaMin), unit: t('pharmacy.min') })}</Txt>
+                <Txt size={13} color={Colors.muted} style={{ marginTop: 2 }}>{t('tracking.arrivalEta', { n: String(etaMin), unit: t('common.min') })}</Txt>
               </View>
-              <View style={styles.etaPill}><Txt weight="bold" size={13} color={Colors.dark1}>{etaMin} {t('pharmacy.min')}</Txt></View>
+              <View style={styles.etaPill}><Txt weight="bold" size={13} color={Colors.dark1}>{etaMin} {t('common.min')}</Txt></View>
             </View>
           )}
 

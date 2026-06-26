@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { cn } from '../lib/utils'
 
 const WILAYAS = [
+  // Wilayas 1–48 (original)
   'Adrar','Chlef','Laghouat','Oum El Bouaghi','Batna','Béjaïa','Biskra','Béchar',
   'Blida','Bouira','Tamanrasset','Tébessa','Tlemcen','Tiaret','Tizi Ouzou',
   'Alger','Djelfa','Jijel','Sétif','Saïda','Skikda','Sidi Bel Abbès',
@@ -19,6 +20,9 @@ const WILAYAS = [
   'Ouargla','Oran','El Bayadh','Illizi','Bordj Bou Arréridj','Boumerdès',
   'El Tarf','Tindouf','Tissemsilt','El Oued','Khenchela','Souk Ahras',
   'Tipaza','Mila','Aïn Defla','Naâma','Aïn Témouchent','Ghardaïa','Relizane',
+  // Wilayas 49–58 (réforme 2021)
+  'Timimoun','Bordj Badji Mokhtar','Ouled Djellal','Béni Abbès',
+  'In Salah','In Guezzam','Touggourt','Djanet',"El M'Ghair",'El Menia',
 ]
 
 const LANGS: { value: Lang; countryCode: string; label: string; sub: string }[] = [
@@ -26,10 +30,10 @@ const LANGS: { value: Lang; countryCode: string; label: string; sub: string }[] 
   { value: 'ar', countryCode: 'dz', label: 'العربية',  sub: 'عربية (DZ)' },
 ]
 
-async function setConfig(key: string, value: unknown, userId: string) {
+async function setConfig(key: string, value: unknown, _userId: string) {
   const { error } = await supabase
     .from('app_config')
-    .upsert({ key, value, updated_at: new Date().toISOString(), updated_by: userId })
+    .upsert({ key, value, updated_at: new Date().toISOString() })
   if (error) throw error
 }
 
