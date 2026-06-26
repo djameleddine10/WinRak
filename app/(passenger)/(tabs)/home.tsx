@@ -214,31 +214,7 @@ export default function Home() {
             <MapPin moving={mapMoving} />
           </View>
 
-          {/* Chip الشارع — قابل للضغط */}
-          {pinLabel ? (
-            <Animated.View style={{ opacity: labelAnim }}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.pinChip,
-                  isDark ? styles.pinChipDark : styles.pinChipLight,
-                  pressed && styles.pinChipPressed,
-                ]}
-                onPress={handlePinChipPress}
-              >
-                <Icon name="map-marker" size={11} color={GOLD} />
-                <Txt
-                  size={10}
-                  weight="bold"
-                  color={isDark ? '#111' : '#fff'}
-                  numberOfLines={1}
-                  style={{ flex: 1, letterSpacing: 0.2 }}
-                >
-                  {pinLabel}
-                </Txt>
-                <Icon name="chevron-right" size={11} color={isDark ? '#555' : 'rgba(255,255,255,0.7)'} />
-              </Pressable>
-            </Animated.View>
-          ) : null}
+          {/* pinChip محذوف — لا شيء تحت الدبوس */}
         </View>
 
         {/* زر موقعي — يمين أعلى الخريطة تحت TopBar */}
@@ -315,49 +291,75 @@ export default function Home() {
 
           <View style={{ height: Spacing.lg }} />
 
-          {/* بطاقات الخدمات */}
-          <View style={styles.cardsWrap}>
-            <View style={styles.cardRow}>
-              <Pressable
-                style={({ pressed }) => [styles.cardSm, styles.goldCard, pressed && styles.pressed]}
-                onPress={openCity}
-              >
-                <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImgSm} resizeMode="contain" />
-                <View style={styles.cardSmFooter}>
-                  <Txt weight="bold" size={15} color={Colors.white}>{t('service.ride')}</Txt>
-                  <View style={[styles.arrowBtnSm, { backgroundColor: Colors.gold }]}>
-                    <DirIcon name="chevron-right" size={15} color="#000" />
-                  </View>
-                </View>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.cardSm, styles.purpleCard, pressed && styles.pressed]}
-                onPress={openShe}
-              >
-                <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImgSm} resizeMode="contain" />
-                <View style={styles.cardSmFooter}>
-                  <Txt weight="bold" size={15} color={Colors.white}>{t('service.women')}</Txt>
-                  <View style={[styles.arrowBtnSm, { backgroundColor: PURPLE }]}>
-                    <DirIcon name="chevron-right" size={15} color="#fff" />
-                  </View>
-                </View>
-              </Pressable>
-            </View>
+          {/* ── بطاقات الخدمات: دوائر ── */}
+          <View style={styles.circleRow}>
+
+            {/* رحلة — ذهبي */}
             <Pressable
-              style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
-              onPress={openDelivery}
+              style={({ pressed }) => [pressed && styles.pressed]}
+              onPress={openCity}
             >
-              <View style={styles.cardImgWrap}>
-                <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
+              <View style={[styles.circleRing, styles.ringGold]}>
+                <View style={styles.circleInner}>
+                  <Image
+                    source={require('../../../assets/cards/car-gold.png')}
+                    style={styles.circleCarImg}
+                    resizeMode="contain"
+                  />
+                </View>
               </View>
-              <View style={styles.cardBody}>
-                <Txt weight="bold" size={17} color={Colors.white}>{t('service.delivery')}</Txt>
-                <Txt size={11} color={Colors.muted} style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
-              </View>
-              <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
-                <DirIcon name="chevron-right" size={18} color="#000" />
+              <View style={styles.circleFooter}>
+                <Txt weight="bold" size={13} color={Colors.white}>{t('service.ride')}</Txt>
+                <View style={[styles.circleArrow, { backgroundColor: GOLD }]}>
+                  <DirIcon name="chevron-right" size={12} color="#000" />
+                </View>
               </View>
             </Pressable>
+
+            {/* نساء — بنفسجي */}
+            <Pressable
+              style={({ pressed }) => [pressed && styles.pressed]}
+              onPress={openShe}
+            >
+              <View style={[styles.circleRing, styles.ringPurple]}>
+                <View style={styles.circleInner}>
+                  <Image
+                    source={require('../../../assets/cards/car-purple.png')}
+                    style={styles.circleCarImg}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+              <View style={styles.circleFooter}>
+                <Txt weight="bold" size={13} color={Colors.white}>{t('service.women')}</Txt>
+                <View style={[styles.circleArrow, { backgroundColor: PURPLE }]}>
+                  <DirIcon name="chevron-right" size={12} color="#fff" />
+                </View>
+              </View>
+            </Pressable>
+
+            {/* توصيل — تيل */}
+            <Pressable
+              style={({ pressed }) => [pressed && styles.pressed]}
+              onPress={openDelivery}
+            >
+              <View style={[styles.circleRing, styles.ringTeal]}>
+                <View style={styles.circleInner}>
+                  <Image
+                    source={require('../../../assets/cards/parcel-teal.png')}
+                    style={styles.circleParcelImg}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+              <View style={styles.circleFooter}>
+                <Txt weight="bold" size={13} color={Colors.white}>{t('service.delivery')}</Txt>
+                <View style={[styles.circleArrow, { backgroundColor: TEAL }]}>
+                  <DirIcon name="chevron-right" size={12} color="#000" />
+                </View>
+              </View>
+            </Pressable>
+
           </View>
 
           {/* الوجهات الأخيرة */}
@@ -414,32 +416,7 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       paddingBottom: 26,
     },
 
-    // Chip الشارع تحت الدبوس
-    pinChip: {
-      flexDirection: row,
-      alignItems: 'center',
-      gap: 5,
-      marginTop: 6,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 20,
-      maxWidth: 180,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
-      elevation: 6,
-    },
-    pinChipDark: {
-      backgroundColor: '#fff',
-    },
-    pinChipLight: {
-      backgroundColor: 'rgba(0,0,0,0.65)',
-    },
-    pinChipPressed: {
-      opacity: 0.75,
-      transform: [{ scale: 0.97 }],
-    },
+    // pinChip محذوف
 
     // زر موقعي — يمين أعلى الخريطة تحت TopBar
     locateBtnWrap: {
@@ -552,34 +529,62 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       alignItems: 'center', justifyContent: 'center',
     },
 
-    cardsWrap: { gap: 12 },
-    cardRow:   { flexDirection: row, gap: 12 },
+    // ── بطاقات دائرية ──
+    circleRow: {
+      flexDirection: row,
+      justifyContent: 'space-between',
+      gap: 10,
+    },
 
-    cardSm: {
-      flex: 1,
-      borderRadius: Spacing.radiusLg,
-      paddingTop: 10, paddingBottom: 12, paddingHorizontal: 12,
-      borderWidth: 1,
+    // الـ ring الخارجي — الدائرة الكاملة
+    circleRing: {
+      width: 108,
+      height: 108,
+      borderRadius: 54,
+      borderWidth: 3,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
       overflow: 'hidden',
+      ...Shadows.md,
     },
-    cardImgSm:    { width: '100%', height: 54, marginBottom: 6 },
-    cardSmFooter: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
-    arrowBtnSm:   { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+    ringGold:   { borderColor: GOLD,   backgroundColor: Colors.dark2, shadowColor: GOLD },
+    ringPurple: { borderColor: PURPLE, backgroundColor: Colors.dark2, shadowColor: PURPLE },
+    ringTeal:   { borderColor: TEAL,   backgroundColor: Colors.dark2, shadowColor: TEAL },
 
-    card: {
-      flexDirection: row, alignItems: 'center',
-      borderRadius: Spacing.radiusLg,
-      paddingVertical: 14, paddingHorizontal: 16,
-      gap: 14, borderWidth: 1, overflow: 'hidden',
+    // الداخل لمحاذاة الصورة
+    circleInner: {
+      width: '100%',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
     },
-    goldCard:   { backgroundColor: Colors.dark2, borderColor: Colors.goldAlpha20,      ...Shadows.md },
-    purpleCard: { backgroundColor: Colors.dark2, borderColor: 'rgba(123,79,212,0.40)', ...Shadows.md },
-    tealCard:   { backgroundColor: Colors.dark2, borderColor: 'rgba(0,194,168,0.40)',  ...Shadows.md },
 
-    cardImgWrap:   { width: 76, height: 56, alignItems: 'center', justifyContent: 'center' },
-    cardImgParcel: { width: 52, height: 50 },
-    cardBody:      { flex: 1 },
-    arrowBtn:      { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+    // صورة السيارة: تطلع 30% من الأعلى
+    circleCarImg: {
+      width: 120,
+      height: 80,
+      marginBottom: -8,
+    },
+
+    // صورة الطرد: أصغر قليلاً
+    circleParcelImg: {
+      width: 76,
+      height: 64,
+      marginBottom: 4,
+    },
+
+    // النص + السهم تحت الدائرة
+    circleFooter: {
+      flexDirection: row,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 5,
+      marginTop: 8,
+    },
+    circleArrow: {
+      width: 20, height: 20, borderRadius: 10,
+      alignItems: 'center', justifyContent: 'center',
+    },
 
     pressed: { opacity: 0.72 },
 
