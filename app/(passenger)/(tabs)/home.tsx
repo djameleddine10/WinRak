@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Dimensions, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
 import { useColors } from '../../../hooks/useColors'
@@ -17,6 +17,7 @@ import { useLocation } from '../../../hooks/useLocation'
 import { useT } from '../../../hooks/useT'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { useIsRTL } from '../../../i18n/locale'
+import { MapPin } from '../../../components/map/MapPin'
 import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
@@ -106,6 +107,37 @@ export default function Home() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
 
+  // Map pin state
+  const [mapMoving, setMapMoving] = useState(false)
+
+  // Bottom sheet hide/show when map is touched
+  const sheetAnim = useRef(new Animated.Value(1)).current   // 1=visible, 0=hidden
+
+  const handleMapTouchStart = useCallback(() => {
+    Animated.timing(sheetAnim, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start()
+  }, [sheetAnim])
+
+  const handleMapTouchEnd = useCallback(() => {
+    Animated.spring(sheetAnim, {
+      toValue: 1,
+      tension: 120,
+      friction: 9,
+      useNativeDriver: true,
+    }).start()
+  }, [sheetAnim])
+
+  const handleRegionChange = useCallback(() => {
+    setMapMoving(true)
+  }, [])
+
+  const handleRegionChangeComplete = useCallback(() => {
+    setMapMoving(false)
+  }, [])
+
   function openCity() {
     setSheMode(false)
     setVehicleType('sedan')
@@ -126,15 +158,26 @@ export default function Home() {
     <View style={styles.root}>
 
       {/* Map — top portion, behind everything */}
-      <View style={styles.mapWrap}>
+      <View
+        style={styles.mapWrap}
+        onTouchStart={handleMapTouchStart}
+        onTouchEnd={handleMapTouchEnd}
+      >
         <WebMap
           showUser
           variant="explore"
           markers={mapDrivers
             .filter((d) => d.isOnline)
             .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
+          onRegionChange={handleRegionChange}
+          onRegionChangeComplete={(_lat, _lng) => handleRegionChangeComplete()}
         />
         <View style={styles.mapOverlay} pointerEvents="none" />
+
+        {/* Central pin — lifts when map moves, settles when stopped */}
+        <View style={styles.pinWrap} pointerEvents="none">
+          <MapPin moving={mapMoving} />
+        </View>
       </View>
 
       {/* TopBar floats on map */}
@@ -154,9 +197,24 @@ export default function Home() {
         </View>
       )}
 
-      {/* Bottom sheet — map stays fully interactive above */}
+      {/* Bottom sheet — hides on map touch, returns on release */}
+      <Animated.View
+        style={[
+          styles.scroll,
+          {
+            opacity: sheetAnim,
+            transform: [{
+              translateY: sheetAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [60, 0],
+              }),
+            }],
+          },
+        ]}
+        pointerEvents={mapMoving ? 'none' : 'box-none'}
+      >
       <ScrollView
-        style={styles.scroll}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.scrollBody}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
@@ -262,6 +320,7 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
+      </Animated.View>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
@@ -275,6 +334,14 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
 
     // Map occupies the top portion — fully interactive (no overlay blocking touches)
     mapWrap: { position: 'absolute', top: 0, left: 0, right: 0, height: MAP_H },
+    pinWrap: {
+      position: 'absolute',
+      top: 0, left: 0, right: 0,
+      height: MAP_H,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 26,   // offset so pin tip is exactly on map center
+    },
     mapOverlay: {
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: Colors.dark1,

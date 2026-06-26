@@ -198,15 +198,6 @@ export default function Search() {
         </View>
       </View>
 
-      {/* Pick on map */}
-      <Pressable
-        style={styles.mapPickBtn}
-        onPress={() => router.push({ pathname: '/(passenger)/map-pick', params: { field: 'to' } })}
-      >
-        <Icon name="map-marker-radius" size={20} color={Colors.gold} />
-        <Txt size={14} color={Colors.white} style={{ flex: 1 }}>{t('search.pickOnMap')}</Txt>
-        <Icon name="chevron-left" size={20} color={Colors.muted} />
-      </Pressable>
 
       <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}>
         <Txt size={12} color={Colors.muted} style={styles.section}>{t('search.recentSearch')}</Txt>
@@ -262,11 +253,6 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     toField:    { flex: 1, zIndex: 100 },
     section:    { marginTop: Spacing.lg, marginBottom: Spacing.sm },
     row:        { flexDirection: row, alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md },
-    mapPickBtn: {
-      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
-      backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd,
-      paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-      marginBottom: Spacing.sm,
-    },
+
   })
 }
