@@ -24,7 +24,7 @@ interface WebMapProps {
   markers?:               MapMarker[]
   route?:                 LatLng[]
   showUser?:              boolean
-  flyToLocation?:         { lat: number; lng: number } | null
+  flyToLocation?:         { lat: number; lng: number; ts?: number } | null
   variant?:               'explore' | 'navigation'
   style?:                 any
   onRegionChange?:        () => void
@@ -53,7 +53,7 @@ export function WebMap({
   const mapRef = useRef<MapView>(null)
   const dark   = scheme === 'dark'
 
-  // Smooth fly-to on locate button press
+  // Smooth fly-to on locate button press — ts يضمن إطلاق useEffect حتى لو lat/lng نفسهم
   useEffect(() => {
     if (!flyToLocation) return
     mapRef.current?.animateToRegion({
@@ -61,8 +61,8 @@ export function WebMap({
       longitude:      flyToLocation.lng,
       latitudeDelta:  0.01,
       longitudeDelta: 0.01,
-    }, 1000)
-  }, [flyToLocation?.lat, flyToLocation?.lng])
+    }, 800)
+  }, [flyToLocation?.ts])
 
   // Auto-fit camera to show full route
   useEffect(() => {
@@ -93,6 +93,7 @@ export function WebMap({
         loadingIndicatorColor={Colors.gold}
         loadingBackgroundColor={dark ? '#0f1120' : '#f5f5f5'}
         moveOnMarkerPress={false}
+        customMapStyle={[]}
         onRegionChange={onRegionChange}
         onRegionChangeComplete={(r) => onRegionChangeComplete?.(r.latitude, r.longitude)}
       >

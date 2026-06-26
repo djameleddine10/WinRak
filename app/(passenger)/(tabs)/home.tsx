@@ -130,8 +130,12 @@ export default function Home() {
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const labelAnim    = useRef(new Animated.Value(0)).current
 
-  // flyTo لزر الموقع
-  const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null)
+  // flyTo لزر الموقع — ts يضمن إطلاق useEffect في WebMap حتى لو الموقع لم يتغير
+  const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; ts: number } | null>(null)
+
+  function triggerFlyTo() {
+    setFlyTo({ lat: userLocation.lat, lng: userLocation.lng, ts: Date.now() })
+  }
 
   const handleRegionChange = useCallback(() => {
     setMapMoving(true)
@@ -221,7 +225,7 @@ export default function Home() {
         <View style={styles.locateBtnWrap} pointerEvents="box-none">
           <Pressable
             style={({ pressed }) => [styles.locateBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => setFlyTo({ lat: userLocation.lat, lng: userLocation.lng })}
+            onPress={triggerFlyTo}
             hitSlop={8}
           >
             <Icon name="crosshairs-gps" size={20} color={GOLD} />
@@ -265,29 +269,16 @@ export default function Home() {
             </Pressable>
           )}
 
-          {/* ── حقلا البحث: من أين + إلى أين ── */}
-          <View style={styles.searchCard}>
-            {/* من أين */}
-            <Pressable style={styles.searchRow} onPress={openCity}>
-              <View style={styles.searchDotFrom} />
-              <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchFrom')}</Txt>
-              <Icon name="crosshairs-gps" size={16} color={Colors.gold} />
-            </Pressable>
-
-            {/* فاصل */}
-            <View style={styles.searchDivider}>
-              <View style={styles.searchLine} />
-            </View>
-
-            {/* إلى أين */}
-            <Pressable style={styles.searchRow} onPress={openCity}>
+          {/* ── حقل البحث: إلى أين فقط ── */}
+          <Pressable style={styles.searchCard} onPress={openCity}>
+            <View style={styles.searchRow}>
               <View style={styles.searchDotTo} />
               <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
               <View style={styles.searchPinBtn}>
                 <Icon name="map-marker" size={15} color={GOLD} />
               </View>
-            </Pressable>
-          </View>
+            </View>
+          </Pressable>
 
           <View style={{ height: Spacing.lg }} />
 
@@ -295,18 +286,9 @@ export default function Home() {
           <View style={styles.circleRow}>
 
             {/* رحلة — ذهبي */}
-            <Pressable
-              style={({ pressed }) => [pressed && styles.pressed]}
-              onPress={openCity}
-            >
+            <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openCity}>
               <View style={[styles.circleRing, styles.ringGold]}>
-                <View style={styles.circleInner}>
-                  <Image
-                    source={require('../../../assets/cards/car-gold.png')}
-                    style={styles.circleCarImg}
-                    resizeMode="contain"
-                  />
-                </View>
+                <Image source={require('../../../assets/cards/car-gold.png')} style={styles.circleCarImg} resizeMode="contain" />
               </View>
               <View style={styles.circleFooter}>
                 <Txt weight="bold" size={13} color={Colors.white}>{t('service.ride')}</Txt>
@@ -317,18 +299,9 @@ export default function Home() {
             </Pressable>
 
             {/* نساء — بنفسجي */}
-            <Pressable
-              style={({ pressed }) => [pressed && styles.pressed]}
-              onPress={openShe}
-            >
+            <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openShe}>
               <View style={[styles.circleRing, styles.ringPurple]}>
-                <View style={styles.circleInner}>
-                  <Image
-                    source={require('../../../assets/cards/car-purple.png')}
-                    style={styles.circleCarImg}
-                    resizeMode="contain"
-                  />
-                </View>
+                <Image source={require('../../../assets/cards/car-purple.png')} style={styles.circleCarImg} resizeMode="contain" />
               </View>
               <View style={styles.circleFooter}>
                 <Txt weight="bold" size={13} color={Colors.white}>{t('service.women')}</Txt>
@@ -339,18 +312,9 @@ export default function Home() {
             </Pressable>
 
             {/* توصيل — تيل */}
-            <Pressable
-              style={({ pressed }) => [pressed && styles.pressed]}
-              onPress={openDelivery}
-            >
+            <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openDelivery}>
               <View style={[styles.circleRing, styles.ringTeal]}>
-                <View style={styles.circleInner}>
-                  <Image
-                    source={require('../../../assets/cards/parcel-teal.png')}
-                    style={styles.circleParcelImg}
-                    resizeMode="contain"
-                  />
-                </View>
+                <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.circleParcelImg} resizeMode="contain" />
               </View>
               <View style={styles.circleFooter}>
                 <Txt weight="bold" size={13} color={Colors.white}>{t('service.delivery')}</Txt>
@@ -461,9 +425,10 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       overflow: 'hidden',
     },
     scrollBody: {
-      paddingTop: 20,
+      flexGrow: 1,
+      paddingTop: 16,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 100,
+      paddingBottom: 90,
     },
 
     handle: {
@@ -501,28 +466,11 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       height: 52,
       paddingHorizontal: Spacing.md,
     },
-    searchDotFrom: {
-      width: 10, height: 10, borderRadius: 5,
-      backgroundColor: GOLD,
-      borderWidth: 2,
-      borderColor: Colors.dark2,
-      shadowColor: GOLD,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.8,
-      shadowRadius: 4,
-    },
     searchDotTo: {
       width: 10, height: 10, borderRadius: 2,
       backgroundColor: PURPLE,
     },
-    searchDivider: {
-      paddingLeft: Spacing.md + 5,
-      paddingRight: Spacing.md,
-    },
-    searchLine: {
-      height: 1,
-      backgroundColor: Colors.border,
-    },
+
     searchPinBtn: {
       width: 30, height: 30, borderRadius: 15,
       backgroundColor: Colors.goldAlpha15,
@@ -532,45 +480,47 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     // ── بطاقات دائرية ──
     circleRow: {
       flexDirection: row,
-      justifyContent: 'space-between',
-      gap: 10,
+      justifyContent: 'space-around',
+      marginTop: 'auto' as any,
+      paddingTop: 12,
+      paddingBottom: 8,
+    },
+
+    // حاوية كل دائرة (تحتوي الـ ring + النص)
+    circleItem: {
+      alignItems: 'center',
     },
 
     // الـ ring الخارجي — الدائرة الكاملة
     circleRing: {
-      width: 108,
-      height: 108,
-      borderRadius: 54,
+      width: 110,
+      height: 110,
+      borderRadius: 55,
       borderWidth: 3,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
       overflow: 'hidden',
+      position: 'relative' as any,
       ...Shadows.md,
     },
     ringGold:   { borderColor: GOLD,   backgroundColor: Colors.dark2, shadowColor: GOLD },
     ringPurple: { borderColor: PURPLE, backgroundColor: Colors.dark2, shadowColor: PURPLE },
     ringTeal:   { borderColor: TEAL,   backgroundColor: Colors.dark2, shadowColor: TEAL },
 
-    // الداخل لمحاذاة الصورة
-    circleInner: {
-      width: '100%',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-    },
-
-    // صورة السيارة: تطلع 30% من الأعلى
+    // صورة السيارة: تخرج من الجانب الأيمن
     circleCarImg: {
-      width: 120,
-      height: 80,
-      marginBottom: -8,
+      position: 'absolute' as any,
+      width: 150,
+      height: 95,
+      right: -30,
+      bottom: 8,
     },
 
-    // صورة الطرد: أصغر قليلاً
+    // صورة الطرد: في المنتصف
     circleParcelImg: {
-      width: 76,
-      height: 64,
-      marginBottom: 4,
+      position: 'absolute' as any,
+      width: 80,
+      height: 68,
+      right: 12,
+      bottom: 10,
     },
 
     // النص + السهم تحت الدائرة
