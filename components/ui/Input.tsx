@@ -39,7 +39,7 @@ export function Input({
 
   return (
     <View style={styles.wrap}>
-      {!!label && (value.length > 0 || focused) && (
+      {!!label && ((value ?? '').length > 0 || focused) && (
         <Txt size={12} color={Colors.muted} style={styles.label}>
           {label}{required ? ' *' : ''}
         </Txt>
