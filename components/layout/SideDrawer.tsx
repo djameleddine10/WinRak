@@ -21,8 +21,7 @@ interface SideDrawerProps {
 }
 
 const { width: SCREEN_W } = Dimensions.get('window')
-// Professional drawer width: ~85% but capped so it never feels oversized on
-// tablets. Leaves a thin sliver of the underlying screen, like Uber/Yassir.
+// ~85% of screen width, capped for tablets.
 const DRAWER_W = Math.min(SCREEN_W * 0.85, 340)
 
 interface DrawerItem {
@@ -48,22 +47,15 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
   const driverName = useDriverName()
   const t = useT()
 
-  // ── Drawer side — bulletproof against the RTL/LTR mismatch ──────────────────
-  // `syncDirection` (i18n/locale.ts) flips the language instantly via useIsRTL but only
-  // calls forceRTL for the NEXT cold start — it never reloads. So the native flag can
-  // disagree with the live language for the whole session, which used to push the panel
-  // to the WRONG edge (e.g. drawer opening from the right in French — see screenshots).
-  //
-  // FIX: we DON'T rely on `left`/`right` (RN swaps them under native-RTL). Instead the
-  // panel is pinned to the LEFT edge with `left: 0` AND `direction: 'ltr'` on the panel,
-  // which neutralises the native RTL swap so `left: 0` always means physical-left. We then
-  // place it on the desired physical edge purely with translateX:
-  //   • AR  → physical RIGHT : rest offset = (SCREEN_W − DRAWER_W), slide in from the right
-  //   • FR/EN → physical LEFT : rest offset = 0, slide in from the left
-  // Transforms are never swapped, so this is correct in all launch×language combinations.
-  const wantRight = isRTL                              // AR → physical right · FR/EN → physical left
-  const OPEN_X    = wantRight ? SCREEN_W - DRAWER_W : 0 // resting position (panel fully visible)
-  const CLOSED_X  = wantRight ? SCREEN_W : -DRAWER_W    // fully off the matching physical edge
+  // ── Slide-in/out positioning ─────────────────────────────────────────────────
+  // We anchor the panel at `left: 0` + `direction: 'ltr'` so `left` is always
+  // physical-left regardless of the native RTL flag. translateX then moves the
+  // panel to the correct physical edge:
+  //   AR  → physical RIGHT: rest at (SCREEN_W − DRAWER_W), close at SCREEN_W
+  //   FR/EN → physical LEFT : rest at 0,                     close at −DRAWER_W
+  const wantRight = isRTL
+  const OPEN_X   = wantRight ? SCREEN_W - DRAWER_W : 0
+  const CLOSED_X = wantRight ? SCREEN_W            : -DRAWER_W
 
   const translateX      = useRef(new Animated.Value(CLOSED_X)).current
   const backdropOpacity = useRef(new Animated.Value(0)).current
@@ -115,19 +107,19 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
 
   const items: DrawerItem[] = isDriver
     ? [
-        { icon: 'car', label: t('drawer.city'), active: true },
-        { icon: 'bell', label: t('drawer.notifications'), route: '/(passenger)/notifications', badge: 20 },
-        { icon: 'shield-check', label: t('drawer.safety'), route: '/(passenger)/security' },
-        { icon: 'cog', label: t('settings.title'), route: '/(passenger)/settings' },
-        { icon: 'message-text', label: t('drawer.support'), route: '/(passenger)/help' },
-        { icon: 'file-document-edit-outline', label: t('drawer.updateDocs'), route: '/(driver)/driver-documents' },
+        { icon: 'car',                        label: t('drawer.city'),         active: true },
+        { icon: 'bell',                        label: t('drawer.notifications'), route: '/(passenger)/notifications', badge: 20 },
+        { icon: 'shield-check',               label: t('drawer.safety'),        route: '/(passenger)/security' },
+        { icon: 'cog',                         label: t('settings.title'),       route: '/(passenger)/settings' },
+        { icon: 'message-text',               label: t('drawer.support'),       route: '/(passenger)/help' },
+        { icon: 'file-document-edit-outline', label: t('drawer.updateDocs'),    route: '/(driver)/driver-documents' },
       ]
     : [
-        { icon: 'car', label: t('drawer.cityRide'), active: true },
-        { icon: 'bell', label: t('drawer.notifications'), route: '/(passenger)/notifications', badge: 3 },
-        { icon: 'shield-check', label: t('drawer.safety'), route: '/(passenger)/security' },
-        { icon: 'cog', label: t('settings.title'), route: '/(passenger)/settings' },
-        { icon: 'message-text', label: t('drawer.support'), route: '/(passenger)/help' },
+        { icon: 'car',          label: t('drawer.cityRide'),       active: true },
+        { icon: 'bell',         label: t('drawer.notifications'),  route: '/(passenger)/notifications', badge: 3 },
+        { icon: 'shield-check', label: t('drawer.safety'),         route: '/(passenger)/security' },
+        { icon: 'cog',          label: t('settings.title'),        route: '/(passenger)/settings' },
+        { icon: 'message-text', label: t('drawer.support'),        route: '/(passenger)/help' },
       ]
 
   return (
@@ -135,93 +127,116 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
       style={[StyleSheet.absoluteFill, { zIndex: 999, elevation: 30 }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
+      {/* Backdrop */}
       <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
+
+      {/* Panel
+          `left: 0` + `direction: 'ltr'` on the panel keeps `left` = physical-left
+          regardless of the native RTL flag. The INNER content wrapper then applies
+          `direction: isRTL ? 'rtl' : 'ltr'` so all children (text, rows, icons)
+          lay out in the correct reading direction for the active language.
+          This decouples the panel position (always translateX-based) from the content
+          direction (always driven by the live language setting). */}
       <Animated.View
         style={[
-          styles.drawer,
-          // `left: 0` + `direction: 'ltr'` neutralise the native RTL left/right swap, so the
-          // panel always anchors to physical-left; translateX (never swapped) then slides it
-          // to the correct physical edge. Correct in all launch×language combinations.
-          { left: 0, direction: 'ltr', width: DRAWER_W, paddingTop: insets.top + Spacing.lg, transform: [{ translateX }] },
+          styles.panel,
+          {
+            left:      0,
+            direction: 'ltr',
+            width:     DRAWER_W,
+            transform: [{ translateX }],
+          },
         ]}
       >
-        {/* Mode chip — shows clearly which mode is active */}
-        <View style={[styles.modeChip, { backgroundColor: isDriver ? Colors.driverGreen + '22' : Colors.goldAlpha15 }]}>
-          <Icon name={isDriver ? 'steering' : 'account'} size={13} color={isDriver ? Colors.success : Colors.gold} />
-          <Txt size={11} weight="bold" color={isDriver ? Colors.success : Colors.gold}>
-            {isDriver ? t('driver.modeLabel') : t('passenger.modeLabel')}
-          </Txt>
-        </View>
-
-        {/* Header */}
-        <Pressable
-          style={styles.header}
-          onPress={() => !isDriver && go('/(passenger)/profile-settings')}
+        {/* Inner content — correct language direction, safe-area aware */}
+        <View
+          style={[
+            styles.inner,
+            {
+              direction:      isRTL ? 'rtl' : 'ltr',
+              paddingTop:     insets.top    + Spacing.lg,
+              paddingBottom:  insets.bottom + Spacing.xl,
+            },
+          ]}
         >
-          <Avatar
-            initial={isDriver ? driverName.charAt(0).toUpperCase() : passengerName.charAt(0).toUpperCase()}
-            size={56}
-            imageUri={isDriver ? null : photoUri}
-            showBorder
-          />
-          <View style={styles.headerInfo}>
-            <Txt weight="bold" size={16}>{isDriver ? driverName : passengerName}</Txt>
-            <View style={styles.ratingRow}>
-              <Icon name="star" size={13} color={Colors.gold} />
-              <Txt size={12} color={Colors.gold}>{isDriver ? driver.rating : passenger.rating}</Txt>
-              {isDriver && <Badge label={driver.level} variant="gold" size="sm" />}
-            </View>
-            {photoMissing && (
-              <View style={styles.addPhotoRow}>
-                <Icon name="alert-circle" size={13} color={Colors.danger} />
-                <Txt size={11} color={Colors.danger}>{t('drawer.addPhoto')}</Txt>
-              </View>
-            )}
+          {/* Mode chip */}
+          <View style={[styles.modeChip, { backgroundColor: isDriver ? Colors.driverGreen + '22' : Colors.goldAlpha15 }]}>
+            <Icon name={isDriver ? 'steering' : 'account'} size={13} color={isDriver ? Colors.success : Colors.gold} />
+            <Txt size={11} weight="bold" color={isDriver ? Colors.success : Colors.gold}>
+              {isDriver ? t('driver.modeLabel') : t('passenger.modeLabel')}
+            </Txt>
           </View>
-        </Pressable>
 
-        <Divider spacing={Spacing.md} />
-
-        {/* Items */}
-        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          {items.map((it) => (
-            <Pressable
-              key={it.label}
-              style={[styles.item, it.active && styles.itemActive]}
-              onPress={() => it.route && go(it.route)}
-            >
-              <Icon name={it.icon} size={22} color={it.active ? Colors.gold : Colors.white} />
-              <Txt size={14} color={it.active ? Colors.gold : Colors.white} style={{ flex: 1 }}>{it.label}</Txt>
-              {it.badge ? <Badge label={String(it.badge)} variant="gold" size="sm" /> : null}
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        {/* Footer */}
-        {isDriver ? (
-          <Button
-            label={t('drawer.passengerMode')}
-            variant="white"
-            icon="account-arrow-left"
-            onPress={() => { setMode('passenger'); go('/(passenger)/(tabs)/home') }}
-          />
-        ) : (
-          <View style={styles.footer}>
-            <Button
-              label={t('drawer.registerDriver')}
-              variant="white"
-              icon="steering"
-              onPress={() => go('/(driver)/driver-signup')}
+          {/* Header */}
+          <Pressable
+            style={styles.header}
+            onPress={() => !isDriver && go('/(passenger)/profile-settings')}
+          >
+            <Avatar
+              initial={isDriver ? driverName.charAt(0).toUpperCase() : passengerName.charAt(0).toUpperCase()}
+              size={56}
+              imageUri={isDriver ? null : photoUri}
+              showBorder
             />
-            <View style={styles.social}>
-              <Icon name="whatsapp" size={22} color={Colors.muted} />
-              <Icon name="facebook" size={22} color={Colors.muted} />
-              <Icon name="instagram" size={22} color={Colors.muted} />
+            <View style={styles.headerInfo}>
+              <Txt weight="bold" size={16}>{isDriver ? driverName : passengerName}</Txt>
+              <View style={styles.ratingRow}>
+                <Icon name="star" size={13} color={Colors.gold} />
+                <Txt size={12} color={Colors.gold}>{isDriver ? driver.rating : passenger.rating}</Txt>
+                {isDriver && <Badge label={driver.level} variant="gold" size="sm" />}
+              </View>
+              {photoMissing && (
+                <View style={styles.addPhotoRow}>
+                  <Icon name="alert-circle" size={13} color={Colors.danger} />
+                  <Txt size={11} color={Colors.danger}>{t('drawer.addPhoto')}</Txt>
+                </View>
+              )}
             </View>
-          </View>
-        )}
+          </Pressable>
+
+          <Divider spacing={Spacing.md} />
+
+          {/* Items */}
+          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+            {items.map((it) => (
+              <Pressable
+                key={it.label}
+                style={[styles.item, it.active && styles.itemActive]}
+                onPress={() => it.route && go(it.route)}
+              >
+                <Icon name={it.icon} size={22} color={it.active ? Colors.gold : Colors.white} />
+                <Txt size={14} color={it.active ? Colors.gold : Colors.white} style={{ flex: 1 }}>{it.label}</Txt>
+                {it.badge ? <Badge label={String(it.badge)} variant="gold" size="sm" /> : null}
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {/* Footer */}
+          {isDriver ? (
+            <Button
+              label={t('drawer.passengerMode')}
+              variant="white"
+              icon="account-arrow-left"
+              onPress={() => { setMode('passenger'); go('/(passenger)/(tabs)/home') }}
+            />
+          ) : (
+            <View style={styles.footer}>
+              <Button
+                label={t('drawer.registerDriver')}
+                variant="white"
+                icon="steering"
+                onPress={() => go('/(driver)/driver-signup')}
+              />
+              <View style={styles.social}>
+                <Icon name="whatsapp"  size={22} color={Colors.muted} />
+                <Icon name="facebook"  size={22} color={Colors.muted} />
+                <Icon name="instagram" size={22} color={Colors.muted} />
+              </View>
+            </View>
+          )}
+        </View>
       </Animated.View>
     </View>
   )
@@ -230,36 +245,42 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
 function makeStyles(Colors: Palette, isRTL: boolean) {
   const dir: 'row' | 'row-reverse' = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
-    backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, zIndex: 0 },
-    drawer: {
-      // No left/right — translateX alone handles position (see CLOSED_X / OPEN_X constants).
+    backdrop: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: Colors.overlay,
+      zIndex: 0,
+    },
+    // Outer animated panel — position + shadow only, no padding/direction here.
+    panel: {
       position: 'absolute', top: 0, bottom: 0,
       backgroundColor: Colors.dark2,
-      paddingHorizontal: Spacing.lg,
-      paddingBottom: Spacing.xl,
-      // Strong shadow so the panel reads as floating ABOVE the screen — fixes the
-      // "drawer looks merged with the background" issue from the screenshots.
       shadowColor: '#000',
       shadowOffset: { width: isRTL ? -8 : 8, height: 0 },
       shadowOpacity: 0.45,
       shadowRadius: 24,
       elevation: 40,
     },
+    // Inner content wrapper — handles direction + safe-area padding.
+    inner: {
+      flex: 1,
+      paddingHorizontal: Spacing.lg,
+    },
     modeChip: {
       flexDirection: dir, alignItems: 'center', gap: 5,
       alignSelf: 'flex-start', borderRadius: Spacing.radiusFull,
       paddingHorizontal: Spacing.md, paddingVertical: 5, marginBottom: Spacing.md,
     },
-    header: { flexDirection: dir, alignItems: 'center', gap: Spacing.md },
-    headerInfo: { flex: 1, gap: 2 },
-    ratingRow: { flexDirection: dir, alignItems: 'center', gap: 6 },
-    addPhotoRow: { flexDirection: dir, alignItems: 'center', gap: 4, marginTop: 2 },
+    header:       { flexDirection: dir, alignItems: 'center', gap: Spacing.md },
+    headerInfo:   { flex: 1, gap: 2 },
+    ratingRow:    { flexDirection: dir, alignItems: 'center', gap: 6 },
+    addPhotoRow:  { flexDirection: dir, alignItems: 'center', gap: 4, marginTop: 2 },
     item: {
       flexDirection: dir, alignItems: 'center', gap: Spacing.md,
-      paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm, borderRadius: Spacing.radiusSm,
+      paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
+      borderRadius: Spacing.radiusSm,
     },
     itemActive: { backgroundColor: Colors.goldAlpha10 },
-    footer: { gap: Spacing.md },
-    social: { flexDirection: dir, justifyContent: 'center', gap: Spacing.xl, paddingTop: Spacing.sm },
+    footer:  { gap: Spacing.md },
+    social:  { flexDirection: dir, justifyContent: 'center', gap: Spacing.xl, paddingTop: Spacing.sm },
   })
 }
