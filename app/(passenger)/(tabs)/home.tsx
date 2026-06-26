@@ -222,168 +222,163 @@ export default function Home() {
         </View>
       )}
 
-      {/* Bottom sheet — slides fully off-screen on map touch */}
+      {/* Bottom sheet — transparent wrapper slides off-screen; inner view has background */}
       <Animated.View
         style={[
-          styles.scroll,
+          styles.sheetOuter,
           {
             transform: [{
               translateY: sheetAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [SHEET_H, 0],
+                outputRange: [SHEET_H + 40, 0],
               }),
             }],
           },
         ]}
         pointerEvents="box-none"
       >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollBody}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-      >
-        {/* Drag handle */}
-        <View style={styles.handle} />
-        {/* Photo warning */}
-        {photoStatus === 'missing' && (
-          <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
-            <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
-            <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
-            <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
-          </Pressable>
-        )}
-
-        {/* Search bar */}
-        <Pressable style={styles.search} onPress={openCity}>
-          <Icon name="magnify" size={18} color={Colors.muted} />
-          <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
-          <View style={styles.searchPin}>
-            <Icon name="map-marker" size={16} color={Colors.gold} />
-          </View>
-        </Pressable>
-
-        {/* Tight, fixed gap — keeps the cards grouped right under the search bar */}
-        <View style={{ height: Spacing.lg }} />
-
-        {/* ── Service cards ── */}
-        <View style={styles.cardsWrap}>
-
-          {/* Row: Ride + Women side by side */}
-          <View style={styles.cardRow}>
-
-            {/* Ride */}
-            <Pressable
-              style={({ pressed }) => [styles.cardSm, styles.goldCard, pressed && styles.pressed]}
-              onPress={openCity}
-            >
-              <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImgSm} resizeMode="contain" />
-              <View style={styles.cardSmFooter}>
-                <Txt weight="bold" size={15} color={Colors.white}>{t('service.ride')}</Txt>
-                <View style={[styles.arrowBtnSm, { backgroundColor: Colors.gold }]}>
-                  <DirIcon name="chevron-right" size={15} color="#000" />
-                </View>
-              </View>
-            </Pressable>
-
-            {/* Women */}
-            <Pressable
-              style={({ pressed }) => [styles.cardSm, styles.purpleCard, pressed && styles.pressed]}
-              onPress={openShe}
-            >
-              <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImgSm} resizeMode="contain" />
-              <View style={styles.cardSmFooter}>
-                <Txt weight="bold" size={15} color={Colors.white}>{t('service.women')}</Txt>
-                <View style={[styles.arrowBtnSm, { backgroundColor: PURPLE }]}>
-                  <DirIcon name="chevron-right" size={15} color="#fff" />
-                </View>
-              </View>
-            </Pressable>
-          </View>
-
-          {/* Delivery — wide */}
-          <Pressable
-            style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
-            onPress={openDelivery}
+        {/* Inner view carries the background — so wrapper stays transparent */}
+        <View style={styles.sheetInner}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollBody}
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
           >
-            <View style={styles.cardImgWrap}>
-              <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
-            </View>
-            <View style={styles.cardBody}>
-              <Txt weight="bold" size={17} color={Colors.white}>{t('service.delivery')}</Txt>
-              <Txt size={11} color={Colors.muted} style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
-            </View>
-            <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
-              <DirIcon name="chevron-right" size={18} color="#000" />
-            </View>
-          </Pressable>
-        </View>
+            {/* Drag handle */}
+            <View style={styles.handle} />
 
-        {/* Recent destinations */}
-        {recentDestinations.length > 0 && (
-          <View style={styles.recentWrap}>
-            <Txt weight="bold" size={13} color={Colors.muted} style={styles.recentTitle}>
-              {t('home.recentTitle')}
-            </Txt>
-            {recentDestinations.map((d) => (
-              <Pressable
-                key={d.name}
-                style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
-                onPress={() => openRecent(d)}
-              >
-                <View style={styles.recentIcon}>
-                  <Icon name="history" size={18} color={Colors.muted} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Txt weight="bold" size={14} color={Colors.white}>{d.name}</Txt>
-                  <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
-                </View>
-                <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
+            {/* Photo warning */}
+            {photoStatus === 'missing' && (
+              <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
+                <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
+                <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
+                <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
               </Pressable>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-      </Animated.View>
+            )}
 
-      {/* Pin confirm bar — appears when pin settles on a location */}
-      {showPinBar && !mapMoving && (
-        <Animated.View style={[styles.pinBar]} pointerEvents="box-none">
-          <View style={styles.pinBarInner}>
-            <View style={styles.pinBarAddress}>
-              <Icon name="map-marker" size={18} color={Colors.gold} />
-              <Txt
-                size={13}
-                color={Colors.white}
-                numberOfLines={2}
-                style={{ flex: 1 }}
-              >
-                {pinAddress ?? `${pinLat.toFixed(5)}, ${pinLng.toFixed(5)}`}
-              </Txt>
-            </View>
-            <Pressable
-              style={({ pressed }) => [styles.pinBarBtn, pressed && { opacity: 0.75 }]}
-              onPress={() => {
-                const place = {
-                  name:    pinAddress ?? t('mapPick.selectedLocation'),
-                  address: pinAddress ?? `${pinLat.toFixed(5)}, ${pinLng.toFixed(5)}`,
-                  lat:     pinLat,
-                  lng:     pinLng,
-                }
-                setSheMode(false)
-                setVehicleType('sedan')
-                setRideMode('city')
-                setTo(place)
-                setShowPinBar(false)
-                router.push('/(passenger)/vehicle-select')
-              }}
-            >
-              <Txt weight="bold" size={14} color="#000">{t('mapPick.confirm')}</Txt>
-              <Icon name="arrow-left" size={18} color="#000" />
+            {/* Search bar */}
+            <Pressable style={styles.search} onPress={openCity}>
+              <Icon name="magnify" size={18} color={Colors.muted} />
+              <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
+              <View style={styles.searchPin}>
+                <Icon name="map-marker" size={16} color={Colors.gold} />
+              </View>
             </Pressable>
-          </View>
-        </Animated.View>
-      )}
+
+            {/* ── Pin destination chip — replaces cards when pin is settled ── */}
+            {showPinBar && !mapMoving ? (
+              <Pressable
+                style={({ pressed }) => [styles.pinChip, pressed && { opacity: 0.8 }]}
+                onPress={() => {
+                  const place = {
+                    name:    pinAddress ?? t('mapPick.selectedLocation'),
+                    address: pinAddress ?? `${pinLat.toFixed(5)}, ${pinLng.toFixed(5)}`,
+                    lat:     pinLat,
+                    lng:     pinLng,
+                  }
+                  setSheMode(false)
+                  setVehicleType('sedan')
+                  setRideMode('city')
+                  setTo(place)
+                  setShowPinBar(false)
+                  router.push('/(passenger)/vehicle-select')
+                }}
+              >
+                <View style={styles.pinChipLeft}>
+                  <View style={styles.pinChipDot}>
+                    <Icon name="map-marker-check" size={16} color="#000" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Txt size={11} color={Colors.muted}>{t('mapPick.titleTo')}</Txt>
+                    <Txt size={13} weight="bold" color={Colors.white} numberOfLines={1}>
+                      {pinAddress
+                        ? pinAddress.split(',')[0]
+                        : `${pinLat.toFixed(4)}, ${pinLng.toFixed(4)}`}
+                    </Txt>
+                  </View>
+                </View>
+                <View style={styles.pinChipBtn}>
+                  <Txt size={13} weight="bold" color="#000">{t('mapPick.confirm')}</Txt>
+                </View>
+              </Pressable>
+            ) : (
+              <>
+                <View style={{ height: Spacing.lg }} />
+                {/* ── Service cards ── */}
+                <View style={styles.cardsWrap}>
+                  <View style={styles.cardRow}>
+                    <Pressable
+                      style={({ pressed }) => [styles.cardSm, styles.goldCard, pressed && styles.pressed]}
+                      onPress={openCity}
+                    >
+                      <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImgSm} resizeMode="contain" />
+                      <View style={styles.cardSmFooter}>
+                        <Txt weight="bold" size={15} color={Colors.white}>{t('service.ride')}</Txt>
+                        <View style={[styles.arrowBtnSm, { backgroundColor: Colors.gold }]}>
+                          <DirIcon name="chevron-right" size={15} color="#000" />
+                        </View>
+                      </View>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [styles.cardSm, styles.purpleCard, pressed && styles.pressed]}
+                      onPress={openShe}
+                    >
+                      <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImgSm} resizeMode="contain" />
+                      <View style={styles.cardSmFooter}>
+                        <Txt weight="bold" size={15} color={Colors.white}>{t('service.women')}</Txt>
+                        <View style={[styles.arrowBtnSm, { backgroundColor: PURPLE }]}>
+                          <DirIcon name="chevron-right" size={15} color="#fff" />
+                        </View>
+                      </View>
+                    </Pressable>
+                  </View>
+                  <Pressable
+                    style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
+                    onPress={openDelivery}
+                  >
+                    <View style={styles.cardImgWrap}>
+                      <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
+                    </View>
+                    <View style={styles.cardBody}>
+                      <Txt weight="bold" size={17} color={Colors.white}>{t('service.delivery')}</Txt>
+                      <Txt size={11} color={Colors.muted} style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
+                    </View>
+                    <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
+                      <DirIcon name="chevron-right" size={18} color="#000" />
+                    </View>
+                  </Pressable>
+                </View>
+
+                {/* Recent destinations */}
+                {recentDestinations.length > 0 && (
+                  <View style={styles.recentWrap}>
+                    <Txt weight="bold" size={13} color={Colors.muted} style={styles.recentTitle}>
+                      {t('home.recentTitle')}
+                    </Txt>
+                    {recentDestinations.map((d) => (
+                      <Pressable
+                        key={d.name}
+                        style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
+                        onPress={() => openRecent(d)}
+                      >
+                        <View style={styles.recentIcon}>
+                          <Icon name="history" size={18} color={Colors.muted} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Txt weight="bold" size={14} color={Colors.white}>{d.name}</Txt>
+                          <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
+                        </View>
+                        <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </Animated.View>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
@@ -420,11 +415,17 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       alignItems: 'center',
     },
 
-    scroll: {
+    // Transparent wrapper — slides off-screen cleanly (no background = no black box)
+    sheetOuter: {
       position: 'absolute',
       left: 0, right: 0,
-      top: MAP_H - 28,          // bottom sheet starts just below the map
+      top: MAP_H - 28,
       bottom: 0,
+      // NO backgroundColor here
+    },
+    // Inner view carries the visual background
+    sheetInner: {
+      flex: 1,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       backgroundColor: Colors.dark1,
@@ -532,37 +533,36 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
 
     pressed: { opacity: 0.72 },
 
-    pinBar: {
-      position: 'absolute',
-      bottom: 90,   // above BottomNav
-      left: Spacing.md,
-      right: Spacing.md,
-      zIndex: 30,
-    },
-    pinBarInner: {
+    // Pin destination chip — inline inside sheet, replaces cards
+    pinChip: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
       backgroundColor: Colors.dark2,
       borderRadius: Spacing.radiusLg,
       borderWidth: 1,
       borderColor: Colors.goldAlpha20,
-      padding: Spacing.md,
-      gap: Spacing.sm,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      gap: 10,
+      marginTop: 4,
       ...Shadows.md,
     },
-    pinBarAddress: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
-      alignItems: 'flex-start',
-      gap: Spacing.sm,
-    },
-    pinBarBtn: {
+    pinChipLeft: {
+      flex: 1,
       flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: Spacing.sm,
+      gap: 10,
+    },
+    pinChipDot: {
+      width: 32, height: 32, borderRadius: 16,
+      backgroundColor: Colors.gold,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    pinChipBtn: {
       backgroundColor: Colors.gold,
       borderRadius: Spacing.radiusMd,
-      paddingVertical: 12,
-      paddingHorizontal: Spacing.md,
-      marginTop: 4,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
     },
 
     recentWrap: { marginTop: Spacing.xxl },
