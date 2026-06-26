@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Dimensions, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
 import { useColors } from '../../../hooks/useColors'
@@ -192,8 +192,8 @@ export default function Home() {
             style={({ pressed }) => [styles.card, styles.goldCard, pressed && styles.pressed]}
             onPress={openCity}
           >
-            <View style={styles.cardIcon}>
-              <Icon name="car-side" size={68} color={GOLD} />
+            <View style={styles.cardImgWrap}>
+              <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImg} resizeMode="contain" />
             </View>
             <View style={styles.cardBody}>
               <Txt weight="bold" size={18} color="#fff">{t('service.ride')}</Txt>
@@ -210,8 +210,8 @@ export default function Home() {
             style={({ pressed }) => [styles.card, styles.purpleCard, pressed && styles.pressed]}
             onPress={openShe}
           >
-            <View style={styles.cardIcon}>
-              <Icon name="human-female" size={68} color={PURPLE} />
+            <View style={styles.cardImgWrap}>
+              <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImg} resizeMode="contain" />
             </View>
             <View style={styles.cardBody}>
               <Txt weight="bold" size={18} color="#fff">{t('service.women')}</Txt>
@@ -227,8 +227,8 @@ export default function Home() {
             style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
             onPress={openDelivery}
           >
-            <View style={styles.cardIcon}>
-              <Icon name="package-variant" size={68} color={TEAL} />
+            <View style={styles.cardImgWrap}>
+              <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
             </View>
             <View style={styles.cardBody}>
               <Txt weight="bold" size={18} color="#fff">{t('service.delivery')}</Txt>
@@ -358,9 +358,11 @@ function makeStyles(Colors: Palette) {
       elevation: 14,
     },
 
-    cardIcon: {
-      width: 82, alignItems: 'center', justifyContent: 'center',
+    cardImgWrap: {
+      width: 92, height: 64, alignItems: 'center', justifyContent: 'center',
     },
+    cardImg: { width: 92, height: 56 },
+    cardImgParcel: { width: 64, height: 60 },
     cardBody: { flex: 1 },
 
     arrowBtn: {
