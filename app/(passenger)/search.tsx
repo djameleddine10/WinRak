@@ -8,6 +8,7 @@ import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
 import { useT } from '../../hooks/useT'
 import { Spacing } from '../../constants/spacing'
+import { Shadows } from '../../constants/shadows'
 import { Txt } from '../../components/ui/Txt'
 import { Icon } from '../../components/ui/Icon'
 import { DirIcon } from '../../components/ui/DirIcon'
@@ -133,7 +134,7 @@ export default function Search() {
               container:          { flex: 0, zIndex: 100 },
               textInputContainer: { backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, paddingHorizontal: Spacing.sm },
               textInput:          { backgroundColor: 'transparent', color: Colors.white, fontSize: 14, height: 44, marginBottom: 0 },
-              listView:           { backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, marginTop: 4, elevation: 10 },
+              listView:           { backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, marginTop: 4, ...Shadows.md },
               row:                { backgroundColor: 'transparent', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
               description:        { color: Colors.white, textAlign: 'right', fontSize: 14 },
               separator:          { backgroundColor: Colors.border, height: 1 },

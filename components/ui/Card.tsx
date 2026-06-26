@@ -3,6 +3,7 @@ import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
 import { Spacing } from '../../constants/spacing'
+import { Shadows } from '../../constants/shadows'
 
 interface CardProps {
   children: React.ReactNode
@@ -54,6 +55,7 @@ function makeStyles(Colors: Palette) {
       backgroundColor: Colors.dark2,
       borderColor: Colors.border,
       overflow: 'hidden',
+      ...Shadows.sm,
     },
     accent: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 4 },
   })

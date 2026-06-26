@@ -4,6 +4,7 @@ import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
 import { useColors } from '../../../hooks/useColors'
 import { Spacing } from '../../../constants/spacing'
+import { Shadows } from '../../../constants/shadows'
 import { Txt } from '../../../components/ui/Txt'
 import { Icon } from '../../../components/ui/Icon'
 import { TopBar } from '../../../components/layout/TopBar'
@@ -20,7 +21,7 @@ import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
 const { height: SCREEN_H } = Dimensions.get('window')
-const MAP_H = Math.round(SCREEN_H * 0.30)
+const MAP_H = Math.round(SCREEN_H * 0.52)
 
 const PURPLE = '#7B4FD4'
 const TEAL   = '#00C2A8'
@@ -175,8 +176,8 @@ export default function Home() {
           </View>
         </Pressable>
 
-        {/* Flexible spacer pushes the cards down toward the floating nav */}
-        <View style={{ flex: 1, minHeight: Spacing.lg }} />
+        {/* Tight, fixed gap — keeps the cards grouped right under the search bar */}
+        <View style={{ height: Spacing.lg }} />
 
         {/* ── Service cards ── */}
         <View style={styles.cardsWrap}>
@@ -283,7 +284,6 @@ function makeStyles(Colors: Palette) {
 
     scroll: { flex: 1 },
     scrollBody: {
-      flexGrow: 1,
       paddingTop: MAP_H - 24,
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: 100,
@@ -351,29 +351,17 @@ function makeStyles(Colors: Palette) {
     goldCard: {
       backgroundColor: Colors.dark2,
       borderColor: Colors.goldAlpha20,
-      shadowColor: Colors.gold,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.30,
-      shadowRadius: 18,
-      elevation: 10,
+      ...Shadows.md,
     },
     purpleCard: {
       backgroundColor: Colors.dark2,
       borderColor: 'rgba(123,79,212,0.40)',
-      shadowColor: PURPLE,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.30,
-      shadowRadius: 18,
-      elevation: 10,
+      ...Shadows.md,
     },
     tealCard: {
       backgroundColor: Colors.dark2,
       borderColor: 'rgba(0,194,168,0.40)',
-      shadowColor: TEAL,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.30,
-      shadowRadius: 18,
-      elevation: 10,
+      ...Shadows.md,
     },
 
     cardImgWrap: {

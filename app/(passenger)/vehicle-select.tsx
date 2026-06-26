@@ -6,6 +6,7 @@ import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
 import { useT } from '../../hooks/useT'
 import { Spacing } from '../../constants/spacing'
+import { Shadows } from '../../constants/shadows'
 import { Txt } from '../../components/ui/Txt'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
@@ -369,7 +370,7 @@ function makeStyles(Colors: Palette) {
       backgroundColor: Colors.gold,
       paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
       borderRadius: Spacing.radiusFull,
-      elevation: 4,
+      ...Shadows.md,
     },
   })
 }

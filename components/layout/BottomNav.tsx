@@ -9,6 +9,7 @@ import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { useUserStore } from '../../store/userStore'
 import { useIsRTL } from '../../i18n/locale'
+import { Shadows } from '../../constants/shadows'
 
 const TABS: Record<string, { icon: string; labelKey: TranslationKey }> = {
   home:            { icon: 'home',              labelKey: 'nav.home'    },
@@ -108,11 +109,7 @@ function makeStyles(Colors: Palette) {
       height: 64,
       width: '100%',
       maxWidth: 420,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.4,
-      shadowRadius: 20,
-      elevation: 18,
+      ...Shadows.lg,
     },
     homeWrap: {
       alignItems: 'center',
