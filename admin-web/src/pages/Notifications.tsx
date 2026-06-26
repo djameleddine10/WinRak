@@ -46,7 +46,7 @@ export default function Notifications() {
         target: form.target,
         title:  form.title,
         body:   form.body,
-        data:   form.data ? JSON.parse(form.data) : null,
+        data:   form.data ? (() => { try { return JSON.parse(form.data) } catch { return null } })() : null,
       }
 
       const { data, error } = await supabase.functions.invoke('notify-broadcast', {
