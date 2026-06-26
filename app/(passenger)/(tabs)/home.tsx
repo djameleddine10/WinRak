@@ -23,10 +23,8 @@ import { getMyTrips } from '../../../services/trips.service'
 const { height: SCREEN_H } = Dimensions.get('window')
 const MAP_H = Math.round(SCREEN_H * 0.30)
 
-const GOLD   = '#FFB800'
 const PURPLE = '#7B4FD4'
 const TEAL   = '#00C2A8'
-const BG     = '#0a0b14'
 
 export default function Home() {
   const Colors = useColors()
@@ -145,13 +143,13 @@ export default function Home() {
           onMenu={() => setDrawerOpen(true)}
           showNotification
           onNotification={() => router.push('/(passenger)/notifications')}
-          rightAction={<Txt weight="bold" size={20} color={GOLD}>WinRak</Txt>}
+          rightAction={<Txt weight="bold" size={20} color={Colors.gold}>WinRak</Txt>}
         />
       </View>
 
       {errorMsg && (
         <View style={styles.gpsBanner}>
-          <Txt size={11} color="#fff">⚠️ {errorMsg}</Txt>
+          <Txt size={11} color={Colors.white}>⚠️ {errorMsg}</Txt>
         </View>
       )}
 
@@ -162,16 +160,16 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
       >
         {/* Greeting */}
-        <Txt weight="bold" size={24} color="#fff" style={styles.greetText}>
+        <Txt weight="bold" size={24} color={Colors.white} style={styles.greetText}>
           {t('home.greeting', { name: displayName })}
         </Txt>
 
         {/* Photo warning */}
         {photoStatus === 'missing' && (
           <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
-            <Icon name="alert-circle-outline" size={14} color={GOLD} />
+            <Icon name="alert-circle-outline" size={14} color={Colors.gold} />
             <Txt size={11} color={Colors.muted} style={{ flex: 1 }}>{t('home.photoWarn')}</Txt>
-            <Txt size={11} color={GOLD} weight="bold">{t('home.takePhoto')}</Txt>
+            <Txt size={11} color={Colors.gold} weight="bold">{t('home.takePhoto')}</Txt>
           </Pressable>
         )}
 
@@ -180,49 +178,46 @@ export default function Home() {
           <Icon name="magnify" size={18} color={Colors.muted} />
           <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
           <View style={styles.searchPin}>
-            <Icon name="map-marker" size={16} color={GOLD} />
+            <Icon name="map-marker" size={16} color={Colors.gold} />
           </View>
         </Pressable>
 
         {/* ── Service cards ── */}
         <View style={styles.cardsWrap}>
 
-          {/* Ride */}
-          <Pressable
-            style={({ pressed }) => [styles.card, styles.goldCard, pressed && styles.pressed]}
-            onPress={openCity}
-          >
-            <View style={styles.cardImgWrap}>
-              <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImg} resizeMode="contain" />
-            </View>
-            <View style={styles.cardBody}>
-              <Txt weight="bold" size={18} color="#fff">{t('service.ride')}</Txt>
-              <Txt size={12} color="rgba(255,255,255,0.50)" style={{ marginTop: 3 }}>{t('service.rideSub')}</Txt>
-              <Txt size={12} color={GOLD} weight="bold" style={{ marginTop: 8 }}>250 DA</Txt>
-            </View>
-            <View style={[styles.arrowBtn, { backgroundColor: GOLD }]}>
-              <DirIcon name="chevron-right" size={18} color="#000" />
-            </View>
-          </Pressable>
+          {/* Row: Ride + Women side by side */}
+          <View style={styles.cardRow}>
 
-          {/* Women */}
-          <Pressable
-            style={({ pressed }) => [styles.card, styles.purpleCard, pressed && styles.pressed]}
-            onPress={openShe}
-          >
-            <View style={styles.cardImgWrap}>
-              <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImg} resizeMode="contain" />
-            </View>
-            <View style={styles.cardBody}>
-              <Txt weight="bold" size={18} color="#fff">{t('service.women')}</Txt>
-              <Txt size={12} color="rgba(255,255,255,0.50)" style={{ marginTop: 3 }}>{t('service.womenOnly')}</Txt>
-            </View>
-            <View style={[styles.arrowBtn, { backgroundColor: PURPLE }]}>
-              <DirIcon name="chevron-right" size={18} color="#fff" />
-            </View>
-          </Pressable>
+            {/* Ride */}
+            <Pressable
+              style={({ pressed }) => [styles.cardSm, styles.goldCard, pressed && styles.pressed]}
+              onPress={openCity}
+            >
+              <Image source={require('../../../assets/cards/car-gold.png')} style={styles.cardImgSm} resizeMode="contain" />
+              <View style={styles.cardSmFooter}>
+                <Txt weight="bold" size={15} color={Colors.white}>{t('service.ride')}</Txt>
+                <View style={[styles.arrowBtnSm, { backgroundColor: Colors.gold }]}>
+                  <DirIcon name="chevron-right" size={15} color="#000" />
+                </View>
+              </View>
+            </Pressable>
 
-          {/* Delivery */}
+            {/* Women */}
+            <Pressable
+              style={({ pressed }) => [styles.cardSm, styles.purpleCard, pressed && styles.pressed]}
+              onPress={openShe}
+            >
+              <Image source={require('../../../assets/cards/car-purple.png')} style={styles.cardImgSm} resizeMode="contain" />
+              <View style={styles.cardSmFooter}>
+                <Txt weight="bold" size={15} color={Colors.white}>{t('service.women')}</Txt>
+                <View style={[styles.arrowBtnSm, { backgroundColor: PURPLE }]}>
+                  <DirIcon name="chevron-right" size={15} color="#fff" />
+                </View>
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Delivery — wide */}
           <Pressable
             style={({ pressed }) => [styles.card, styles.tealCard, pressed && styles.pressed]}
             onPress={openDelivery}
@@ -231,8 +226,8 @@ export default function Home() {
               <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.cardImgParcel} resizeMode="contain" />
             </View>
             <View style={styles.cardBody}>
-              <Txt weight="bold" size={18} color="#fff">{t('service.delivery')}</Txt>
-              <Txt size={12} color="rgba(255,255,255,0.50)" style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
+              <Txt weight="bold" size={17} color={Colors.white}>{t('service.delivery')}</Txt>
+              <Txt size={11} color={Colors.muted} style={{ marginTop: 3 }}>{t('service.deliverySub')}</Txt>
             </View>
             <View style={[styles.arrowBtn, { backgroundColor: TEAL }]}>
               <DirIcon name="chevron-right" size={18} color="#000" />
@@ -256,7 +251,7 @@ export default function Home() {
                   <Icon name="history" size={18} color={Colors.muted} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Txt weight="bold" size={14} color="#fff">{d.name}</Txt>
+                  <Txt weight="bold" size={14} color={Colors.white}>{d.name}</Txt>
                   <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
                 </View>
                 <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
@@ -273,12 +268,13 @@ export default function Home() {
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
-    root: { flex: 1, backgroundColor: BG },
+    root: { flex: 1, backgroundColor: Colors.dark1 },
 
     mapWrap: { position: 'absolute', top: 0, left: 0, right: 0, height: MAP_H },
     mapOverlay: {
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(10,11,20,0.62)',
+      backgroundColor: Colors.dark1,
+      opacity: 0.55,
     },
     topBarWrap: {
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
@@ -293,76 +289,97 @@ function makeStyles(Colors: Palette) {
     scrollBody: {
       paddingTop: MAP_H - 20,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: Spacing.xxxl,
+      paddingBottom: 120,
     },
 
     greetText: { textAlign: 'right', marginBottom: Spacing.md },
 
     photoWarn: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: 8,
-      backgroundColor: 'rgba(255,184,0,0.10)',
-      borderRadius: Spacing.radiusMd, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)',
+      backgroundColor: Colors.goldAlpha10,
+      borderRadius: Spacing.radiusMd, borderWidth: 1, borderColor: Colors.goldAlpha20,
       paddingVertical: 8, paddingHorizontal: Spacing.md, marginBottom: Spacing.md,
     },
 
     search: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: 10,
-      backgroundColor: 'rgba(255,255,255,0.07)',
+      backgroundColor: Colors.dark2,
       borderRadius: Spacing.radiusMd, height: 52,
       paddingHorizontal: Spacing.md, marginBottom: Spacing.xl,
-      borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+      borderWidth: 1, borderColor: Colors.border,
     },
     searchPin: {
       width: 32, height: 32, borderRadius: 16,
-      backgroundColor: 'rgba(255,184,0,0.15)',
+      backgroundColor: Colors.goldAlpha15,
       alignItems: 'center', justifyContent: 'center',
     },
 
-    cardsWrap: { gap: 14 },
+    cardsWrap: { gap: 12 },
+
+    cardRow: { flexDirection: 'row-reverse', gap: 12 },
+
+    cardSm: {
+      flex: 1,
+      borderRadius: Spacing.radiusLg,
+      paddingTop: 10,
+      paddingBottom: 12,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      overflow: 'hidden',
+    },
+    cardImgSm: { width: '100%', height: 54, marginBottom: 6 },
+    cardSmFooter: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    arrowBtnSm: {
+      width: 30, height: 30, borderRadius: 15,
+      alignItems: 'center', justifyContent: 'center',
+    },
 
     card: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
       borderRadius: Spacing.radiusLg,
-      paddingVertical: 18,
-      paddingHorizontal: 18,
-      gap: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      gap: 14,
       borderWidth: 1,
       overflow: 'hidden',
     },
     goldCard: {
-      backgroundColor: 'rgba(255,184,0,0.07)',
-      borderColor: 'rgba(255,184,0,0.30)',
-      shadowColor: GOLD,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.45,
-      shadowRadius: 22,
-      elevation: 14,
+      backgroundColor: Colors.dark2,
+      borderColor: Colors.goldAlpha20,
+      shadowColor: Colors.gold,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.30,
+      shadowRadius: 18,
+      elevation: 10,
     },
     purpleCard: {
-      backgroundColor: 'rgba(123,79,212,0.10)',
-      borderColor: 'rgba(123,79,212,0.38)',
+      backgroundColor: Colors.dark2,
+      borderColor: 'rgba(123,79,212,0.40)',
       shadowColor: PURPLE,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.45,
-      shadowRadius: 22,
-      elevation: 14,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.30,
+      shadowRadius: 18,
+      elevation: 10,
     },
     tealCard: {
-      backgroundColor: 'rgba(0,194,168,0.07)',
-      borderColor: 'rgba(0,194,168,0.30)',
+      backgroundColor: Colors.dark2,
+      borderColor: 'rgba(0,194,168,0.40)',
       shadowColor: TEAL,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.45,
-      shadowRadius: 22,
-      elevation: 14,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.30,
+      shadowRadius: 18,
+      elevation: 10,
     },
 
     cardImgWrap: {
-      width: 92, height: 64, alignItems: 'center', justifyContent: 'center',
+      width: 76, height: 56, alignItems: 'center', justifyContent: 'center',
     },
-    cardImg: { width: 92, height: 56 },
-    cardImgParcel: { width: 64, height: 60 },
+    cardImgParcel: { width: 52, height: 50 },
     cardBody: { flex: 1 },
 
     arrowBtn: {
@@ -377,11 +394,11 @@ function makeStyles(Colors: Palette) {
     recentRow: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: 14,
       paddingVertical: Spacing.md,
-      borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)',
+      borderBottomWidth: 1, borderBottomColor: Colors.border,
     },
     recentIcon: {
       width: 38, height: 38, borderRadius: 19,
-      backgroundColor: 'rgba(255,255,255,0.07)',
+      backgroundColor: Colors.dark3,
       alignItems: 'center', justifyContent: 'center',
     },
   })

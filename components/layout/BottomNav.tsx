@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { type Palette } from '../../constants/colors'
 import { useColors } from '../../hooks/useColors'
-import { Spacing } from '../../constants/spacing'
 import { Txt } from '../ui/Txt'
 import { Icon } from '../ui/Icon'
 import { useT } from '../../hooks/useT'
@@ -11,10 +10,10 @@ import { type TranslationKey } from '../../i18n/translations'
 import { useUserStore } from '../../store/userStore'
 
 const TABS: Record<string, { icon: string; labelKey: TranslationKey }> = {
-  home:            { icon: 'home',               labelKey: 'nav.home'   },
-  'rides-history': { icon: 'map-marker-radius',   labelKey: 'nav.trips'  },
-  wallet:          { icon: 'wallet',              labelKey: 'nav.wallet' },
-  profile:         { icon: 'account',             labelKey: 'nav.account' },
+  home:            { icon: 'home',              labelKey: 'nav.home'    },
+  'rides-history': { icon: 'map-marker-radius', labelKey: 'nav.trips'   },
+  wallet:          { icon: 'wallet',            labelKey: 'nav.wallet'  },
+  profile:         { icon: 'account',           labelKey: 'nav.account' },
 }
 
 // Minimal shape of the expo-router / react-navigation tab bar props we use.
@@ -26,7 +25,9 @@ interface TabBarProps {
   }
 }
 
-// Custom tab bar for the passenger tab navigator.
+// Floating pill tab bar for the passenger tab navigator.
+// Home sits as a raised gold circle at the start of the bar
+// (far right in Arabic RTL, far left in LTR via row-reverse).
 export function BottomNav({ state, navigation }: TabBarProps) {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
@@ -38,41 +39,98 @@ export function BottomNav({ state, navigation }: TabBarProps) {
   // tab navigator; hide its bottom bar so its Home tab can't bounce them into passenger mode.
   if (mode === 'driver') return null
 
+  function go(route: { key: string; name: string }, focused: boolean) {
+    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
+    if (!focused && !event.defaultPrevented) navigation.navigate(route.name)
+  }
+
   return (
-    <View style={[styles.bar, { height: Spacing.tabBarHeight + insets.bottom, paddingBottom: insets.bottom }]}>
-      {state.routes.map((route, index) => {
-        const tab = TABS[route.name]
-        if (!tab) return null
-        const focused = state.index === index
-        const color = focused ? Colors.gold : Colors.muted
-        return (
-          <Pressable
-            key={route.key}
-            style={styles.tab}
-            onPress={() => {
-              const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
-              if (!focused && !event.defaultPrevented) navigation.navigate(route.name)
-            }}
-          >
-            <Icon name={tab.icon} size={24} color={color} />
-            <Txt size={11} color={color} weight={focused ? 'bold' : 'regular'}>{t(tab.labelKey)}</Txt>
-            {focused && <View style={styles.dot} />}
-          </Pressable>
-        )
-      })}
+    <View style={[styles.wrap, { paddingBottom: insets.bottom + 8 }]} pointerEvents="box-none">
+      <View style={styles.pill}>
+        {state.routes.map((route, index) => {
+          const tab = TABS[route.name]
+          if (!tab) return null
+          const focused = state.index === index
+
+          // Home → raised gold circle.
+          if (route.name === 'home') {
+            return (
+              <Pressable
+                key={route.key}
+                style={styles.homeWrap}
+                onPress={() => go(route, focused)}
+                hitSlop={10}
+              >
+                <View style={styles.homeBtn}>
+                  <Icon name="home" size={26} color="#000" />
+                </View>
+              </Pressable>
+            )
+          }
+
+          const color = focused ? Colors.gold : Colors.muted
+          return (
+            <Pressable
+              key={route.key}
+              style={styles.tab}
+              onPress={() => go(route, focused)}
+              hitSlop={8}
+            >
+              <Icon name={tab.icon} size={23} color={color} />
+              <Txt size={10} color={color} weight={focused ? 'bold' : 'regular'} style={styles.label}>
+                {t(tab.labelKey)}
+              </Txt>
+            </Pressable>
+          )
+        })}
+      </View>
     </View>
   )
 }
 
 function makeStyles(Colors: Palette) {
   return StyleSheet.create({
-    bar: {
-      flexDirection: 'row-reverse',
-      backgroundColor: Colors.dark2,
-      borderTopWidth: 1,
-      borderTopColor: Colors.border,
+    wrap: {
+      position: 'absolute', left: 0, right: 0, bottom: 0,
+      alignItems: 'center',
+      paddingHorizontal: 16,
     },
-    tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-    dot: { width: 16, height: 3, borderRadius: 2, backgroundColor: Colors.gold, marginTop: 2 },
+    pill: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: Colors.dark2,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      paddingHorizontal: 22,
+      height: 64,
+      width: '100%',
+      maxWidth: 420,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.4,
+      shadowRadius: 20,
+      elevation: 18,
+    },
+    homeWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    homeBtn: {
+      width: 56, height: 56, borderRadius: 28,
+      backgroundColor: Colors.gold,
+      alignItems: 'center', justifyContent: 'center',
+      marginTop: -26,
+      borderWidth: 4,
+      borderColor: Colors.dark1,
+      shadowColor: Colors.gold,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.5,
+      shadowRadius: 14,
+      elevation: 16,
+    },
+    tab: { alignItems: 'center', justifyContent: 'center', gap: 3, minWidth: 52 },
+    label: { textAlign: 'center' },
   })
 }
