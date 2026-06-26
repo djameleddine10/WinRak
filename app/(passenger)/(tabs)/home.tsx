@@ -154,12 +154,15 @@ export default function Home() {
         </View>
       )}
 
-      {/* Scrollable content starts overlapping the map bottom */}
+      {/* Bottom sheet — map stays fully interactive above */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollBody}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
       >
+        {/* Drag handle */}
+        <View style={styles.handle} />
         {/* Photo warning */}
         {photoStatus === 'missing' && (
           <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
@@ -270,14 +273,16 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.dark1 },
 
+    // Map occupies the top portion — fully interactive (no overlay blocking touches)
     mapWrap: { position: 'absolute', top: 0, left: 0, right: 0, height: MAP_H },
     mapOverlay: {
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: Colors.dark1,
-      opacity: 0.55,
+      opacity: 0.18,        // reduced — just a subtle tint, not a blocker
     },
     topBarWrap: {
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+      pointerEvents: 'box-none',  // let map touches pass through the empty area
     },
     gpsBanner: {
       position: 'absolute', top: Spacing.topBarHeight, left: 0, right: 0, zIndex: 15,
@@ -285,11 +290,28 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       alignItems: 'center',
     },
 
-    scroll: { flex: 1 },
+    scroll: {
+      position: 'absolute',
+      left: 0, right: 0,
+      top: MAP_H - 28,          // bottom sheet starts just below the map
+      bottom: 0,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      backgroundColor: Colors.dark1,
+      overflow: 'hidden',
+    },
     scrollBody: {
-      paddingTop: MAP_H - 24,
+      paddingTop: 20,
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: 100,
+    },
+
+    handle: {
+      width: 40, height: 4,
+      borderRadius: 2,
+      backgroundColor: Colors.dark4,
+      alignSelf: 'center',
+      marginBottom: Spacing.md,
     },
 
     photoWarn: {
