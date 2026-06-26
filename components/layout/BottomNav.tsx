@@ -28,8 +28,9 @@ interface TabBarProps {
 }
 
 // Floating pill tab bar for the passenger tab navigator.
-// Home sits as a raised gold circle at the START of the bar:
-// far right in Arabic (RTL), far left in French/English (LTR).
+// The focused tab is rendered as a raised gold circle (56 px, marginTop: -26).
+// All other tabs show their icon + label in muted/gold depending on focus state.
+// Direction-aware: pill reverses in RTL so Home ends up on the far right in Arabic.
 export function BottomNav({ state, navigation }: TabBarProps) {
   const Colors = useColors()
   const isRTL = useIsRTL()
@@ -55,23 +56,23 @@ export function BottomNav({ state, navigation }: TabBarProps) {
           if (!tab) return null
           const focused = state.index === index
 
-          // Home → raised gold circle.
-          if (route.name === 'home') {
+          // Focused tab → raised gold circle (no label).
+          if (focused) {
             return (
               <Pressable
                 key={route.key}
-                style={styles.homeWrap}
+                style={styles.activeWrap}
                 onPress={() => go(route, focused)}
                 hitSlop={10}
               >
-                <View style={styles.homeBtn}>
-                  <Icon name="home" size={26} color="#000" />
+                <View style={styles.activeBtn}>
+                  <Icon name={tab.icon} size={26} color="#000" />
                 </View>
               </Pressable>
             )
           }
 
-          const color = focused ? Colors.gold : Colors.muted
+          // Idle tab → icon + label.
           return (
             <Pressable
               key={route.key}
@@ -79,8 +80,8 @@ export function BottomNav({ state, navigation }: TabBarProps) {
               onPress={() => go(route, focused)}
               hitSlop={8}
             >
-              <Icon name={tab.icon} size={23} color={color} />
-              <Txt size={10} color={color} weight={focused ? 'bold' : 'regular'} style={styles.label}>
+              <Icon name={tab.icon} size={23} color={Colors.muted} />
+              <Txt size={10} color={Colors.muted} weight="regular" style={styles.label}>
                 {t(tab.labelKey)}
               </Txt>
             </Pressable>
@@ -111,11 +112,12 @@ function makeStyles(Colors: Palette) {
       maxWidth: 420,
       ...Shadows.lg,
     },
-    homeWrap: {
+    // Raised gold circle for the active tab.
+    activeWrap: {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    homeBtn: {
+    activeBtn: {
       width: 56, height: 56, borderRadius: 28,
       backgroundColor: Colors.gold,
       alignItems: 'center', justifyContent: 'center',
@@ -128,6 +130,7 @@ function makeStyles(Colors: Palette) {
       shadowRadius: 14,
       elevation: 16,
     },
+    // Idle tabs.
     tab: { alignItems: 'center', justifyContent: 'center', gap: 3, minWidth: 52 },
     label: { textAlign: 'center' },
   })

@@ -16,6 +16,7 @@ import { useMapStore } from '../../../store/mapStore'
 import { useLocation } from '../../../hooks/useLocation'
 import { useT } from '../../../hooks/useT'
 import { DirIcon } from '../../../components/ui/DirIcon'
+import { useIsRTL } from '../../../i18n/locale'
 import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
@@ -28,7 +29,8 @@ const TEAL   = '#00C2A8'
 
 export default function Home() {
   const Colors = useColors()
-  const styles = useMemo(() => makeStyles(Colors), [Colors])
+  const isRTL = useIsRTL()
+  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const photoStatus = useUserStore((s) => s.photoStatus)
   const profile     = useUserStore((s) => s.profile)
   const setRideMode = useUserStore((s) => s.setRideMode)
@@ -263,7 +265,8 @@ export default function Home() {
   )
 }
 
-function makeStyles(Colors: Palette) {
+function makeStyles(Colors: Palette, isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.dark1 },
 
@@ -290,14 +293,14 @@ function makeStyles(Colors: Palette) {
     },
 
     photoWarn: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 8,
+      flexDirection: row, alignItems: 'center', gap: 8,
       backgroundColor: Colors.goldAlpha10,
       borderRadius: Spacing.radiusMd, borderWidth: 1, borderColor: Colors.goldAlpha20,
       paddingVertical: 8, paddingHorizontal: Spacing.md, marginBottom: Spacing.md,
     },
 
     search: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 10,
+      flexDirection: row, alignItems: 'center', gap: 10,
       backgroundColor: Colors.dark2,
       borderRadius: Spacing.radiusMd, height: 52,
       paddingHorizontal: Spacing.md, marginBottom: Spacing.lg,
@@ -316,7 +319,7 @@ function makeStyles(Colors: Palette) {
 
     cardsWrap: { gap: 12 },
 
-    cardRow: { flexDirection: 'row-reverse', gap: 12 },
+    cardRow: { flexDirection: row, gap: 12 },
 
     cardSm: {
       flex: 1,
@@ -329,7 +332,7 @@ function makeStyles(Colors: Palette) {
     },
     cardImgSm: { width: '100%', height: 54, marginBottom: 6 },
     cardSmFooter: {
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       alignItems: 'center',
       justifyContent: 'space-between',
     },
@@ -339,7 +342,7 @@ function makeStyles(Colors: Palette) {
     },
 
     card: {
-      flexDirection: 'row-reverse',
+      flexDirection: row,
       alignItems: 'center',
       borderRadius: Spacing.radiusLg,
       paddingVertical: 14,
@@ -380,7 +383,7 @@ function makeStyles(Colors: Palette) {
     recentWrap: { marginTop: Spacing.xxl },
     recentTitle: { textAlign: 'right', marginBottom: Spacing.sm },
     recentRow: {
-      flexDirection: 'row-reverse', alignItems: 'center', gap: 14,
+      flexDirection: row, alignItems: 'center', gap: 14,
       paddingVertical: Spacing.md,
       borderBottomWidth: 1, borderBottomColor: Colors.border,
     },
