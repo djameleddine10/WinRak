@@ -9,9 +9,9 @@ import { Icon } from '../../components/ui/Icon'
 import { TopBar } from '../../components/layout/TopBar'
 import { useT } from '../../hooks/useT'
 import { useUserStore } from '../../store/userStore'
-import {
 import { useIsRTL } from '../../i18n/locale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
   fetchNotifications,
   markAllNotificationsRead,
   subscribeNotifications,
@@ -31,6 +31,7 @@ function makeTypeIcon(Colors: Palette): Record<string, { icon: string; color: st
 export default function Notifications() {
   const insets = useSafeAreaInsets()
   const Colors  = useColors()
+  const isRTL   = useIsRTL()
   const styles  = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const TYPE_ICON = useMemo(() => makeTypeIcon(Colors), [Colors])
   const t       = useT()

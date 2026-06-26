@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { useColors } from '../../hooks/useColors'
 import { useT } from '../../hooks/useT'
@@ -21,7 +22,8 @@ interface DriverCardProps {
 export function DriverCard({ driver, showActions, compact, onCall, onMessage }: DriverCardProps) {
   const Colors = useColors()
   const isRTL = useIsRTL()
-    const t = useT()
+  const styles = useMemo(() => makeStyles(isRTL), [isRTL])
+  const t = useT()
   const lang = useSettingsStore((s) => s.language)
 
   // Language-reactive name: Arabic script in Arabic mode, Latin transliteration otherwise
@@ -64,12 +66,15 @@ export function DriverCard({ driver, showActions, compact, onCall, onMessage }: 
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: Spacing.md },
-  row: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
-  info: { flex: 1, gap: 2 },
-  nameRow: { flexDirection: row, alignItems: 'center', gap: 6 },
-  metaRow: { flexDirection: row, alignItems: 'center', gap: 4 },
-  actions: { flexDirection: row, gap: Spacing.sm },
-  action: { flex: 1 },
-})
+function makeStyles(isRTL: boolean) {
+  const row = isRTL ? 'row-reverse' : 'row'
+  return StyleSheet.create({
+    wrap: { gap: Spacing.md },
+    row: { flexDirection: row, alignItems: 'center', gap: Spacing.md },
+    info: { flex: 1, gap: 2 },
+    nameRow: { flexDirection: row, alignItems: 'center', gap: 6 },
+    metaRow: { flexDirection: row, alignItems: 'center', gap: 4 },
+    actions: { flexDirection: row, gap: Spacing.sm },
+    action: { flex: 1 },
+  })
+}

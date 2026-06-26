@@ -119,7 +119,7 @@ function StatusRow({ icon, color, label, value }: { icon: string; color: string;
   const Colors = useColors()
   const isRTL = useIsRTL()
     return (
-    <View style={{ flexDirection: row, alignItems: 'center', gap: Spacing.md }}>
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: Spacing.md }}>
       <Icon name={icon} size={20} color={color} />
       <Txt size={14} style={{ flex: 1 }}>{label}</Txt>
       <Txt size={13} color={color}>{value}</Txt>

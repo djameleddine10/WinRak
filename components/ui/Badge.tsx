@@ -22,7 +22,7 @@ export const Badge = memo(function Badge({ label, variant = 'gold', size = 'md',
     const v = makeVariants(Colors)[variant]
   const fontSize = size === 'sm' ? 10 : 12
   return (
-    <View style={[styles.base, { backgroundColor: v.bg }]}>
+    <View style={[styles.base, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: v.bg }]}>
       {icon && <Icon name={icon} size={fontSize + 2} color={v.text} />}
       <Txt weight="semibold" size={fontSize} color={v.text}>{label}</Txt>
     </View>
@@ -42,7 +42,6 @@ function makeVariants(Colors: Palette): Record<BadgeVariant, { bg: string; text:
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: row,
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: Spacing.sm,

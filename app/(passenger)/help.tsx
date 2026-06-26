@@ -28,6 +28,7 @@ const SECTIONS: {
 
 export default function Help() {
   const insets = useSafeAreaInsets()
+  const isRTL = useIsRTL()
   const t = useT()
   return (
     <View style={{ flex: 1, backgroundColor: LIGHT_BG }}>
@@ -39,7 +40,7 @@ export default function Help() {
             {s.items.map((item, i) => (
               <Pressable
                 key={item.key}
-                style={[styles.row, i < s.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: SEP }]}
+                style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }, i < s.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: SEP }]}
                 onPress={item.onPress}
               >
                 <Txt size={14} color={DARK_TEXT} style={{ flex: 1 }}>{t(item.key)}</Txt>
@@ -57,5 +58,5 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.screenPadding },
   section: { marginBottom: Spacing.xl },
   label: { marginBottom: Spacing.sm },
-  row: { flexDirection: row, alignItems: 'center', paddingVertical: Spacing.md },
+  row: { alignItems: 'center', paddingVertical: Spacing.md },
 })

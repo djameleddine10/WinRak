@@ -163,8 +163,9 @@ export default function DeliveryCheckout() {
 }
 
 function Row({ label, value, Colors }: { label: string; value: string; Colors: Palette }) {
+  const isRTL = useIsRTL()
   return (
-    <View style={{ flexDirection: row, justifyContent: 'space-between', paddingVertical: 4 }}>
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
       <Txt size={13} color={Colors.muted}>{label}</Txt>
       <Txt size={13}>{value}</Txt>
     </View>

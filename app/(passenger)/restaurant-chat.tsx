@@ -16,8 +16,7 @@ import { useIsRTL } from '../../i18n/locale'
 export default function RestaurantChat() {
   const Colors = useColors()
   const isRTL = useIsRTL()
-    const t = useT()
-  const isRTL = useIsRTL()
+  const t = useT()
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()

@@ -188,7 +188,7 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   const Colors = useColors()
   const isRTL = useIsRTL()
     return (
-    <View style={rowStatStyles.shareRow}>
+    <View style={[rowStatStyles.shareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <Txt size={13} color={Colors.muted} style={{ flex: 1 }}>{label}</Txt>
       <Txt size={bold ? 18 : 13} weight={bold ? 'bold' : 'regular'}>{value}</Txt>
     </View>
@@ -199,7 +199,7 @@ function Stat({ icon, value }: { icon: string; value: string }) {
   const Colors = useColors()
   const isRTL = useIsRTL()
     return (
-    <View style={[rowStatStyles.statCard, { backgroundColor: Colors.dark3 }]}>
+    <View style={[rowStatStyles.statCard, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: Colors.dark3 }]}>
       <Icon name={icon} size={22} color={Colors.gold} />
       <Txt size={13}>{value}</Txt>
     </View>
@@ -225,6 +225,6 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
 
 // Module-level styles for Row/Stat sub-components (no theme dependency)
 const rowStatStyles = StyleSheet.create({
-  shareRow: { flexDirection: row, alignItems: 'center', paddingVertical: 4 },
-  statCard: { width: '48.5%', borderRadius: Spacing.radiusMd, padding: Spacing.lg, flexDirection: row, alignItems: 'center', gap: Spacing.sm },
+  shareRow: { alignItems: 'center', paddingVertical: 4 },
+  statCard: { width: '48.5%', borderRadius: Spacing.radiusMd, padding: Spacing.lg, alignItems: 'center', gap: Spacing.sm },
 })
