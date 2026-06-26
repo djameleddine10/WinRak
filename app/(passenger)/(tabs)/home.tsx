@@ -18,6 +18,7 @@ import { useT } from '../../../hooks/useT'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { useIsRTL } from '../../../i18n/locale'
 import { MapPin } from '../../../components/map/MapPin'
+import { ALGIERS_CENTER } from '../../../mock/map'
 import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
@@ -107,35 +108,59 @@ export default function Home() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // Map pin state
-  const [mapMoving, setMapMoving] = useState(false)
+  // ── Map pin state ──────────────────────────────────────────────────
+  const [mapMoving,  setMapMoving]  = useState(false)
+  const [pinAddress, setPinAddress] = useState<string | null>(null)
+  const [pinLat,     setPinLat]     = useState(ALGIERS_CENTER.lat)
+  const [pinLng,     setPinLng]     = useState(ALGIERS_CENTER.lng)
+  const [showPinBar, setShowPinBar] = useState(false)
+  const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Bottom sheet hide/show when map is touched
+  // Bottom sheet: slides fully off-screen on touch, springs back on release
+  const SHEET_H = SCREEN_H - MAP_H + 28   // full height of the sheet
   const sheetAnim = useRef(new Animated.Value(1)).current   // 1=visible, 0=hidden
 
-  const handleMapTouchStart = useCallback(() => {
+  const hideSheet = useCallback(() => {
     Animated.timing(sheetAnim, {
       toValue: 0,
-      duration: 180,
+      duration: 160,
       useNativeDriver: true,
     }).start()
   }, [sheetAnim])
 
-  const handleMapTouchEnd = useCallback(() => {
+  const showSheet = useCallback(() => {
     Animated.spring(sheetAnim, {
       toValue: 1,
-      tension: 120,
-      friction: 9,
+      tension: 130,
+      friction: 10,
       useNativeDriver: true,
     }).start()
   }, [sheetAnim])
 
   const handleRegionChange = useCallback(() => {
     setMapMoving(true)
+    setShowPinBar(false)
+    if (geocodeTimer.current) clearTimeout(geocodeTimer.current)
   }, [])
 
-  const handleRegionChangeComplete = useCallback(() => {
+  const handleRegionChangeComplete = useCallback((lat: number, lng: number) => {
     setMapMoving(false)
+    setPinLat(lat)
+    setPinLng(lng)
+    setPinAddress(null)
+    // Debounced reverse-geocode
+    geocodeTimer.current = setTimeout(() => {
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`,
+        { headers: { 'User-Agent': 'WinRakApp/1.0' } }
+      )
+        .then((r) => r.json())
+        .then((d) => {
+          setPinAddress(d.display_name ?? null)
+          setShowPinBar(true)
+        })
+        .catch(() => setShowPinBar(true))
+    }, 300)
   }, [])
 
   function openCity() {
@@ -160,8 +185,8 @@ export default function Home() {
       {/* Map — top portion, behind everything */}
       <View
         style={styles.mapWrap}
-        onTouchStart={handleMapTouchStart}
-        onTouchEnd={handleMapTouchEnd}
+        onTouchStart={hideSheet}
+        onTouchEnd={showSheet}
       >
         <WebMap
           showUser
@@ -170,7 +195,7 @@ export default function Home() {
             .filter((d) => d.isOnline)
             .map((d) => ({ lat: d.lat, lng: d.lng, heading: d.heading, type: 'car' as const }))}
           onRegionChange={handleRegionChange}
-          onRegionChangeComplete={(_lat, _lng) => handleRegionChangeComplete()}
+          onRegionChangeComplete={handleRegionChangeComplete}
         />
         <View style={styles.mapOverlay} pointerEvents="none" />
 
@@ -197,21 +222,20 @@ export default function Home() {
         </View>
       )}
 
-      {/* Bottom sheet — hides on map touch, returns on release */}
+      {/* Bottom sheet — slides fully off-screen on map touch */}
       <Animated.View
         style={[
           styles.scroll,
           {
-            opacity: sheetAnim,
             transform: [{
               translateY: sheetAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [60, 0],
+                outputRange: [SHEET_H, 0],
               }),
             }],
           },
         ]}
-        pointerEvents={mapMoving ? 'none' : 'box-none'}
+        pointerEvents="box-none"
       >
       <ScrollView
         style={{ flex: 1 }}
@@ -321,6 +345,45 @@ export default function Home() {
         )}
       </ScrollView>
       </Animated.View>
+
+      {/* Pin confirm bar — appears when pin settles on a location */}
+      {showPinBar && !mapMoving && (
+        <Animated.View style={[styles.pinBar]} pointerEvents="box-none">
+          <View style={styles.pinBarInner}>
+            <View style={styles.pinBarAddress}>
+              <Icon name="map-marker" size={18} color={Colors.gold} />
+              <Txt
+                size={13}
+                color={Colors.white}
+                numberOfLines={2}
+                style={{ flex: 1 }}
+              >
+                {pinAddress ?? `${pinLat.toFixed(5)}, ${pinLng.toFixed(5)}`}
+              </Txt>
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.pinBarBtn, pressed && { opacity: 0.75 }]}
+              onPress={() => {
+                const place = {
+                  name:    pinAddress ?? t('mapPick.selectedLocation'),
+                  address: pinAddress ?? `${pinLat.toFixed(5)}, ${pinLng.toFixed(5)}`,
+                  lat:     pinLat,
+                  lng:     pinLng,
+                }
+                setSheMode(false)
+                setVehicleType('sedan')
+                setRideMode('city')
+                setTo(place)
+                setShowPinBar(false)
+                router.push('/(passenger)/vehicle-select')
+              }}
+            >
+              <Txt weight="bold" size={14} color="#000">{t('mapPick.confirm')}</Txt>
+              <Icon name="arrow-left" size={18} color="#000" />
+            </Pressable>
+          </View>
+        </Animated.View>
+      )}
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
@@ -468,6 +531,39 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     },
 
     pressed: { opacity: 0.72 },
+
+    pinBar: {
+      position: 'absolute',
+      bottom: 90,   // above BottomNav
+      left: Spacing.md,
+      right: Spacing.md,
+      zIndex: 30,
+    },
+    pinBarInner: {
+      backgroundColor: Colors.dark2,
+      borderRadius: Spacing.radiusLg,
+      borderWidth: 1,
+      borderColor: Colors.goldAlpha20,
+      padding: Spacing.md,
+      gap: Spacing.sm,
+      ...Shadows.md,
+    },
+    pinBarAddress: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.sm,
+    },
+    pinBarBtn: {
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      backgroundColor: Colors.gold,
+      borderRadius: Spacing.radiusMd,
+      paddingVertical: 12,
+      paddingHorizontal: Spacing.md,
+      marginTop: 4,
+    },
 
     recentWrap: { marginTop: Spacing.xxl },
     recentTitle: { textAlign: 'right', marginBottom: Spacing.sm },
