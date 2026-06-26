@@ -47,15 +47,16 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
   const driverName = useDriverName()
   const t = useT()
 
-  // ── Slide-in/out positioning ─────────────────────────────────────────────────
-  // We anchor the panel at `left: 0` + `direction: 'ltr'` so `left` is always
-  // physical-left regardless of the native RTL flag. translateX then moves the
-  // panel to the correct physical edge:
-  //   AR  → physical RIGHT: rest at (SCREEN_W − DRAWER_W), close at SCREEN_W
-  //   FR/EN → physical LEFT : rest at 0,                     close at −DRAWER_W
+  // ── Slide-in/out positioning — robust against the RTL/LTR native-flag mismatch ──
+  // The OUTER container forces `direction: 'ltr'`, so `left`/`right` below always mean
+  // the PHYSICAL edge no matter what I18nManager's native flag says. We pin the panel to
+  // the edge the active language wants, then slide it on/off by exactly its OWN width
+  // (translateX is physical and never auto-swapped). Sliding by the panel width — not by
+  // SCREEN_W — guarantees it closes fully with no leftover sliver.
+  //   AR → physical RIGHT · FR/EN → physical LEFT
   const wantRight = isRTL
-  const OPEN_X   = wantRight ? SCREEN_W - DRAWER_W : 0
-  const CLOSED_X = wantRight ? SCREEN_W            : -DRAWER_W
+  const OPEN_X   = 0
+  const CLOSED_X = wantRight ? DRAWER_W : -DRAWER_W
 
   const translateX      = useRef(new Animated.Value(CLOSED_X)).current
   const backdropOpacity = useRef(new Animated.Value(0)).current
@@ -105,6 +106,12 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
   const isDriver = mode === 'driver'
   const photoMissing = !isDriver && photoStatus === 'missing'
 
+  // The floating pill nav exists only in passenger mode and renders in a layer
+  // ABOVE this drawer, so it would clip the footer button. Reserve enough bottom
+  // clearance to lift the footer fully above the pill — including the raised gold
+  // circle that overhangs the pill's top edge. Driver mode has no pill nav.
+  const footerClearance = isDriver ? Spacing.xl : Spacing.tabBarHeight + 46
+
   const items: DrawerItem[] = isDriver
     ? [
         { icon: 'car',                        label: t('drawer.city'),         active: true },
@@ -124,7 +131,7 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
 
   return (
     <View
-      style={[StyleSheet.absoluteFill, { zIndex: 999, elevation: 30 }]}
+      style={[StyleSheet.absoluteFill, { direction: 'ltr', zIndex: 999, elevation: 30 }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
       {/* Backdrop */}
@@ -132,19 +139,14 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
-      {/* Panel
-          `left: 0` + `direction: 'ltr'` on the panel keeps `left` = physical-left
-          regardless of the native RTL flag. The INNER content wrapper then applies
-          `direction: isRTL ? 'rtl' : 'ltr'` so all children (text, rows, icons)
-          lay out in the correct reading direction for the active language.
-          This decouples the panel position (always translateX-based) from the content
-          direction (always driven by the live language setting). */}
+      {/* Panel — pinned to the physical edge the language wants (left/right are physical
+          because the outer container forces direction:'ltr'); slides via translateX.
+          The inner wrapper restores the reading direction for the active language. */}
       <Animated.View
         style={[
           styles.panel,
+          wantRight ? { right: 0 } : { left: 0 },
           {
-            left:      0,
-            direction: 'ltr',
             width:     DRAWER_W,
             transform: [{ translateX }],
           },
@@ -157,7 +159,7 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
             {
               direction:      isRTL ? 'rtl' : 'ltr',
               paddingTop:     insets.top    + Spacing.lg,
-              paddingBottom:  insets.bottom + Spacing.xl,
+              paddingBottom:  insets.bottom + footerClearance,
             },
           ]}
         >
