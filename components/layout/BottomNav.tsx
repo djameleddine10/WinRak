@@ -8,6 +8,7 @@ import { Icon } from '../ui/Icon'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { useUserStore } from '../../store/userStore'
+import { useIsRTL } from '../../i18n/locale'
 
 const TABS: Record<string, { icon: string; labelKey: TranslationKey }> = {
   home:            { icon: 'home',              labelKey: 'nav.home'    },
@@ -26,10 +27,11 @@ interface TabBarProps {
 }
 
 // Floating pill tab bar for the passenger tab navigator.
-// Home sits as a raised gold circle at the start of the bar
-// (far right in Arabic RTL, far left in LTR via row-reverse).
+// Home sits as a raised gold circle at the START of the bar:
+// far right in Arabic (RTL), far left in French/English (LTR).
 export function BottomNav({ state, navigation }: TabBarProps) {
   const Colors = useColors()
+  const isRTL = useIsRTL()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
   const insets = useSafeAreaInsets()
   const t = useT()
@@ -46,7 +48,7 @@ export function BottomNav({ state, navigation }: TabBarProps) {
 
   return (
     <View style={[styles.wrap, { paddingBottom: insets.bottom + 8 }]} pointerEvents="box-none">
-      <View style={styles.pill}>
+      <View style={[styles.pill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {state.routes.map((route, index) => {
           const tab = TABS[route.name]
           if (!tab) return null
@@ -96,7 +98,6 @@ function makeStyles(Colors: Palette) {
       paddingHorizontal: 16,
     },
     pill: {
-      flexDirection: 'row-reverse',
       alignItems: 'center',
       justifyContent: 'space-between',
       backgroundColor: Colors.dark2,

@@ -14,7 +14,6 @@ import { useRideStore } from '../../../store/rideStore'
 import { useMapStore } from '../../../store/mapStore'
 import { useLocation } from '../../../hooks/useLocation'
 import { useT } from '../../../hooks/useT'
-import { usePassengerName } from '../../../i18n/locale'
 import { DirIcon } from '../../../components/ui/DirIcon'
 import { useRealMapDrivers } from '../../../hooks/useRealMapDrivers'
 import { registerPushToken } from '../../../services/notifications.service'
@@ -29,7 +28,6 @@ const TEAL   = '#00C2A8'
 export default function Home() {
   const Colors = useColors()
   const styles = useMemo(() => makeStyles(Colors), [Colors])
-  const displayName = usePassengerName()
   const photoStatus = useUserStore((s) => s.photoStatus)
   const profile     = useUserStore((s) => s.profile)
   const setRideMode = useUserStore((s) => s.setRideMode)
@@ -159,11 +157,6 @@ export default function Home() {
         contentContainerStyle={styles.scrollBody}
         showsVerticalScrollIndicator={false}
       >
-        {/* Greeting */}
-        <Txt weight="bold" size={24} color={Colors.white} style={styles.greetText}>
-          {t('home.greeting', { name: displayName })}
-        </Txt>
-
         {/* Photo warning */}
         {photoStatus === 'missing' && (
           <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
@@ -181,6 +174,9 @@ export default function Home() {
             <Icon name="map-marker" size={16} color={Colors.gold} />
           </View>
         </Pressable>
+
+        {/* Flexible spacer pushes the cards down toward the floating nav */}
+        <View style={{ flex: 1, minHeight: Spacing.lg }} />
 
         {/* ── Service cards ── */}
         <View style={styles.cardsWrap}>
@@ -287,12 +283,11 @@ function makeStyles(Colors: Palette) {
 
     scroll: { flex: 1 },
     scrollBody: {
-      paddingTop: MAP_H - 20,
+      flexGrow: 1,
+      paddingTop: MAP_H - 24,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 120,
+      paddingBottom: 100,
     },
-
-    greetText: { textAlign: 'right', marginBottom: Spacing.md },
 
     photoWarn: {
       flexDirection: 'row-reverse', alignItems: 'center', gap: 8,
@@ -305,8 +300,13 @@ function makeStyles(Colors: Palette) {
       flexDirection: 'row-reverse', alignItems: 'center', gap: 10,
       backgroundColor: Colors.dark2,
       borderRadius: Spacing.radiusMd, height: 52,
-      paddingHorizontal: Spacing.md, marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.md, marginBottom: Spacing.lg,
       borderWidth: 1, borderColor: Colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.18,
+      shadowRadius: 14,
+      elevation: 8,
     },
     searchPin: {
       width: 32, height: 32, borderRadius: 16,
