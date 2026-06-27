@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../constants/colors'
@@ -92,17 +92,20 @@ export default function DriverRegistration() {
     if (step === 2 && !validateStep2()) return
     if (step === 3) {
       if (!validateStep3()) return
-      if (!profile?.id) return
+      if (!profile?.id) {
+        Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.')
+        return
+      }
       setLoading(true)
       try {
         await submitRegistration(profile.id)
-        router.replace('/(driver)/driver-pending')
-      } catch {
-        // En cas d'erreur réseau, on navigue quand même (les docs seront uploadées depuis driver-documents)
-        router.replace('/(driver)/driver-pending')
+      } catch (err) {
+        console.warn('[WinRak] submitRegistration error:', err)
+        // On continue vers driver-pending même en cas d'erreur réseau
       } finally {
         setLoading(false)
       }
+      router.replace('/(driver)/driver-pending')
       return
     }
     setErrors({})

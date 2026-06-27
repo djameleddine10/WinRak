@@ -15,8 +15,7 @@ export async function pickDocument(source: 'camera' | 'gallery') {
   const options: ImagePicker.ImagePickerOptions = {
     mediaTypes: ['images'],
     quality:    0.85,
-    allowsEditing: true,
-    aspect:     [4, 3],
+    allowsEditing: false,
   }
 
   const result = source === 'camera'

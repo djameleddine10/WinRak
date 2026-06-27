@@ -48,8 +48,8 @@ export function PhotoUpload({
       }
       setState('uploading')
       const result = source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 })
-        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 })
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.85 })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.85 })
       if (result.canceled || !result.assets?.[0]) {
         setState(uri ? 'uploaded' : 'empty')
         return
