@@ -285,28 +285,30 @@ export default function Home() {
       )}
 
       {/* ════════════════════════════════════════════════════════════
-          5. الـ Sheet — يطفو فوق الخريطة
-             • الجزء العلوي (GRAD_H) شفاف → معتم (gradient)
-             • باقيه معتم بلون dark1
+          5. الـ Sheet — معتم بالكامل، يبدأ أسفل الـ gradient
       ════════════════════════════════════════════════════════════ */}
+
+      {/* — Gradient مستقل — sibling فوق الـ sheet — */}
+      <Animated.View
+        style={[styles.sheetGradient, { top: Animated.subtract(sheetTop, GRAD_H) }]}
+        pointerEvents="none"
+      >
+        <Svg width="100%" height={GRAD_H}>
+          <Defs>
+            <SvgLinearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0"    stopColor={Colors.dark1} stopOpacity="0"    />
+              <Stop offset="0.45" stopColor={Colors.dark1} stopOpacity="0.6"  />
+              <Stop offset="0.8"  stopColor={Colors.dark1} stopOpacity="0.92" />
+              <Stop offset="1"    stopColor={Colors.dark1} stopOpacity="1"    />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height={GRAD_H} fill="url(#sheetGrad)" />
+        </Svg>
+      </Animated.View>
+
       <Animated.View style={[styles.sheet, { top: sheetTop }]}>
 
-        {/* — Gradient الشفافية — أعلى الـ sheet — */}
-        <View style={styles.sheetGradient} pointerEvents="none">
-          <Svg width="100%" height={GRAD_H}>
-            <Defs>
-              <SvgLinearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0"    stopColor={Colors.dark1} stopOpacity="0"    />
-                <Stop offset="0.4"  stopColor={Colors.dark1} stopOpacity="0.55" />
-                <Stop offset="0.75" stopColor={Colors.dark1} stopOpacity="0.88" />
-                <Stop offset="1"    stopColor={Colors.dark1} stopOpacity="1"    />
-              </SvgLinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100%" height={GRAD_H} fill="url(#sheetGrad)" />
-          </Svg>
-        </View>
-
-        {/* — المقبض — فوق الـ gradient — */}
+        {/* — المقبض — */}
         <View style={styles.handleWrap} {...panResponder.panHandlers}>
           <View style={styles.handle} />
         </View>
@@ -487,23 +489,19 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       // لا overflow:hidden — حتى لا يقطع الـ gradient
     },
 
-    // gradient شفافية أعلى الـ sheet
+    // gradient مستقل — sibling فوق الـ sheet يتحرك معه
     sheetGradient: {
       position: 'absolute',
-      top: 0, left: 0, right: 0,
+      left: 0, right: 0,
       height: GRAD_H,
-      zIndex: 2,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      overflow: 'hidden',
+      zIndex: 11, // فوق الـ sheet (zIndex: 10)
     },
 
-    // المقبض — يجلس فوق الـ gradient
+    // المقبض — حجم طبيعي، الـ gradient absolute فوقه
     handleWrap: {
-      height: GRAD_H,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
+      paddingTop: 12,
       paddingBottom: 12,
+      alignItems: 'center',
       zIndex: 3,
     },
     handle: {
