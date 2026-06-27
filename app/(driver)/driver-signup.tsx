@@ -29,7 +29,6 @@ export default function DriverSignup() {
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
   const setMode = useUserStore((s) => s.setMode)
-  const approveRegistration = useDriverStore((s) => s.approveRegistration)
   const setSheService = useDriverStore((s) => s.setSheService)
   const [drawer, setDrawer] = useState(false)
   const t = useT()
@@ -43,13 +42,6 @@ export default function DriverSignup() {
   function toPassenger() {
     setMode('passenger')
     router.replace('/(passenger)/(tabs)/home')
-  }
-
-  // Existing driver: skip registration, go straight to the radar home.
-  function enterExisting() {
-    approveRegistration()
-    setMode('driver')
-    router.replace('/(driver)/home')
   }
 
   return (
@@ -90,7 +82,7 @@ export default function DriverSignup() {
       <View style={{ flex: 1 }} />
 
       <View style={{ paddingBottom: insets.bottom + Spacing.lg, gap: Spacing.md }}>
-        <Button label={t('driver.haveAccount')} variant="white" onPress={enterExisting} />
+        <Button label={t('driver.haveAccount')} variant="white" onPress={() => router.push('/(auth)/login')} />
         <Pressable onPress={toPassenger}>
           <Txt size={13} color={Colors.muted} center>{t('driver.toPassenger')}</Txt>
         </Pressable>

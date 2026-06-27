@@ -14,7 +14,7 @@ import { useT } from '../../hooks/useT'
 import { useUserStore } from '../../store/userStore'
 import { useDriverStore } from '../../store/driverStore'
 import { usePaymentStore } from '../../store/paymentStore'
-import { verifyOTP, getMyProfile, getDriverStats } from '../../services/auth.service'
+import { verifyOTP, getMyProfile, getDriverStats, getDriverRegistrationStatus } from '../../services/auth.service'
 import { DEV_AUTH_BYPASS } from '../../constants/config'
 
 export default function Otp() {
@@ -29,8 +29,8 @@ export default function Otp() {
   const setMode        = useUserStore((s) => s.setMode)
   const setDriverStats = useUserStore((s) => s.setDriverStats)
   const storePhone     = useUserStore((s) => s.phone)
-  const approveDriver  = useDriverStore((s) => s.approveRegistration)
-  const loadWallet     = usePaymentStore((s) => s.loadWallet)
+  const setRegistrationStatus = useDriverStore((s) => s.setRegistrationStatus)
+  const loadWallet            = usePaymentStore((s) => s.loadWallet)
 
   const phone = paramPhone || storePhone
 
@@ -78,13 +78,21 @@ export default function Otp() {
         login()
         if (profile.role === 'driver') {
           setMode('driver')
-          approveDriver()
+          // Fetch real registration_status from DB
+          const regStatus = await getDriverRegistrationStatus(profile.id)
+          setRegistrationStatus(regStatus)
           getDriverStats(profile.id)
             .then((stats) => {
               if (stats) setDriverStats({ rating: stats.rating, totalTrips: stats.total_trips })
             })
             .catch(() => {})
-          router.replace('/(driver)/home')
+          if (regStatus === 'approved') {
+            router.replace('/(driver)/home')
+          } else if (regStatus === 'pending' || regStatus === 'rejected') {
+            router.replace('/(driver)/driver-pending')
+          } else {
+            router.replace('/(driver)/driver-signup')
+          }
         } else {
           setMode('passenger')
           loadWallet(profile.id)

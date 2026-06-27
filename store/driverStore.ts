@@ -64,7 +64,7 @@ interface DriverStore {
   setPhoto:              (uri: string) => void
   setDocPhoto:           (field: keyof Pick<DriverFormData, 'licensePhotoUri' | 'grayCardPhotoUri' | 'vehicleFrontUri' | 'vehicleRearUri' | 'pieceIdentiteUri'>, uri: string) => void
   submitRegistration:    (userId: string) => Promise<void>
-  approveRegistration:   () => void
+  setRegistrationStatus: (status: DriverRegistrationStatus) => void
   goOnline:           () => void
   goOffline:          () => void
   simulateRequest:    () => void
@@ -212,8 +212,7 @@ export const useDriverStore = create<DriverStore>()(
         set({ registrationStatus: 'pending' })
       },
 
-      // Mock shortcut: skip the 24-48h review and become an approved driver.
-      approveRegistration: () => set({ registrationStatus: 'approved', status: 'offline' }),
+      setRegistrationStatus: (status) => set({ registrationStatus: status }),
 
       goOnline: () => {
         stopRequestTimer()

@@ -84,6 +84,16 @@ export async function getMyProfile() {
   return data
 }
 
+export async function getDriverRegistrationStatus(driverId: string): Promise<'not_started' | 'pending' | 'approved' | 'rejected'> {
+  const { data, error } = await supabase
+    .from('drivers')
+    .select('registration_status')
+    .eq('id', driverId)
+    .maybeSingle()
+  if (error || !data) return 'not_started'
+  return (data.registration_status as 'not_started' | 'pending' | 'approved' | 'rejected') ?? 'not_started'
+}
+
 export async function getDriverStats(driverId: string) {
   const { data, error } = await supabase
     .from('drivers')
