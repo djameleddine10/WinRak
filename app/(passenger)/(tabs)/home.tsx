@@ -8,6 +8,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
 import { useColors, useResolvedScheme } from '../../../hooks/useColors'
@@ -43,7 +44,8 @@ export default function Home() {
   const scheme      = useResolvedScheme()
   const isDark      = scheme === 'dark'
   const isRTL       = useIsRTL()
-  const styles      = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
+  const insets      = useSafeAreaInsets()
+  const styles      = useMemo(() => makeStyles(Colors, isRTL, insets.top), [Colors, isRTL, insets.top])
 
   const photoStatus    = useUserStore((s) => s.photoStatus)
   const profile        = useUserStore((s) => s.profile)
@@ -280,8 +282,6 @@ export default function Home() {
             </View>
           </Pressable>
 
-          <View style={{ height: Spacing.lg }} />
-
           {/* ── بطاقات الخدمات: دوائر ── */}
           <View style={styles.circleRow}>
 
@@ -358,7 +358,7 @@ export default function Home() {
   )
 }
 
-function makeStyles(Colors: Palette, isRTL: boolean) {
+function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
   const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.dark1 },
@@ -385,8 +385,9 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     // زر موقعي — يمين أعلى الخريطة تحت TopBar
     locateBtnWrap: {
       position: 'absolute',
-      top: 72,
+      top: Spacing.topBarHeight + statusBarH + 10,
       right: 14,
+      zIndex: 10,
     },
     locateBtn: {
       width: 42,
@@ -481,8 +482,7 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     circleRow: {
       flexDirection: row,
       justifyContent: 'space-around',
-      marginTop: 'auto' as any,
-      paddingTop: 12,
+      marginTop: Spacing.lg,
       paddingBottom: 8,
     },
 
@@ -496,10 +496,13 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       width: 110,
       height: 110,
       borderRadius: 55,
-      borderWidth: 3,
+      borderWidth: 1.5,
       overflow: 'hidden',
       position: 'relative' as any,
-      ...Shadows.md,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.55,
+      shadowRadius: 12,
+      elevation: 10,
     },
     ringGold:   { borderColor: GOLD,   backgroundColor: Colors.dark2, shadowColor: GOLD },
     ringPurple: { borderColor: PURPLE, backgroundColor: Colors.dark2, shadowColor: PURPLE },
