@@ -248,11 +248,11 @@ export default function DriverHome() {
 
       {/* Daily stats bar */}
       <View style={styles.statsBar}>
-        <StatChip icon="car-multiple" label={t('driver.todayRides')} value={String(driverMock.stats.todayRides)} />
+        <StatChip icon="car-multiple" label={t('driver.todayRides')} value={String(driverStats?.totalTrips ?? 0)} />
         <View style={styles.statsDivider} />
-        <StatChip icon="clock-outline" label={t('driver.hoursOnline')} value={`${driverMock.stats.hoursOnline}h`} />
+        <StatChip icon="star-outline" label={t('driver.rating')} value={driverStats?.rating ? driverStats.rating.toFixed(1) : '—'} />
         <View style={styles.statsDivider} />
-        <StatChip icon="cash" label={t('driver.todayIncome')} value={`${(driverMock.earnings.today).toLocaleString('en-US')}`} gold />
+        <StatChip icon="cash" label={t('driver.todayIncome')} value="—" gold />
       </View>
 
       <DriverTabBar active="orders" />
