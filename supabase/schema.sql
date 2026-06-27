@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
   vehicle_model    TEXT,
   vehicle_year     INTEGER,
   vehicle_plate    TEXT         UNIQUE,
-  vehicle_type     TEXT         CHECK (vehicle_type IN ('economique','confort','she','intercites')),
+  vehicle_type     TEXT         CHECK (vehicle_type IN ('economique','confort','she','intercites','moto')),
   vehicle_color    TEXT,
   rating           DECIMAL(2,1) DEFAULT 5.0 CHECK (rating BETWEEN 1 AND 5),
   total_trips      INTEGER      DEFAULT 0,
@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS public.drivers (
   status           TEXT         DEFAULT 'offline' CHECK (status IN ('online','offline','on_trip')),
   current_lat      REAL,
   current_lng      REAL,
-  is_verified      BOOLEAN      DEFAULT FALSE,
+  is_verified          BOOLEAN      DEFAULT FALSE,
+  registration_status  TEXT         DEFAULT 'not_started' CHECK (registration_status IN ('not_started','pending','approved','rejected')),
   verified_at      TIMESTAMPTZ,
   verified_by      UUID         REFERENCES public.profiles(id)
 );
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
 CREATE TABLE IF NOT EXISTS public.driver_documents (
   id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
   driver_id     UUID         NOT NULL REFERENCES public.drivers(id) ON DELETE CASCADE,
-  type          TEXT         NOT NULL CHECK (type IN ('permis','carte_grise','vehicle_front','vehicle_rear','selfie')),
+  type          TEXT         NOT NULL CHECK (type IN ('permis','carte_grise','vehicle_front','vehicle_rear','selfie','piece_identite')),
   file_url      TEXT         NOT NULL,   -- URL Supabase Storage
   file_name     TEXT,
   file_size     INTEGER,                 -- octets
@@ -242,46 +243,56 @@ CREATE OR REPLACE TRIGGER after_trip_complete
 
 -- Vérification driver : quand tous les docs sont approuvés → is_verified = true
 CREATE OR REPLACE FUNCTION check_driver_verification()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $
 DECLARE
-  doc_count INTEGER;
+  doc_count      INTEGER;
   approved_count INTEGER;
+  rejected_count INTEGER;
 BEGIN
+  SELECT COUNT(*) INTO doc_count
+    FROM public.driver_documents WHERE driver_id = NEW.driver_id;
+  SELECT COUNT(*) INTO approved_count
+    FROM public.driver_documents WHERE driver_id = NEW.driver_id AND status = 'approved';
+  SELECT COUNT(*) INTO rejected_count
+    FROM public.driver_documents WHERE driver_id = NEW.driver_id AND status = 'rejected';
+
   IF NEW.status = 'approved' THEN
-    SELECT COUNT(*) INTO doc_count
-      FROM public.driver_documents WHERE driver_id = NEW.driver_id;
-    SELECT COUNT(*) INTO approved_count
-      FROM public.driver_documents WHERE driver_id = NEW.driver_id AND status = 'approved';
     IF doc_count >= 4 AND approved_count = doc_count THEN
       UPDATE public.drivers SET
-        is_verified = TRUE,
-        verified_at = NOW(),
-        verified_by = NEW.reviewed_by
+        is_verified         = TRUE,
+        verified_at         = NOW(),
+        verified_by         = NEW.reviewed_by,
+        registration_status = 'approved'
       WHERE id = NEW.driver_id;
-      -- Notification au chauffeur
       INSERT INTO public.notifications (user_id, title, body, type, data)
       VALUES (
         NEW.driver_id,
-        'Dossier approuvé ✓',
-        'Félicitations ! Votre dossier a été validé. Vous pouvez démarrer le service.',
+        'تم قبول ملفك ✓',
+        'مبروك! تم التحقق من ملفك. يمكنك الآن بدء العمل.',
         'doc_approved',
         jsonb_build_object('driver_id', NEW.driver_id)
       );
     END IF;
   ELSIF NEW.status = 'rejected' THEN
-    -- Notification de refus
+    UPDATE public.drivers SET
+      registration_status = 'pending'
+    WHERE id = NEW.driver_id AND registration_status != 'approved';
     INSERT INTO public.notifications (user_id, title, body, type, data)
     VALUES (
       NEW.driver_id,
-      'Document refusé',
-      COALESCE(NEW.reject_reason, 'Un document a été refusé. Veuillez le soumettre à nouveau.'),
+      'تم رفض وثيقة',
+      COALESCE(NEW.reject_reason, 'تم رفض إحدى وثائقك. يرجى إعادة رفعها.'),
       'doc_rejected',
-      jsonb_build_object('doc_type', NEW.type, 'reason', NEW.reject_reason)
+      jsonb_build_object(
+        'doc_id',   NEW.id,
+        'doc_type', NEW.type,
+        'reason',   NEW.reject_reason
+      )
     );
   END IF;
   RETURN NEW;
 END;
-$$;
+$;
 
 CREATE OR REPLACE TRIGGER after_doc_reviewed
   AFTER UPDATE ON public.driver_documents
@@ -374,17 +385,50 @@ SELECT
   p.full_name,
   p.full_name_ar,
   p.phone,
+  p.avatar_url,
   dr.vehicle_make,
   dr.vehicle_model,
   dr.vehicle_plate,
   dr.vehicle_type,
+  dr.registration_status,
   dd.type,
   dd.file_url,
   dd.file_name,
   dd.status,
   dd.reject_reason,
+  dd.reviewed_at,
+  dd.reviewed_by,
   dd.uploaded_at
 FROM public.driver_documents dd
 JOIN public.profiles p  ON dd.driver_id = p.id
 JOIN public.drivers dr  ON dd.driver_id = dr.id
 ORDER BY dd.uploaded_at DESC;
+
+-- Vue résumé par chauffeur (liste admin)
+CREATE OR REPLACE VIEW public.driver_approval_summary AS
+SELECT
+  dr.id                                                          AS driver_id,
+  p.full_name,
+  p.full_name_ar,
+  p.phone,
+  p.avatar_url,
+  dr.vehicle_type,
+  dr.vehicle_make,
+  dr.vehicle_model,
+  dr.vehicle_plate,
+  dr.registration_status,
+  dr.is_verified,
+  COUNT(dd.id)                                                   AS total_docs,
+  COUNT(dd.id) FILTER (WHERE dd.status = 'pending')             AS pending_docs,
+  COUNT(dd.id) FILTER (WHERE dd.status = 'approved')            AS approved_docs,
+  COUNT(dd.id) FILTER (WHERE dd.status = 'rejected')            AS rejected_docs,
+  MAX(dd.uploaded_at)                                            AS last_upload_at
+FROM public.drivers dr
+JOIN public.profiles p ON dr.id = p.id
+LEFT JOIN public.driver_documents dd ON dd.driver_id = dr.id
+WHERE dr.registration_status IN ('pending', 'rejected')
+   OR (dr.registration_status = 'approved' AND dr.is_verified = FALSE)
+GROUP BY dr.id, p.full_name, p.full_name_ar, p.phone, p.avatar_url,
+         dr.vehicle_type, dr.vehicle_make, dr.vehicle_model, dr.vehicle_plate,
+         dr.registration_status, dr.is_verified
+ORDER BY last_upload_at DESC NULLS LAST;
