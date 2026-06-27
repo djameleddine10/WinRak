@@ -94,25 +94,47 @@ export default function DriverRegistration() {
       if (!validateStep3()) return
       setLoading(true)
       try {
-        // Résoudre l'ID utilisateur — store d'abord, sinon Supabase Auth directement
+        // ── Résolution de l'ID en cascade ───────────────────────────────
+        // 1. profile.id depuis le store (AsyncStorage)
         let userId = profile?.id as string | undefined
+
+        // 2. Supabase Auth session active
         if (!userId) {
-          const { data: { user } } = await supabase.auth.getUser()
-          userId = user?.id
-          // Sync le profil dans le store si possible
-          if (user && !profile) {
-            const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-            if (p) setProfile(p)
-          }
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            userId = user?.id
+            if (user && !profile) {
+              const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+              if (p) setProfile(p)
+            }
+          } catch (_) {}
         }
+
+        // 3. Refresh de session Supabase
+        if (!userId) {
+          try {
+            const { data: refreshed } = await supabase.auth.refreshSession()
+            userId = refreshed.user?.id
+          } catch (_) {}
+        }
+
+        // 4. Aucune source disponible → forcer reconnexion
         if (!userId) {
           Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.')
+          router.replace('/(auth)/login')
           return
         }
+
         await submitRegistration(userId)
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[WinRak] submitRegistration error:', err)
-        // On navigue quand même — les docs peuvent être ré-uploadées depuis driver-documents
+        if (err?.message === 'no_auth') {
+          Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.')
+          router.replace('/(auth)/login')
+          return
+        }
+        // Autres erreurs (réseau, upload) → on navigue quand même
+        // Les docs peuvent être re-soumises depuis driver-documents
       } finally {
         setLoading(false)
       }

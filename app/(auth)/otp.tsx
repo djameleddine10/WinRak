@@ -105,7 +105,34 @@ export default function Otp() {
       }
     } catch (e: any) {
       if (DEV_AUTH_BYPASS) {
+        // En mode dev, on essaie quand même de récupérer le profil depuis Supabase
+        // (cas où le SMS Twilio échoue mais la session existe déjà)
         console.warn('[WinRak] verifyOTP failed — DEV bypass active:', e.message)
+        try {
+          const profile = await getMyProfile()
+          if (profile) {
+            setProfile(profile)
+            login()
+            if (profile.role === 'driver') {
+              setMode('driver')
+              const regStatus = await getDriverRegistrationStatus(profile.id)
+              setRegistrationStatus(regStatus)
+              if (regStatus === 'approved') {
+                router.replace('/(driver)/home')
+              } else if (regStatus === 'pending' || regStatus === 'rejected') {
+                router.replace('/(driver)/driver-pending')
+              } else {
+                router.replace('/(driver)/driver-signup')
+              }
+            } else {
+              setMode('passenger')
+              loadWallet(profile.id)
+              router.replace('/(passenger)/(tabs)/home')
+            }
+            return
+          }
+        } catch (_) {}
+        // Aucun profil Supabase → bypass total (dev sans compte réel)
         login()
         router.replace('/(passenger)/(tabs)/home')
       } else {

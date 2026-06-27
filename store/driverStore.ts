@@ -161,9 +161,25 @@ export const useDriverStore = create<DriverStore>()(
       submitRegistration: async (userIdHint: string) => {
         const { formData } = get()
 
-        // Toujours vérifier via Supabase Auth — source de vérité absolue
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        const userId = authUser?.id ?? userIdHint
+        // Résolution de l'ID : cascade de 4 sources
+        // 1. Session Supabase active
+        let userId: string | undefined
+        try {
+          const { data: { user: authUser } } = await supabase.auth.getUser()
+          userId = authUser?.id
+        } catch (_) {}
+
+        // 2. Refresh de session si null
+        if (!userId) {
+          try {
+            const { data: refreshed } = await supabase.auth.refreshSession()
+            userId = refreshed.user?.id
+          } catch (_) {}
+        }
+
+        // 3. Hint passé par le composant (profile.id depuis AsyncStorage)
+        if (!userId) userId = userIdHint || undefined
+
         if (!userId) throw new Error('no_auth')
 
         // 1. Upsert drivers row
