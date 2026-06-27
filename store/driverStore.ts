@@ -63,7 +63,7 @@ interface DriverStore {
   updateForm:            (field: keyof DriverFormData, value: string) => void
   setPhoto:              (uri: string) => void
   setDocPhoto:           (field: keyof Pick<DriverFormData, 'licensePhotoUri' | 'grayCardPhotoUri' | 'vehicleFrontUri' | 'vehicleRearUri' | 'pieceIdentiteUri'>, uri: string) => void
-  submitRegistration:    (userId: string) => Promise<void>
+  submitRegistration:    (userIdHint: string) => Promise<void>
   setRegistrationStatus: (status: DriverRegistrationStatus) => void
   goOnline:           () => void
   goOffline:          () => void
@@ -158,18 +158,16 @@ export const useDriverStore = create<DriverStore>()(
       // 1. Upsert row dans drivers avec registration_status='pending'
       // 2. Upload chaque photo collectée via uploadDocument
       // 3. Met à jour registrationStatus local → 'pending'
-      submitRegistration: async (userId: string) => {
+      submitRegistration: async (userIdHint: string) => {
         const { formData } = get()
 
+        // Toujours vérifier via Supabase Auth — source de vérité absolue
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        const userId = authUser?.id ?? userIdHint
+        if (!userId) throw new Error('no_auth')
+
         // 1. Upsert drivers row
-        const vehicleTypeMap: Record<string, string> = {
-          sedan: 'economique',
-          suv:   'confort',
-          van:   'confort',
-          truck: 'economique',
-          moto:  'moto',
-        }
-        const dbVehicleType = vehicleTypeMap[formData.vehicleType] ?? 'economique'
+        const dbVehicleType = formData.vehicleType === 'moto' ? 'moto' : 'economique'
 
         const { error: driverErr } = await supabase
           .from('drivers')

@@ -13,16 +13,15 @@ import { PhotoUpload } from '../../components/ui/PhotoUpload'
 import { ExitConfirmDialog } from '../../components/layout/ExitConfirmDialog'
 import { useDriverStore } from '../../store/driverStore'
 import { useUserStore } from '../../store/userStore'
+import { supabase } from '../../lib/supabase'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { useIsRTL } from '../../i18n/locale'
 
 const VEHICLE_TYPES: { type: string; icon: string; labelKey: TranslationKey }[] = [
-  { type: 'sedan', icon: 'car',           labelKey: 'driverReg.sedan' },
-  { type: 'suv',   icon: 'car-estate',    labelKey: 'driverReg.suv' },
-  { type: 'van',   icon: 'van-passenger', labelKey: 'driverReg.van' },
-  { type: 'moto',  icon: 'motorbike',     labelKey: 'driverReg.moto' },
+  { type: 'sedan', icon: 'car',       labelKey: 'driverReg.sedan' },
+  { type: 'moto',  icon: 'motorbike', labelKey: 'driverReg.moto' },
 ]
 
 export default function DriverRegistration() {
@@ -42,7 +41,8 @@ export default function DriverRegistration() {
     setVehicleMode,
     submitRegistration,
   } = useDriverStore()
-  const profile = useUserStore((s) => s.profile)
+  const profile        = useUserStore((s) => s.profile)
+  const setProfile     = useUserStore((s) => s.setProfile)
   const step    = registrationStep
   const t       = useT()
 
@@ -92,16 +92,27 @@ export default function DriverRegistration() {
     if (step === 2 && !validateStep2()) return
     if (step === 3) {
       if (!validateStep3()) return
-      if (!profile?.id) {
-        Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.')
-        return
-      }
       setLoading(true)
       try {
-        await submitRegistration(profile.id)
+        // Résoudre l'ID utilisateur — store d'abord, sinon Supabase Auth directement
+        let userId = profile?.id as string | undefined
+        if (!userId) {
+          const { data: { user } } = await supabase.auth.getUser()
+          userId = user?.id
+          // Sync le profil dans le store si possible
+          if (user && !profile) {
+            const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+            if (p) setProfile(p)
+          }
+        }
+        if (!userId) {
+          Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.')
+          return
+        }
+        await submitRegistration(userId)
       } catch (err) {
         console.warn('[WinRak] submitRegistration error:', err)
-        // On continue vers driver-pending même en cas d'erreur réseau
+        // On navigue quand même — les docs peuvent être ré-uploadées depuis driver-documents
       } finally {
         setLoading(false)
       }
