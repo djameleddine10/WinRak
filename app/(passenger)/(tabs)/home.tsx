@@ -349,10 +349,11 @@ export default function Home() {
           )}
         </ScrollView>
 
-        {/* ── Gradient داخل الـ sheet — من أسفله للأعلى ── */}
-        <View style={styles.sheetBottomGrad} pointerEvents="none">
-          <BottomGradient color={Colors.dark1} />
-        </View>
+      </View>
+
+      {/* ── Gradient أسفل الشاشة — فوق الـ BottomNav، من معتم لشفاف ── */}
+      <View style={styles.sheetBottomGrad} pointerEvents="none">
+        <BottomGradient color={Colors.dark1} />
       </View>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
@@ -588,13 +589,13 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       flex: 1,
     },
 
-    // Gradient داخل الـ sheet — مثبّت في أسفله، يتدرج للأعلى
+    // Gradient أسفل الشاشة — فوق الـ BottomNav، من معتم لشفاف للأعلى
     sheetBottomGrad: {
       position: 'absolute',
       left: 0, right: 0,
-      bottom: 0,
-      height: 90,
-      zIndex: 6,
+      bottom: 70,   // فوق الـ BottomNav مباشرة
+      height: 100,
+      zIndex: 20,
     },
 
     pressed: { opacity: 0.7 },
