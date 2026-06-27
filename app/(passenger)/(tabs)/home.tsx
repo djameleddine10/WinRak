@@ -8,6 +8,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native'
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
@@ -222,6 +223,9 @@ export default function Home() {
         </View>
       </View>
 
+      {/* ── Gradient فوق TopBar — يحمي قراءة الـ bar فوق الخريطة ── */}
+      <TopGradient height={Spacing.topBarHeight + insets.top + 20} color={Colors.dark1} />
+
       {/* ── TopBar ── */}
       <View style={styles.topBarWrap} pointerEvents="box-none">
         <TopBar
@@ -345,7 +349,51 @@ export default function Home() {
         </ScrollView>
       </View>
 
+      {/* ── Gradient أسفل الـ sheet — انتقال ناعم فوق BottomNav ── */}
+      <View style={styles.sheetBottomGrad} pointerEvents="none">
+        <BottomGradient color={Colors.dark1} />
+      </View>
+
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </View>
+  )
+}
+
+// ─── Gradient فوق TopBar ─────────────────────────────────────────────────────
+function TopGradient({ height, color }: { height: number; color: string }) {
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height }} pointerEvents="none">
+      <Svg width="100%" height={height} style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+        <Defs>
+          <SvgLinearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={color} stopOpacity="0.82" />
+            <Stop offset="0.6" stopColor={color} stopOpacity="0.45" />
+            <Stop offset="1" stopColor={color} stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height={height} fill="url(#topGrad)" />
+      </Svg>
+    </View>
+  )
+}
+
+// ─── Gradient أسفل الـ sheet فوق BottomNav ───────────────────────────────────
+function BottomGradient({ color }: { color: string }) {
+  const H = 72
+  return (
+    <View
+      style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: H }}
+      pointerEvents="none"
+    >
+      <Svg width="100%" height={H} style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+        <Defs>
+          <SvgLinearGradient id="botGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={color} stopOpacity="0" />
+            <Stop offset="1" stopColor={color} stopOpacity="0.88" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height={H} fill="url(#botGrad)" />
+      </Svg>
     </View>
   )
 }
@@ -539,6 +587,16 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     },
     recentText: {
       flex: 1,
+    },
+
+    // Gradient أسفل الـ sheet
+    sheetBottomGrad: {
+      position: 'absolute',
+      left: 0, right: 0,
+      bottom: 0,
+      height: 72,
+      zIndex: 5,
+      pointerEvents: 'none',
     },
 
     pressed: { opacity: 0.7 },
