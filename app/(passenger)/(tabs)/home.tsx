@@ -3,6 +3,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,7 +34,9 @@ import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
 const { height: SCREEN_H } = Dimensions.get('window')
-const MAP_H = Math.round(SCREEN_H * 0.52)
+const MAP_H          = Math.round(SCREEN_H * 0.52)
+const SHEET_COLLAPSED = MAP_H - 28          // الحالة المضغوطة
+const SHEET_EXPANDED  = Math.round(SCREEN_H * 0.22) // الحالة المفتوحة (22% من الأعلى)
 
 const PURPLE = '#7B4FD4'
 const TEAL   = '#00C2A8'
@@ -123,6 +126,52 @@ export default function Home() {
   useRealMapDrivers()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // ── Sheet animation ───────────────────────────────────────────────
+  const [sheetExpanded, setSheetExpanded] = useState(false)
+  const sheetTop = useRef(new Animated.Value(SHEET_COLLAPSED)).current
+
+  const expandSheet = useCallback(() => {
+    setSheetExpanded(true)
+    Animated.spring(sheetTop, {
+      toValue: SHEET_EXPANDED,
+      useNativeDriver: false,
+      damping: 20,
+      stiffness: 180,
+    }).start()
+  }, [sheetTop])
+
+  const collapseSheet = useCallback(() => {
+    setSheetExpanded(false)
+    Animated.spring(sheetTop, {
+      toValue: SHEET_COLLAPSED,
+      useNativeDriver: false,
+      damping: 20,
+      stiffness: 180,
+    }).start()
+  }, [sheetTop])
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
+      onPanResponderMove: (_, g) => {
+        const current = (sheetTop as any)._value as number
+        const next = current + g.dy
+        if (next >= SHEET_EXPANDED && next <= SHEET_COLLAPSED) {
+          sheetTop.setValue(next)
+        }
+      },
+      onPanResponderRelease: (_, g) => {
+        const current = (sheetTop as any)._value as number
+        const mid = (SHEET_EXPANDED + SHEET_COLLAPSED) / 2
+        if (g.vy < -0.3 || current < mid) {
+          expandSheet()
+        } else {
+          collapseSheet()
+        }
+      },
+    })
+  ).current
 
   // ── دبوس الخريطة ─────────────────────────────────────────────────
   const [mapMoving,  setMapMoving]  = useState(false)
@@ -244,15 +293,18 @@ export default function Home() {
         </View>
       )}
 
-      {/* ── الـ Sheet — ScrollView واحدة كاملة ── */}
-      <View style={styles.sheet}>
+      {/* ── الـ Sheet — ديناميكي بالسحب ── */}
+      <Animated.View style={[styles.sheet, { top: sheetTop }]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
+          scrollEnabled={sheetExpanded}
         >
-          {/* المقبض */}
-          <View style={styles.handle} />
+          {/* المقبض — قابل للسحب */}
+          <View style={styles.handleWrap} {...panResponder.panHandlers}>
+            <View style={styles.handle} />
+          </View>
 
           {/* تحذير الصورة */}
           {photoStatus === 'missing' && (
@@ -349,7 +401,7 @@ export default function Home() {
           )}
         </ScrollView>
 
-      </View>
+      </Animated.View>
 
       {/* ── Gradient أسفل الشاشة — فوق الـ BottomNav، من معتم لشفاف ── */}
       <View style={styles.sheetBottomGrad} pointerEvents="none">
@@ -449,7 +501,6 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     sheet: {
       position: 'absolute',
       left: 0, right: 0,
-      top: MAP_H - 28,
       bottom: 0,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
@@ -458,17 +509,19 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     },
 
     scrollContent: {
-      paddingTop: 12,
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: 110,
+    },
+
+    handleWrap: {
+      paddingVertical: 12,
+      alignItems: 'center',
     },
 
     handle: {
       width: 40, height: 4,
       borderRadius: 2,
       backgroundColor: Colors.dark4,
-      alignSelf: 'center',
-      marginBottom: Spacing.md,
     },
 
     photoWarn: {
