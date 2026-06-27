@@ -47,7 +47,7 @@ import { registerPushToken } from '../../../services/notifications.service'
 import { getMyTrips } from '../../../services/trips.service'
 
 // ─── ثوابت ───────────────────────────────────────────────────────────────────
-const { height: SCREEN_H } = Dimensions.get('window')
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 
 // ارتفاع الـ sheet في الحالتين (قيمة top من أعلى الشاشة)
 const SHEET_PEEK     = Math.round(SCREEN_H * 0.54)  // collapsed — يظهر ~46% من الأسفل
@@ -230,7 +230,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════════════════════
           1. الخريطة — تملأ الشاشة كاملاً، لا تُقيَّد
       ════════════════════════════════════════════════════════════ */}
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+      <View style={styles.mapWrap} pointerEvents="box-none">
         <WebMap
           showUser
           variant="explore"
@@ -427,6 +427,14 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
   return StyleSheet.create({
 
     root: { flex: 1, backgroundColor: Colors.dark1 },
+
+    // ── الخريطة — تملأ الشاشة كاملاً ──
+    mapWrap: {
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      width:  SCREEN_W,
+      height: SCREEN_H,
+    },
 
     // ── الدبوس — في وسط الشاشة ──
     pinWrap: {
