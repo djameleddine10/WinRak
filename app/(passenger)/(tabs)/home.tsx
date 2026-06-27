@@ -4,10 +4,9 @@
  * Layout:
  *  - الخريطة تملأ الشاشة كاملاً (flex: 1) — لا شيء يقيدها
  *  - TopBar شفاف فوق الخريطة
- *  - Sheet يطفو فوق الخريطة بـ position: absolute
- *    • Collapsed: يظهر search + 3 circles فقط
- *    • Expanded:  يصعد ويظهر الرحلات الأخيرة
- *  - الـ sheet شفاف من الأعلى → معتم تدريجياً للأسفل (SVG gradient mask)
+ *  - Sheet ثابت يطفو فوق الخريطة بـ position: absolute (top: SCREEN_H * 0.60)
+ *    • يظهر search + 3 circles فقط — لا سحب، لا تمدد
+ *  - حافة الـ sheet نظيفة (borderTopRadius) — لا ضبابة/gradient علوي
  *  - زر GPS خارج mapWrap تماماً — لا يتداخل
  */
 
@@ -20,7 +19,6 @@ import {
   StyleSheet,
   View,
 } from 'react-native'
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
@@ -54,9 +52,6 @@ const SHEET_TOP = Math.round(SCREEN_H * 0.60)
 const PURPLE = '#7B4FD4'
 const TEAL   = '#00C2A8'
 const GOLD   = '#ffbc07'
-
-// ارتفاع الجزء الشفاف (gradient) أعلى الـ sheet
-const GRAD_H = 110
 
 // ─── Component رئيسي ─────────────────────────────────────────────────────────
 export default function Home() {
@@ -226,24 +221,8 @@ export default function Home() {
       )}
 
       {/* ════════════════════════════════════════════════════════════
-          5. الـ Sheet — ثابت، يلتصق بالمحتوى. Gradient علوي فقط
+          5. الـ Sheet — ثابت، يلتصق بالمحتوى. حافة نظيفة بلا ضبابة
       ════════════════════════════════════════════════════════════ */}
-
-      {/* — Gradient علوي ثابت — انتقال خريطة→sheet — */}
-      <View style={[styles.sheetGradient, { top: SHEET_TOP - GRAD_H }]} pointerEvents="none">
-        <Svg width="100%" height={GRAD_H}>
-          <Defs>
-            <SvgLinearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0"    stopColor={Colors.dark1} stopOpacity="0"    />
-              <Stop offset="0.3"  stopColor={Colors.dark1} stopOpacity="0.25" />
-              <Stop offset="0.55" stopColor={Colors.dark1} stopOpacity="0.55" />
-              <Stop offset="0.78" stopColor={Colors.dark1} stopOpacity="0.82" />
-              <Stop offset="1"    stopColor={Colors.dark1} stopOpacity="1"    />
-            </SvgLinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height={GRAD_H} fill="url(#sheetGrad)" />
-        </Svg>
-      </View>
 
       <View style={[styles.sheet, { top: SHEET_TOP }]}>
 
@@ -392,18 +371,9 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       borderTopRightRadius: 28,
       backgroundColor: Colors.dark1,
       zIndex: 10,
-      // لا overflow:hidden — حتى لا يقطع الـ gradient
     },
 
-    // gradient مستقل — sibling فوق الـ sheet يتحرك معه
-    sheetGradient: {
-      position: 'absolute',
-      left: 0, right: 0,
-      height: GRAD_H,
-      zIndex: 11, // فوق الـ sheet (zIndex: 10)
-    },
-
-    // المقبض — حجم طبيعي، الـ gradient absolute فوقه
+    // المقبض — حجم طبيعي
     handleWrap: {
       paddingTop: 12,
       paddingBottom: 12,
