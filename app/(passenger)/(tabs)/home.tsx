@@ -380,23 +380,20 @@ function TopGradient({ height, color }: { height: number; color: string }) {
 
 // ─── Gradient أسفل الـ sheet فوق BottomNav ───────────────────────────────────
 function BottomGradient({ color }: { color: string }) {
-  const H = 72
+  const H = 90
   return (
-    <View
-      style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: H }}
-      pointerEvents="none"
-    >
-      <Svg width="100%" height={H} style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-        <Defs>
-          <SvgLinearGradient id="botGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0"    stopColor={color} stopOpacity="0" />
-            <Stop offset="0.45" stopColor={color} stopOpacity="0.28" />
-            <Stop offset="1"    stopColor={color} stopOpacity="0.65" />
-          </SvgLinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height={H} fill="url(#botGrad)" />
-      </Svg>
-    </View>
+    <Svg width="100%" height={H}>
+      <Defs>
+        <SvgLinearGradient id="botGrad" x1="0" y1="1" x2="0" y2="0">
+          <Stop offset="0"    stopColor={color} stopOpacity="1"    />
+          <Stop offset="0.33" stopColor={color} stopOpacity="0.80" />
+          <Stop offset="0.56" stopColor={color} stopOpacity="0.45" />
+          <Stop offset="0.78" stopColor={color} stopOpacity="0.15" />
+          <Stop offset="1"    stopColor={color} stopOpacity="0"    />
+        </SvgLinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height={H} fill="url(#botGrad)" />
+    </Svg>
   )
 }
 
@@ -452,7 +449,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       position: 'absolute',
       left: 0, right: 0,
       top: MAP_H - 28,
-      bottom: 0,
+      bottom: Spacing.tabBarHeight + 16,   // يقف فوق BottomNav — لا يغطيه
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       backgroundColor: Colors.dark1,
@@ -462,7 +459,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     scrollContent: {
       paddingTop: 12,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 110,
+      paddingBottom: 20,
     },
 
     handle: {
@@ -591,14 +588,13 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       flex: 1,
     },
 
-    // Gradient أسفل الـ sheet
+    // Gradient أسفل الـ sheet — ملاصق لأسفل الـ sheet، يتدرج للأعلى
     sheetBottomGrad: {
       position: 'absolute',
       left: 0, right: 0,
-      bottom: 0,
-      height: 72,
-      zIndex: 5,
-      pointerEvents: 'none',
+      bottom: Spacing.tabBarHeight + 16,
+      height: 90,
+      zIndex: 6,
     },
 
     pressed: { opacity: 0.7 },
