@@ -51,14 +51,15 @@ CREATE TABLE IF NOT EXISTS public.drivers (
   current_lng      REAL,
   is_verified      BOOLEAN      DEFAULT FALSE,
   verified_at      TIMESTAMPTZ,
-  verified_by      UUID         REFERENCES public.profiles(id)
+  verified_by      UUID         REFERENCES public.profiles(id),
+  registration_status TEXT      DEFAULT 'not_started' CHECK (registration_status IN ('not_started','pending','approved','rejected'))
 );
 
 -- ─── DRIVER DOCUMENTS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.driver_documents (
   id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
   driver_id     UUID         NOT NULL REFERENCES public.drivers(id) ON DELETE CASCADE,
-  type          TEXT         NOT NULL CHECK (type IN ('permis','carte_grise','vehicle_front','vehicle_rear','selfie')),
+  type          TEXT         NOT NULL CHECK (type IN ('permis','carte_grise','vehicle_front','vehicle_rear','selfie','piece_identite')),
   file_url      TEXT         NOT NULL,   -- URL Supabase Storage
   file_name     TEXT,
   file_size     INTEGER,                 -- octets
