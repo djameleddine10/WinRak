@@ -229,6 +229,7 @@ export default function Home() {
       {/* ── TopBar ── */}
       <View style={styles.topBarWrap} pointerEvents="box-none">
         <TopBar
+          transparent
           showMenu
           onMenu={() => setDrawerOpen(true)}
           showNotification

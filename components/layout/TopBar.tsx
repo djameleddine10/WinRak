@@ -21,11 +21,12 @@ interface TopBarProps {
   onBack?: () => void
   onMenu?: () => void
   onNotification?: () => void
+  transparent?: boolean
 }
 
 export function TopBar({
   title, showBack, showMenu, showNotification, notificationCount = 0,
-  rightAction, onBack, onMenu, onNotification,
+  rightAction, onBack, onMenu, onNotification, transparent = false,
 }: TopBarProps) {
   const Colors = useColors()
   const isRTL = useIsRTL()
@@ -37,7 +38,7 @@ export function TopBar({
     : () => router.back()
 
   return (
-    <View style={[styles.bar, { paddingTop: insets.top, height: Spacing.topBarHeight + insets.top }]}>
+    <View style={[styles.bar, { paddingTop: insets.top, height: Spacing.topBarHeight + insets.top }, transparent && styles.barTransparent]}>
       <View style={styles.leading}>
         {showBack && (
           <Pressable onPress={onBack ?? defaultBack} style={styles.iconBtn} hitSlop={8}>
@@ -79,6 +80,10 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
       paddingBottom: Spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: Colors.border,
+    },
+    barTransparent: {
+      backgroundColor: 'transparent',
+      borderBottomWidth: 0,
     },
     leading: { flexDirection: dir, alignItems: 'center', minWidth: 80 },
     center: { position: 'absolute', left: 0, right: 0, bottom: Spacing.md, alignItems: 'center' },
