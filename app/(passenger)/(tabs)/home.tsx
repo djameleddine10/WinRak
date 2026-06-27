@@ -16,9 +16,7 @@ import {
   Animated,
   Dimensions,
   Image,
-  PanResponder,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native'
@@ -50,8 +48,8 @@ import { getMyTrips } from '../../../services/trips.service'
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 
 // ارتفاع الـ sheet في الحالتين (قيمة top من أعلى الشاشة)
-const SHEET_PEEK     = Math.round(SCREEN_H * 0.54)  // collapsed — يظهر ~46% من الأسفل
-const SHEET_EXPANDED = Math.round(SCREEN_H * 0.20)  // expanded  — يغطي ~80%
+// موضع الـ sheet — ثابت، يلتصق بالمحتوى (search + circles)
+const SHEET_TOP = Math.round(SCREEN_H * 0.60)
 
 const PURPLE = '#7B4FD4'
 const TEAL   = '#00C2A8'
@@ -74,25 +72,9 @@ export default function Home() {
   const setRideMode    = useUserStore((s) => s.setRideMode)
   const setSheMode     = useRideStore((s) => s.setSheMode)
   const setVehicleType = useRideStore((s) => s.setVehicleType)
-  const setTo          = useRideStore((s) => s.setTo)
-  const rideHistory    = useRideStore((s) => s.rideHistory)
   const setRideHistory = useRideStore((s) => s.setRideHistory)
   const mapDrivers     = useMapStore((s) => s.mapDrivers)
   const userLocation   = useMapStore((s) => s.userLocation)
-
-  // ── الوجهات الأخيرة ──
-  const recentDestinations = useMemo(() => {
-    const seen = new Set<string>()
-    const out: { name: string; address: string; lat: number; lng: number }[] = []
-    for (const r of rideHistory) {
-      const d = r.to
-      if (!d || seen.has(d.name)) continue
-      seen.add(d.name)
-      out.push(d)
-      if (out.length >= 5) break
-    }
-    return out
-  }, [rideHistory])
 
   // ── جلب رحلات Supabase ──
   useEffect(() => {
@@ -170,42 +152,6 @@ export default function Home() {
     }, 350)
   }, [labelAnim])
 
-  // ── Sheet animation ──
-  const [sheetExpanded, setSheetExpanded] = useState(false)
-  const sheetTop = useRef(new Animated.Value(SHEET_PEEK)).current
-
-  const snapTo = useCallback((toValue: number, expanded: boolean) => {
-    setSheetExpanded(expanded)
-    Animated.spring(sheetTop, {
-      toValue,
-      useNativeDriver: false,
-      damping: 22,
-      stiffness: 200,
-      mass: 0.8,
-    }).start()
-  }, [sheetTop])
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx),
-      onPanResponderMove: (_, g) => {
-        const cur = (sheetTop as any)._value as number
-        const next = Math.max(SHEET_EXPANDED, Math.min(SHEET_PEEK, cur + g.dy))
-        sheetTop.setValue(next)
-      },
-      onPanResponderRelease: (_, g) => {
-        const cur = (sheetTop as any)._value as number
-        const mid = (SHEET_EXPANDED + SHEET_PEEK) / 2
-        if (g.vy < -0.5 || cur < mid) {
-          snapTo(SHEET_EXPANDED, true)
-        } else {
-          snapTo(SHEET_PEEK, false)
-        }
-      },
-    })
-  ).current
-
   // ── navigation helpers ──
   const [drawerOpen, setDrawerOpen] = useState(false)
   const { errorMsg } = useLocation()
@@ -219,11 +165,6 @@ export default function Home() {
     router.push('/(passenger)/search')
   }
   function openDelivery() { router.push('/(passenger)/delivery') }
-  function openRecent(dest: { name: string; address: string; lat: number; lng: number }) {
-    setSheMode(false); setVehicleType('sedan'); setRideMode('city')
-    setTo(dest)
-    router.push('/(passenger)/search')
-  }
   return (
     <View style={styles.root}>
 
@@ -285,14 +226,11 @@ export default function Home() {
       )}
 
       {/* ════════════════════════════════════════════════════════════
-          5. الـ Sheet — معتم بالكامل، يبدأ أسفل الـ gradient
+          5. الـ Sheet — ثابت، يلتصق بالمحتوى. Gradient علوي فقط
       ════════════════════════════════════════════════════════════ */}
 
-      {/* — Gradient مستقل — sibling فوق الـ sheet — */}
-      <Animated.View
-        style={[styles.sheetGradient, { top: Animated.subtract(sheetTop, GRAD_H) }]}
-        pointerEvents="none"
-      >
+      {/* — Gradient علوي ثابت — انتقال خريطة→sheet — */}
+      <View style={[styles.sheetGradient, { top: SHEET_TOP - GRAD_H }]} pointerEvents="none">
         <Svg width="100%" height={GRAD_H}>
           <Defs>
             <SvgLinearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
@@ -305,22 +243,17 @@ export default function Home() {
           </Defs>
           <Rect x="0" y="0" width="100%" height={GRAD_H} fill="url(#sheetGrad)" />
         </Svg>
-      </Animated.View>
+      </View>
 
-      <Animated.View style={[styles.sheet, { top: sheetTop }]}>
+      <View style={[styles.sheet, { top: SHEET_TOP }]}>
 
-        {/* — المقبض — */}
-        <View style={styles.handleWrap} {...panResponder.panHandlers}>
+        {/* — مقبض زخرفي — */}
+        <View style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>
 
-        {/* — المحتوى القابل للتمرير — */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          scrollEnabled={sheetExpanded}
-          contentContainerStyle={styles.scrollContent}
-        >
+        {/* — المحتوى — */}
+        <View style={styles.scrollContent}>
           {/* تحذير الصورة */}
           {photoStatus === 'missing' && (
             <Pressable style={styles.photoWarn} onPress={() => router.push('/(passenger)/profile-setup')}>
@@ -382,39 +315,8 @@ export default function Home() {
               </View>
             </Pressable>
           </View>
-
-          {/* الوجهات الأخيرة — تظهر فقط عند الانفتاح */}
-          {recentDestinations.length > 0 && (
-            <View style={styles.recentSection}>
-              <Txt weight="bold" size={12} color={Colors.muted} style={styles.recentLabel}>
-                {t('home.recentTitle')}
-              </Txt>
-              <View style={styles.recentList}>
-                {recentDestinations.map((dest, idx) => (
-                  <Pressable
-                    key={dest.name + idx}
-                    style={({ pressed }) => [
-                      styles.recentItem,
-                      idx === recentDestinations.length - 1 && styles.recentItemLast,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => openRecent(dest)}
-                  >
-                    <View style={styles.recentIconWrap}>
-                      <Icon name="clock-outline" size={16} color={Colors.muted} />
-                    </View>
-                    <View style={styles.recentText}>
-                      <Txt weight="bold" size={14} color={Colors.white} numberOfLines={1}>{dest.name}</Txt>
-                      <Txt size={12} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{dest.address}</Txt>
-                    </View>
-                    <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          )}
-        </ScrollView>
-      </Animated.View>
+        </View>
+      </View>
 
       {/* ════════════════════════════════════════════════════════════
           6. SideDrawer
@@ -443,7 +345,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     pinWrap: {
       position: 'absolute',
       top: 0, left: 0, right: 0,
-      height: SHEET_PEEK,          // وسط الجزء المرئي من الخريطة فقط
+      height: SHEET_TOP,           // وسط الجزء المرئي من الخريطة فقط
       alignItems: 'center',
       justifyContent: 'center',
       paddingBottom: 28,           // تعويض ذيل الدبوس — يجعل الرأس في المركز
@@ -592,33 +494,6 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       width: 20, height: 20, borderRadius: 10,
       alignItems: 'center', justifyContent: 'center',
     },
-
-    // ── الوجهات الأخيرة ──
-    recentSection: { marginTop: Spacing.xl },
-    recentLabel: {
-      textAlign: isRTL ? 'right' : 'left',
-      letterSpacing: 0.6,
-      textTransform: 'uppercase',
-      marginBottom: Spacing.sm,
-    },
-    recentList: {
-      backgroundColor: Colors.dark2,
-      borderRadius: Spacing.radiusLg,
-      borderWidth: 1, borderColor: Colors.border,
-      overflow: 'hidden',
-    },
-    recentItem: {
-      flexDirection: row, alignItems: 'center', gap: 14,
-      paddingVertical: 14, paddingHorizontal: 16,
-      borderBottomWidth: 1, borderBottomColor: Colors.border,
-    },
-    recentItemLast: { borderBottomWidth: 0 },
-    recentIconWrap: {
-      width: 36, height: 36, borderRadius: 18,
-      backgroundColor: Colors.dark3,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    recentText: { flex: 1 },
 
     pressed: { opacity: 0.7 },
   })
