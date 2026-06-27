@@ -13,7 +13,6 @@ import { router } from 'expo-router'
 import { type Palette } from '../../../constants/colors'
 import { useColors, useResolvedScheme } from '../../../hooks/useColors'
 import { Spacing } from '../../../constants/spacing'
-import { Shadows } from '../../../constants/shadows'
 import { Txt } from '../../../components/ui/Txt'
 import { Icon } from '../../../components/ui/Icon'
 import { TopBar } from '../../../components/layout/TopBar'
@@ -67,7 +66,7 @@ export default function Home() {
       if (!d || seen.has(d.name)) continue
       seen.add(d.name)
       out.push(d)
-      if (out.length >= 3) break
+      if (out.length >= 5) break
     }
     return out
   }, [rideHistory])
@@ -132,7 +131,6 @@ export default function Home() {
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const labelAnim    = useRef(new Animated.Value(0)).current
 
-  // flyTo لزر الموقع — ts يضمن إطلاق useEffect في WebMap حتى لو الموقع لم يتغير
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; ts: number } | null>(null)
 
   function triggerFlyTo() {
@@ -166,22 +164,15 @@ export default function Home() {
     }, 350)
   }, [labelAnim])
 
-  // عند الضغط على chip الشارع: يملأ "من أين" ويفتح البحث نحو الوجهة
   function handlePinChipPress() {
     if (!pinLabel) return
     setSheMode(false)
     setVehicleType('sedan')
     setRideMode('city')
-    setFrom({
-      name:    pinLabel,
-      address: pinLabel,
-      lat:     pinLat,
-      lng:     pinLng,
-    })
+    setFrom({ name: pinLabel, address: pinLabel, lat: pinLat, lng: pinLng })
     router.push('/(passenger)/search')
   }
 
-  // ── Navigation ────────────────────────────────────────────────────
   function openCity() {
     setSheMode(false)
     setVehicleType('sedan')
@@ -201,7 +192,7 @@ export default function Home() {
   return (
     <View style={styles.root}>
 
-      {/* ── الخريطة: الجزء العلوي بدون تعتيم ── */}
+      {/* ── الخريطة ── */}
       <View style={styles.mapWrap}>
         <WebMap
           showUser
@@ -214,16 +205,12 @@ export default function Home() {
           onRegionChangeComplete={handleRegionChangeComplete}
         />
 
-        {/* الدبوس الذهبي في مركز الخريطة */}
         <View style={styles.pinWrap} pointerEvents="box-none">
           <View pointerEvents="none">
             <MapPin moving={mapMoving} />
           </View>
-
-          {/* pinChip محذوف — لا شيء تحت الدبوس */}
         </View>
 
-        {/* زر موقعي — يمين أعلى الخريطة تحت TopBar */}
         <View style={styles.locateBtnWrap} pointerEvents="box-none">
           <Pressable
             style={({ pressed }) => [styles.locateBtn, pressed && { opacity: 0.8 }]}
@@ -252,12 +239,14 @@ export default function Home() {
         </View>
       )}
 
-      {/* ── الـ Sheet ── */}
+      {/* ── الـ Sheet — ScrollView واحدة كاملة ── */}
       <View style={styles.sheet}>
-
-        {/* ═══ القسم الثابت: لا يتحرك أبداً ═══ */}
-        <View style={styles.staticSection}>
-          {/* مقبض */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* المقبض */}
           <View style={styles.handle} />
 
           {/* تحذير الصورة */}
@@ -272,7 +261,7 @@ export default function Home() {
           {/* حقل البحث */}
           <Pressable style={styles.searchCard} onPress={openCity}>
             <View style={styles.searchRow}>
-              <View style={styles.searchDotTo} />
+              <View style={styles.searchDot} />
               <Txt size={14} color={Colors.muted} style={{ flex: 1 }}>{t('home.searchPlaceholder')}</Txt>
               <View style={styles.searchPinBtn}>
                 <Icon name="map-marker" size={15} color={GOLD} />
@@ -282,7 +271,6 @@ export default function Home() {
 
           {/* الدوائر الثلاث */}
           <View style={styles.circleRow}>
-
             <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openCity}>
               <View style={[styles.circleRing, styles.ringGold]}>
                 <Image source={require('../../../assets/cards/car-gold.png')} style={styles.circleCarImg} resizeMode="contain" />
@@ -318,140 +306,46 @@ export default function Home() {
                 </View>
               </View>
             </Pressable>
-
           </View>
-        </View>
 
-        {/* ═══ القسم المتحرك: يتحرك للأسفل فقط ═══ */}
-        <ScrollView
-          style={styles.scrollSection}
-          contentContainerStyle={styles.scrollBody}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* صف المنزل / العمل */}
-          <QuickPlaces
-            savedPlaces={profile?.savedPlaces}
-            Colors={Colors}
-            styles={styles}
-            isRTL={isRTL}
-            t={t}
-            onPress={(place) => {
-              setSheMode(false)
-              setVehicleType('sedan')
-              setRideMode('city')
-              if (place.address) {
-                setTo(place)
-                router.push('/(passenger)/search')
-              } else {
-                router.push('/(passenger)/search')
-              }
-            }}
-          />
-
-          {/* الوجهات الأخيرة */}
+          {/* ── الوجهات الأخيرة ── */}
           {recentDestinations.length > 0 && (
-            <View style={styles.recentWrap}>
-              <Txt weight="bold" size={13} color={Colors.muted} style={styles.recentTitle}>
+            <View style={styles.recentSection}>
+              <Txt weight="bold" size={12} color={Colors.muted} style={styles.recentLabel}>
                 {t('home.recentTitle')}
               </Txt>
-              {recentDestinations.map((d) => (
-                <Pressable
-                  key={d.name}
-                  style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
-                  onPress={() => openRecent(d)}
-                >
-                  <View style={styles.recentIcon}>
-                    <Icon name="history" size={18} color={Colors.muted} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Txt weight="bold" size={14} color={Colors.white}>{d.name}</Txt>
-                    <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>{d.address}</Txt>
-                  </View>
-                  <DirIcon name="chevron-right" size={18} color={Colors.dark4} />
-                </Pressable>
-              ))}
+              <View style={styles.recentList}>
+                {recentDestinations.map((dest, idx) => (
+                  <Pressable
+                    key={dest.name + idx}
+                    style={({ pressed }) => [
+                      styles.recentItem,
+                      idx === recentDestinations.length - 1 && styles.recentItemLast,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => openRecent(dest)}
+                  >
+                    <View style={styles.recentIconWrap}>
+                      <Icon name="clock-outline" size={16} color={Colors.muted} />
+                    </View>
+                    <View style={styles.recentText}>
+                      <Txt weight="bold" size={14} color={Colors.white} numberOfLines={1}>
+                        {dest.name}
+                      </Txt>
+                      <Txt size={12} color={Colors.muted} numberOfLines={1} style={{ marginTop: 2 }}>
+                        {dest.address}
+                      </Txt>
+                    </View>
+                    <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+                  </Pressable>
+                ))}
+              </View>
             </View>
           )}
         </ScrollView>
-
       </View>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
-    </View>
-  )
-}
-
-// ─── مكوّن صف المنزل / العمل ─────────────────────────────────────────────────
-function QuickPlaces({
-  savedPlaces,
-  Colors,
-  styles,
-  isRTL,
-  t,
-  onPress,
-}: {
-  savedPlaces?: { home: { name: string; address: string; lat: number; lng: number }; work: { name: string; address: string; lat: number; lng: number } } | null
-  Colors: Palette
-  styles: ReturnType<typeof makeStyles>
-  isRTL: boolean
-  t: (k: string) => string
-  onPress: (place: { name: string; address: string; lat: number; lng: number }) => void
-}) {
-  const home = savedPlaces?.home
-  const work = savedPlaces?.work
-  const hasHome = !!home?.address
-  const hasWork = !!work?.address
-
-  return (
-    <View style={styles.quickRow}>
-      {/* المنزل */}
-      <Pressable
-        style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
-        onPress={() => onPress(hasHome ? home! : { name: t('home.home'), address: '', lat: 0, lng: 0 })}
-      >
-        <View style={[styles.quickIcon, hasHome ? styles.quickIconFilled : styles.quickIconEmpty]}>
-          <Icon name={hasHome ? 'home' : 'home-outline'} size={18} color={hasHome ? GOLD : Colors.muted} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Txt weight="bold" size={13} color={hasHome ? Colors.white : Colors.muted}>
-            {hasHome ? home!.name || t('home.home') : t('home.addHome')}
-          </Txt>
-          {hasHome && (
-            <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 1 }}>
-              {home!.address}
-            </Txt>
-          )}
-        </View>
-        {hasHome
-          ? <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
-          : <Icon name="plus-circle-outline" size={16} color={Colors.muted} />
-        }
-      </Pressable>
-
-      {/* العمل */}
-      <Pressable
-        style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
-        onPress={() => onPress(hasWork ? work! : { name: t('home.work'), address: '', lat: 0, lng: 0 })}
-      >
-        <View style={[styles.quickIcon, hasWork ? styles.quickIconFilled : styles.quickIconEmpty]}>
-          <Icon name={hasWork ? 'briefcase' : 'briefcase-outline'} size={18} color={hasWork ? PURPLE : Colors.muted} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Txt weight="bold" size={13} color={hasWork ? Colors.white : Colors.muted}>
-            {hasWork ? work!.name || t('home.work') : t('home.addWork')}
-          </Txt>
-          {hasWork && (
-            <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 1 }}>
-              {work!.address}
-            </Txt>
-          )}
-        </View>
-        {hasWork
-          ? <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
-          : <Icon name="plus-circle-outline" size={16} color={Colors.muted} />
-        }
-      </Pressable>
     </View>
   )
 }
@@ -461,14 +355,12 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.dark1 },
 
-    // الخريطة — 52% العلوية، بدون تعتيم
     mapWrap: {
       position: 'absolute',
       top: 0, left: 0, right: 0,
       height: MAP_H,
     },
 
-    // الدبوس في مركز منطقة الخريطة
     pinWrap: {
       position: 'absolute',
       top: 0, left: 0, right: 0,
@@ -478,9 +370,6 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       paddingBottom: 26,
     },
 
-    // pinChip محذوف
-
-    // زر موقعي — يمين أعلى الخريطة تحت TopBar
     locateBtnWrap: {
       position: 'absolute',
       top: Spacing.topBarHeight + statusBarH + 10,
@@ -488,14 +377,10 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       zIndex: 10,
     },
     locateBtn: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
+      width: 42, height: 42, borderRadius: 21,
       backgroundColor: Colors.dark2,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: Colors.border,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: Colors.border,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
@@ -512,7 +397,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       alignItems: 'center',
     },
 
-    // الـ sheet — الحاوية الكاملة
+    // ── الـ Sheet ──
     sheet: {
       position: 'absolute',
       left: 0, right: 0,
@@ -524,23 +409,10 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       overflow: 'hidden',
     },
 
-    // القسم الثابت: handle + photoWarn + searchCard + circles
-    staticSection: {
+    scrollContent: {
       paddingTop: 12,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 8,
-      borderBottomWidth: 1,
-      borderBottomColor: Colors.border,
-    },
-
-    // القسم المتحرك
-    scrollSection: {
-      flex: 1,
-    },
-    scrollBody: {
-      paddingTop: 12,
-      paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 100,
+      paddingBottom: 110,
     },
 
     handle: {
@@ -554,11 +426,12 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     photoWarn: {
       flexDirection: row, alignItems: 'center', gap: 8,
       backgroundColor: Colors.goldAlpha10,
-      borderRadius: Spacing.radiusMd, borderWidth: 1, borderColor: Colors.goldAlpha20,
-      paddingVertical: 8, paddingHorizontal: Spacing.md, marginBottom: Spacing.md,
+      borderRadius: Spacing.radiusMd,
+      borderWidth: 1, borderColor: Colors.goldAlpha20,
+      paddingVertical: 8, paddingHorizontal: Spacing.md,
+      marginBottom: Spacing.md,
     },
 
-    // ── حقلا البحث ──
     searchCard: {
       backgroundColor: Colors.dark2,
       borderRadius: Spacing.radiusMd,
@@ -578,35 +451,26 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       height: 52,
       paddingHorizontal: Spacing.md,
     },
-    searchDotTo: {
+    searchDot: {
       width: 10, height: 10, borderRadius: 2,
       backgroundColor: PURPLE,
     },
-
     searchPinBtn: {
       width: 30, height: 30, borderRadius: 15,
       backgroundColor: Colors.goldAlpha15,
       alignItems: 'center', justifyContent: 'center',
     },
 
-    // ── بطاقات دائرية ──
+    // ── الدوائر ──
     circleRow: {
       flexDirection: row,
       justifyContent: 'space-around',
       marginTop: Spacing.lg,
-      paddingBottom: 8,
+      marginBottom: Spacing.xs,
     },
-
-    // حاوية كل دائرة (تحتوي الـ ring + النص)
-    circleItem: {
-      alignItems: 'center',
-    },
-
-    // الـ ring الخارجي — الدائرة الكاملة
+    circleItem: { alignItems: 'center' },
     circleRing: {
-      width: 110,
-      height: 110,
-      borderRadius: 55,
+      width: 110, height: 110, borderRadius: 55,
       borderWidth: 1.5,
       overflow: 'hidden',
       position: 'relative' as any,
@@ -618,78 +482,65 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     ringGold:   { borderColor: GOLD,   backgroundColor: Colors.dark2, shadowColor: GOLD },
     ringPurple: { borderColor: PURPLE, backgroundColor: Colors.dark2, shadowColor: PURPLE },
     ringTeal:   { borderColor: TEAL,   backgroundColor: Colors.dark2, shadowColor: TEAL },
-
-    // صورة السيارة: تخرج من الجانب الأيمن
     circleCarImg: {
       position: 'absolute' as any,
-      width: 150,
-      height: 95,
-      right: -30,
-      bottom: 8,
+      width: 150, height: 95,
+      right: -30, bottom: 8,
     },
-
-    // صورة الطرد: في المنتصف
     circleParcelImg: {
       position: 'absolute' as any,
-      width: 80,
-      height: 68,
-      right: 12,
-      bottom: 10,
+      width: 80, height: 68,
+      right: 12, bottom: 10,
     },
-
-    // النص + السهم تحت الدائرة
     circleFooter: {
       flexDirection: row,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 5,
-      marginTop: 8,
+      gap: 5, marginTop: 8,
     },
     circleArrow: {
       width: 20, height: 20, borderRadius: 10,
       alignItems: 'center', justifyContent: 'center',
     },
 
-    pressed: { opacity: 0.72 },
-
-    // صف المنزل / العمل
-    quickRow: {
-      gap: 10,
-      marginBottom: Spacing.md,
+    // ── الوجهات الأخيرة ──
+    recentSection: {
+      marginTop: Spacing.xl,
     },
-    quickBtn: {
-      flexDirection: row,
-      alignItems: 'center',
-      gap: 12,
+    recentLabel: {
+      textAlign: isRTL ? 'right' : 'left',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+      marginBottom: Spacing.sm,
+    },
+    recentList: {
       backgroundColor: Colors.dark2,
-      borderRadius: Spacing.radiusMd,
+      borderRadius: Spacing.radiusLg,
       borderWidth: 1,
       borderColor: Colors.border,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
+      overflow: 'hidden',
     },
-    quickIcon: {
-      width: 38, height: 38, borderRadius: 19,
+    recentItem: {
+      flexDirection: row,
+      alignItems: 'center',
+      gap: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+    },
+    recentItemLast: {
+      borderBottomWidth: 0,
+    },
+    recentIconWrap: {
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: Colors.dark3,
       alignItems: 'center', justifyContent: 'center',
     },
-    quickIconFilled: {
-      backgroundColor: Colors.goldAlpha10,
-    },
-    quickIconEmpty: {
-      backgroundColor: Colors.dark3,
+    recentText: {
+      flex: 1,
     },
 
-    recentWrap:  { marginTop: Spacing.md },
-    recentTitle: { textAlign: 'right', marginBottom: Spacing.sm },
-    recentRow: {
-      flexDirection: row, alignItems: 'center', gap: 14,
-      paddingVertical: Spacing.md,
-      borderBottomWidth: 1, borderBottomColor: Colors.border,
-    },
-    recentIcon: {
-      width: 38, height: 38, borderRadius: 19,
-      backgroundColor: Colors.dark3,
-      alignItems: 'center', justifyContent: 'center',
-    },
+    pressed: { opacity: 0.7 },
   })
 }
