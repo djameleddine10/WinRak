@@ -348,11 +348,11 @@ export default function Home() {
             </View>
           )}
         </ScrollView>
-      </View>
 
-      {/* ── Gradient أسفل الـ sheet — انتقال ناعم فوق BottomNav ── */}
-      <View style={styles.sheetBottomGrad} pointerEvents="none">
-        <BottomGradient color={Colors.dark1} />
+        {/* ── Gradient داخل الـ sheet — من أسفله للأعلى ── */}
+        <View style={styles.sheetBottomGrad} pointerEvents="none">
+          <BottomGradient color={Colors.dark1} />
+        </View>
       </View>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
@@ -449,7 +449,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       position: 'absolute',
       left: 0, right: 0,
       top: MAP_H - 28,
-      bottom: Spacing.tabBarHeight + 16,   // يقف فوق BottomNav — لا يغطيه
+      bottom: 0,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       backgroundColor: Colors.dark1,
@@ -459,7 +459,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
     scrollContent: {
       paddingTop: 12,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 20,
+      paddingBottom: 110,
     },
 
     handle: {
@@ -588,11 +588,11 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       flex: 1,
     },
 
-    // Gradient أسفل الـ sheet — ملاصق لأسفل الـ sheet، يتدرج للأعلى
+    // Gradient داخل الـ sheet — مثبّت في أسفله، يتدرج للأعلى
     sheetBottomGrad: {
       position: 'absolute',
       left: 0, right: 0,
-      bottom: Spacing.tabBarHeight + 16,
+      bottom: 0,
       height: 90,
       zIndex: 6,
     },
