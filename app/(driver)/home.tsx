@@ -284,16 +284,16 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     },
     topBar: {
       flexDirection: row, alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, gap: Spacing.md,
+      paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm, gap: Spacing.sm,
     },
     iconBtn: {
-      padding: 8,
-      borderRadius: 20,
+      width: 40, height: 40, borderRadius: 20,
+      alignItems: 'center', justifyContent: 'center',
       backgroundColor: Colors.dark3,
     },
     toggle: {
-      flexDirection: row, alignItems: 'center', gap: Spacing.sm,
-      borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.xl, paddingVertical: 10,
+      flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: 6,
+      borderRadius: Spacing.radiusFull, paddingHorizontal: Spacing.lg, paddingVertical: 9,
     },
     statsBar: {
       flexDirection: row, alignItems: 'center',

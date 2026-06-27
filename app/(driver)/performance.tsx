@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -16,9 +16,7 @@ import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { useUserStore } from '../../store/userStore'
-import { useDriverName } from '../../i18n/locale'
-import { useState } from 'react'
-import { useIsRTL } from '../../i18n/locale'
+import { useDriverName, useIsRTL } from '../../i18n/locale'
 
 const LEVEL_KEY: Record<string, TranslationKey> = {
   bronze: 'driver.levelBronze', silver: 'driver.levelSilver', gold: 'driver.levelGold', platinum: 'driver.levelPlatinum',
@@ -52,7 +50,12 @@ export default function Performance() {
     platinum: { base: 500, threshold: 500, hasNext: false },
   }
   const totalTrips = driverStats?.totalTrips ?? 0
-  const tier       = TIERS[driver.level] ?? TIERS.bronze
+  // المستوى يُحسب من عدد الرحلات الحقيقي (لا يوجد حقل level في قاعدة البيانات)
+  const level: string =
+    totalTrips >= 500 ? 'platinum' :
+    totalTrips >= 150 ? 'gold' :
+    totalTrips >= 50  ? 'silver' : 'bronze'
+  const tier       = TIERS[level] ?? TIERS.bronze
   const ridesToNext = tier.hasNext ? Math.max(0, tier.threshold - totalTrips) : 0
   const progress    = tier.hasNext
     ? Math.min(1, (totalTrips - tier.base) / (tier.threshold - tier.base))
@@ -71,7 +74,7 @@ export default function Performance() {
             <Avatar initial={driverName.charAt(0).toUpperCase()} size={64} showBorder />
             <View style={{ flex: 1 }}>
               <View style={styles.nameRow}>
-                <Txt weight="black" size={26}>{LEVEL_KEY[driver.level] ? t(LEVEL_KEY[driver.level]) : t('driver.levelBase')}</Txt>
+                <Txt weight="black" size={26}>{LEVEL_KEY[level] ? t(LEVEL_KEY[level]) : t('driver.levelBase')}</Txt>
                 <Icon name="rhombus" size={22} color={Colors.blue} />
               </View>
               <Txt size={14} color={Colors.muted}>{t('driver.levelThisWeek')}</Txt>
@@ -104,7 +107,8 @@ export default function Performance() {
                 <Txt size={14} color={Colors.muted}>{t('driver.todayIncome')}</Txt>
                 <DirIcon name="chevron-right" size={20} color={Colors.muted} />
               </View>
-              <Txt weight="black" size={30}>{driver.earnings.today.toLocaleString('en-US')} {cur}</Txt>
+              {/* الدخل التفصيلي يُحسب من المعاملات الحقيقية في شاشة earnings — هنا 0 افتراضياً حتى لا يتعطّل */}
+              <Txt weight="black" size={30}>{(0).toLocaleString('en-US')} {cur}</Txt>
               <View style={styles.goalBtn}>
                 <Icon name="plus" size={18} color={Colors.white} />
                 <Txt size={14}>{t('driver.addDailyGoal')}</Txt>

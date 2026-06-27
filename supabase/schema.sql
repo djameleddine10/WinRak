@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
   vehicle_model    TEXT,
   vehicle_year     INTEGER,
   vehicle_plate    TEXT         UNIQUE,
-  vehicle_type     TEXT         CHECK (vehicle_type IN ('economique','confort','she','intercites')),
+  vehicle_type     TEXT         CHECK (vehicle_type IN ('economique','confort','sedan','she','moto','intercites')),
   vehicle_color    TEXT,
   rating           DECIMAL(2,1) DEFAULT 5.0 CHECK (rating BETWEEN 1 AND 5),
   total_trips      INTEGER      DEFAULT 0,

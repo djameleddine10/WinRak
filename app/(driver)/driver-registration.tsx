@@ -17,11 +17,12 @@ import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { useIsRTL } from '../../i18n/locale'
 
+// الأنواع المدعومة فعلياً في WinRak. القيمة المخزّنة (type) متوافقة مع قيود قاعدة البيانات.
 const VEHICLE_TYPES: { type: string; icon: string; labelKey: TranslationKey }[] = [
-  { type: 'sedan', icon: 'car',          labelKey: 'driverReg.sedan' },
-  { type: 'suv',   icon: 'car-estate',   labelKey: 'driverReg.suv' },
-  { type: 'van',   icon: 'van-passenger', labelKey: 'driverReg.van' },
-  { type: 'truck', icon: 'truck',        labelKey: 'driverReg.truck' },
+  { type: 'economique', icon: 'car-hatchback', labelKey: 'driverReg.economique' },
+  { type: 'confort',    icon: 'car-estate',    labelKey: 'driverReg.confort' },
+  { type: 'sedan',      icon: 'car',           labelKey: 'driverReg.sedan' },
+  { type: 'moto',       icon: 'motorbike',     labelKey: 'driverReg.moto' },
 ]
 
 export default function DriverRegistration() {
@@ -37,6 +38,7 @@ export default function DriverRegistration() {
   const [photoOk, setPhotoOk] = useState(false)
   const [agree1, setAgree1] = useState(false)
   const [agree2, setAgree2] = useState(false)
+  const [showAgreeErr, setShowAgreeErr] = useState(false)
 
   function validateStep1() {
     const e: Record<string, string> = {}
@@ -61,6 +63,7 @@ export default function DriverRegistration() {
     if (step === 1 && !validateStep1()) return
     if (step === 2 && !validateStep2()) return
     if (step === 3) {
+      if (!agree1 || !agree2) { setShowAgreeErr(true); return }
       submitRegistration()
       router.replace('/(driver)/driver-setup-loading')
       return
@@ -129,8 +132,11 @@ export default function DriverRegistration() {
             <Input label={t('driverReg.year')} placeholder="2022" type="numeric" value={formData.vehicleYear} onChangeText={(text) => updateForm('vehicleYear', text)} />
             <Input label={t('driverReg.plate')} placeholder="000-000-16" value={formData.vehiclePlate} onChangeText={(text) => updateForm('vehiclePlate', text)} />
 
-            <Checkbox checked={agree1} onToggle={() => setAgree1(!agree1)} label={t('driverReg.agreeInfo')} />
-            <Checkbox checked={agree2} onToggle={() => setAgree2(!agree2)} label={t('driverReg.agreeTerms')} />
+            <Checkbox checked={agree1} onToggle={() => { setAgree1(!agree1); setShowAgreeErr(false) }} label={t('driverReg.agreeInfo')} error={showAgreeErr && !agree1} />
+            <Checkbox checked={agree2} onToggle={() => { setAgree2(!agree2); setShowAgreeErr(false) }} label={t('driverReg.agreeTerms')} error={showAgreeErr && !agree2} />
+            {showAgreeErr && (!agree1 || !agree2) && (
+              <Txt size={12} color={Colors.danger}>{t('driverReg.errAgree')}</Txt>
+            )}
           </View>
         )}
         <View style={{ height: Spacing.lg }} />
@@ -151,7 +157,6 @@ export default function DriverRegistration() {
             <Button
               label={step === 3 ? t('driverReg.submit') : t('driverReg.next')}
               fullWidth={false}
-              disabled={step === 3 && (!agree1 || !agree2)}
               onPress={onNext}
               style={styles.nextBtn}
             />
@@ -164,13 +169,13 @@ export default function DriverRegistration() {
   )
 }
 
-function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) {
+function Checkbox({ checked, onToggle, label, error }: { checked: boolean; onToggle: () => void; label: string; error?: boolean }) {
   const Colors = useColors()
   const isRTL = useIsRTL()
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
-    <Pressable style={styles.checkRow} onPress={onToggle}>
-      <View style={[styles.box, checked && styles.boxOn]}>
+    <Pressable style={[styles.checkRow, error && styles.checkRowErr]} onPress={onToggle}>
+      <View style={[styles.box, checked && styles.boxOn, error && !checked && styles.boxErr]}>
         {checked && <Icon name="check" size={14} color={Colors.dark1} />}
       </View>
       <Txt size={13} style={{ flex: 1 }}>{label}</Txt>
@@ -189,9 +194,11 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     typeRow: { flexDirection: row, gap: Spacing.sm },
     typeChip: { flex: 1, height: 60, borderRadius: Spacing.radiusMd, borderWidth: 1.5, borderColor: 'transparent', backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center', gap: 4 },
     typeChipOn: { borderColor: Colors.gold, backgroundColor: Colors.goldAlpha10 },
-    checkRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusSm, padding: Spacing.md },
+    checkRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusSm, padding: Spacing.md, borderWidth: 1, borderColor: 'transparent' },
+    checkRowErr: { borderColor: Colors.danger },
     box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: Colors.muted, alignItems: 'center', justifyContent: 'center' },
     boxOn: { backgroundColor: Colors.gold, borderColor: Colors.gold },
+    boxErr: { borderColor: Colors.danger },
     footer: { paddingTop: Spacing.md },
     track: { height: 3, backgroundColor: Colors.dark3, borderRadius: 2, overflow: 'hidden', marginBottom: Spacing.md },
     fill: { height: 3, backgroundColor: Colors.gold },
