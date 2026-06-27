@@ -58,7 +58,7 @@ const TEAL   = '#00C2A8'
 const GOLD   = '#ffbc07'
 
 // ارتفاع الجزء الشفاف (gradient) أعلى الـ sheet
-const GRAD_H = 80
+const GRAD_H = 110
 
 // ─── Component رئيسي ─────────────────────────────────────────────────────────
 export default function Home() {
@@ -267,13 +267,13 @@ export default function Home() {
       {/* ════════════════════════════════════════════════════════════
           4. زر GPS — يمين الشاشة، فوق الـ sheet
       ════════════════════════════════════════════════════════════ */}
-      <View style={[styles.gpsBtn, { top: insets.top + Spacing.topBarHeight + 12 }]}>
+      <View style={[styles.gpsBtn, { top: insets.top + Spacing.topBarHeight + 20 }]}>
         <Pressable
           style={({ pressed }) => [styles.gpsBtnInner, pressed && { opacity: 0.75 }]}
           onPress={() => setFlyTo({ lat: userLocation.lat, lng: userLocation.lng, ts: Date.now() })}
           hitSlop={8}
         >
-          <Icon name="crosshairs-gps" size={20} color={GOLD} />
+          <Icon name="crosshairs-gps" size={18} color={GOLD} />
         </Pressable>
       </View>
 
@@ -297,8 +297,9 @@ export default function Home() {
           <Defs>
             <SvgLinearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0"    stopColor={Colors.dark1} stopOpacity="0"    />
-              <Stop offset="0.45" stopColor={Colors.dark1} stopOpacity="0.6"  />
-              <Stop offset="0.8"  stopColor={Colors.dark1} stopOpacity="0.92" />
+              <Stop offset="0.3"  stopColor={Colors.dark1} stopOpacity="0.25" />
+              <Stop offset="0.55" stopColor={Colors.dark1} stopOpacity="0.55" />
+              <Stop offset="0.78" stopColor={Colors.dark1} stopOpacity="0.82" />
               <Stop offset="1"    stopColor={Colors.dark1} stopOpacity="1"    />
             </SvgLinearGradient>
           </Defs>
@@ -440,9 +441,12 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
 
     // ── الدبوس — في وسط الشاشة ──
     pinWrap: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute',
+      top: 0, left: 0, right: 0,
+      height: SHEET_PEEK,          // وسط الجزء المرئي من الخريطة فقط
       alignItems: 'center',
       justifyContent: 'center',
+      paddingBottom: 28,           // تعويض ذيل الدبوس — يجعل الرأس في المركز
       zIndex: 5,
     },
 
@@ -459,7 +463,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       zIndex: 25,
     },
     gpsBtnInner: {
-      width: 42, height: 42, borderRadius: 21,
+      width: 38, height: 38, borderRadius: 19,
       backgroundColor: Colors.dark2,
       alignItems: 'center', justifyContent: 'center',
       borderWidth: 1, borderColor: Colors.border,
