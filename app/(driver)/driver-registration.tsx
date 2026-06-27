@@ -12,132 +12,356 @@ import { Button } from '../../components/ui/Button'
 import { PhotoUpload } from '../../components/ui/PhotoUpload'
 import { ExitConfirmDialog } from '../../components/layout/ExitConfirmDialog'
 import { useDriverStore } from '../../store/driverStore'
+import { useUserStore } from '../../store/userStore'
 import { useT } from '../../hooks/useT'
 import { type TranslationKey } from '../../i18n/translations'
 import { DirIcon } from '../../components/ui/DirIcon'
 import { useIsRTL } from '../../i18n/locale'
 
 const VEHICLE_TYPES: { type: string; icon: string; labelKey: TranslationKey }[] = [
-  { type: 'sedan', icon: 'car',          labelKey: 'driverReg.sedan' },
-  { type: 'suv',   icon: 'car-estate',   labelKey: 'driverReg.suv' },
+  { type: 'sedan', icon: 'car',           labelKey: 'driverReg.sedan' },
+  { type: 'suv',   icon: 'car-estate',    labelKey: 'driverReg.suv' },
   { type: 'van',   icon: 'van-passenger', labelKey: 'driverReg.van' },
-  { type: 'truck', icon: 'truck',        labelKey: 'driverReg.truck' },
+  { type: 'moto',  icon: 'motorbike',     labelKey: 'driverReg.moto' },
 ]
 
 export default function DriverRegistration() {
   const Colors = useColors()
-  const isRTL = useIsRTL()
+  const isRTL  = useIsRTL()
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   const insets = useSafeAreaInsets()
-  const { registrationStep, formData, nextStep, prevStep, updateForm, setPhoto, submitRegistration } = useDriverStore()
-  const step = registrationStep
-  const t = useT()
-  const [exit, setExit] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [photoOk, setPhotoOk] = useState(false)
-  const [agree1, setAgree1] = useState(false)
-  const [agree2, setAgree2] = useState(false)
+  const {
+    registrationStep,
+    formData,
+    vehicleMode,
+    nextStep,
+    prevStep,
+    updateForm,
+    setPhoto,
+    setDocPhoto,
+    setVehicleMode,
+    submitRegistration,
+  } = useDriverStore()
+  const profile = useUserStore((s) => s.profile)
+  const step    = registrationStep
+  const t       = useT()
 
+  const [exit,    setExit]    = useState(false)
+  const [errors,  setErrors]  = useState<Record<string, string>>({})
+  const [photoOk, setPhotoOk] = useState(false)
+  const [agree1,  setAgree1]  = useState(false)
+  const [agree2,  setAgree2]  = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  // ─── Validation ──────────────────────────────────────────────────────────────
   function validateStep1() {
     const e: Record<string, string> = {}
-    if (!formData.firstName) e.firstName = t('driverReg.errRequired')
-    if (!formData.lastName) e.lastName = t('driverReg.errRequired')
-    if (!formData.birthDate) e.birthDate = t('driverReg.errRequired')
-    if (!photoOk) e.photo = t('driverReg.errPhoto')
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-  function validateStep2() {
-    const e: Record<string, string> = {}
-    if (!formData.licenseNumber) e.licenseNumber = t('driverReg.errRequired')
-    if (!formData.licenseExpiry) e.licenseExpiry = t('driverReg.errRequired')
-    if (!formData.grayCardNumber) e.grayCardNumber = t('driverReg.errRequired')
-    if (!formData.birthPlace) e.birthPlace = t('driverReg.errRequired')
+    if (!formData.firstName)  e.firstName = t('driverReg.errRequired')
+    if (!formData.lastName)   e.lastName  = t('driverReg.errRequired')
+    if (!formData.birthDate)  e.birthDate = t('driverReg.errRequired')
+    if (!photoOk)             e.photo     = t('driverReg.errPhoto')
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
-  function onNext() {
+  function validateStep2() {
+    const e: Record<string, string> = {}
+    if (!formData.licenseNumber)   e.licenseNumber   = t('driverReg.errRequired')
+    if (!formData.licenseExpiry)   e.licenseExpiry   = t('driverReg.errRequired')
+    if (!formData.grayCardNumber)  e.grayCardNumber  = t('driverReg.errRequired')
+    if (!formData.birthPlace)      e.birthPlace      = t('driverReg.errRequired')
+    if (!formData.licensePhotoUri) e.licensePhoto    = t('driverReg.errPhoto')
+    if (!formData.grayCardPhotoUri) e.grayCardPhoto  = t('driverReg.errPhoto')
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  function validateStep3() {
+    const e: Record<string, string> = {}
+    if (!formData.vehicleFrontUri) e.vehicleFront = t('driverReg.errPhoto')
+    if (!formData.vehicleRearUri)  e.vehicleRear  = t('driverReg.errPhoto')
+    if (vehicleMode === 'moto' && !formData.pieceIdentiteUri)
+      e.pieceIdentite = t('driverReg.errPhoto')
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  // ─── Navigation ──────────────────────────────────────────────────────────────
+  async function onNext() {
     if (step === 1 && !validateStep1()) return
     if (step === 2 && !validateStep2()) return
     if (step === 3) {
-      submitRegistration()
-      router.replace('/(driver)/driver-setup-loading')
+      if (!validateStep3()) return
+      if (!profile?.id) return
+      setLoading(true)
+      try {
+        await submitRegistration(profile.id)
+        router.replace('/(driver)/driver-pending')
+      } catch {
+        // En cas d'erreur réseau, on navigue quand même (les docs seront uploadées depuis driver-documents)
+        router.replace('/(driver)/driver-pending')
+      } finally {
+        setLoading(false)
+      }
       return
     }
     setErrors({})
     nextStep()
   }
 
-  const stepTitle = step === 1 ? t('driverReg.step1') : step === 2 ? t('driverReg.step2') : t('driverReg.step3')
+  const stepTitle =
+    step === 1 ? t('driverReg.step1')
+    : step === 2 ? t('driverReg.step2')
+    : t('driverReg.step3')
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + Spacing.md }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => setExit(true)}><Icon name="close" size={22} color={Colors.white} /></Pressable>
+        <Pressable onPress={() => setExit(true)}>
+          <Icon name="close" size={22} color={Colors.white} />
+        </Pressable>
         <Txt weight="bold" size={18} style={{ flex: 1, textAlign: 'center' }}>{stepTitle}</Txt>
         <Txt size={13} color={Colors.blue}>{t('driverReg.help')}</Txt>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── STEP 1: معلومات شخصية + صورة السيلفي ─────────────────── */}
         {step === 1 && (
           <View style={{ gap: Spacing.lg, alignItems: 'center' }}>
-            <PhotoUpload shape="square" size={120} required={!photoOk} onPhotoSelected={(u) => { setPhoto(u); setPhotoOk(true) }} />
+            <PhotoUpload
+              shape="square"
+              size={120}
+              required={!photoOk}
+              onPhotoSelected={(u) => { setPhoto(u); setPhotoOk(true) }}
+            />
             {errors.photo && <Txt size={12} color={Colors.danger}>{errors.photo}</Txt>}
             <View style={{ width: '100%', gap: Spacing.md }}>
-              <Input label={t('form.firstName')} placeholder={t('form.firstName')} value={formData.firstName} onChangeText={(text) => updateForm('firstName', text)} required error={errors.firstName} />
-              <Input label={t('form.lastName')} placeholder={t('form.lastName')} value={formData.lastName} onChangeText={(text) => updateForm('lastName', text)} required error={errors.lastName} />
-              <Input label={t('driverReg.birthDate')} placeholder="YYYY-MM-DD" value={formData.birthDate} onChangeText={(text) => updateForm('birthDate', text)} required error={errors.birthDate} />
+              <Input
+                label={t('form.firstName')}
+                placeholder={t('form.firstName')}
+                value={formData.firstName}
+                onChangeText={(v) => updateForm('firstName', v)}
+                required
+                error={errors.firstName}
+              />
+              <Input
+                label={t('form.lastName')}
+                placeholder={t('form.lastName')}
+                value={formData.lastName}
+                onChangeText={(v) => updateForm('lastName', v)}
+                required
+                error={errors.lastName}
+              />
+              <Input
+                label={t('driverReg.birthDate')}
+                placeholder="YYYY-MM-DD"
+                value={formData.birthDate}
+                onChangeText={(v) => updateForm('birthDate', v)}
+                required
+                error={errors.birthDate}
+              />
             </View>
           </View>
         )}
 
+        {/* ── STEP 2: وثائق السيارة (نصوص + صور permis + carte_grise) ── */}
         {step === 2 && (
           <View style={{ gap: Spacing.md }}>
             <Txt size={14} color={Colors.muted}>{t('driverReg.requiredDocs')}</Txt>
-            <Input label={t('driverReg.licenseNum')} placeholder={t('driverReg.licenseNumPh')} leftIcon="card-account-details" value={formData.licenseNumber} onChangeText={(text) => updateForm('licenseNumber', text)} required error={errors.licenseNumber} />
-            <Input label={t('driverReg.licenseExpiry')} placeholder="YYYY-MM-DD" leftIcon="calendar" value={formData.licenseExpiry} onChangeText={(text) => updateForm('licenseExpiry', text)} required error={errors.licenseExpiry} />
-            <Input label={t('driverReg.grayCard')} placeholder={t('driverReg.grayCardPh')} leftIcon="car" value={formData.grayCardNumber} onChangeText={(text) => updateForm('grayCardNumber', text)} required error={errors.grayCardNumber} />
-            <Input label={t('driverReg.birthPlace')} placeholder={t('driverReg.birthPlacePh')} leftIcon="map-marker" value={formData.birthPlace} onChangeText={(text) => updateForm('birthPlace', text)} required error={errors.birthPlace} />
+            <Input
+              label={t('driverReg.licenseNum')}
+              placeholder={t('driverReg.licenseNumPh')}
+              leftIcon="card-account-details"
+              value={formData.licenseNumber}
+              onChangeText={(v) => updateForm('licenseNumber', v)}
+              required
+              error={errors.licenseNumber}
+            />
+            <Input
+              label={t('driverReg.licenseExpiry')}
+              placeholder="YYYY-MM-DD"
+              leftIcon="calendar"
+              value={formData.licenseExpiry}
+              onChangeText={(v) => updateForm('licenseExpiry', v)}
+              required
+              error={errors.licenseExpiry}
+            />
+            <Input
+              label={t('driverReg.grayCard')}
+              placeholder={t('driverReg.grayCardPh')}
+              leftIcon="car"
+              value={formData.grayCardNumber}
+              onChangeText={(v) => updateForm('grayCardNumber', v)}
+              required
+              error={errors.grayCardNumber}
+            />
+            <Input
+              label={t('driverReg.birthPlace')}
+              placeholder={t('driverReg.birthPlacePh')}
+              leftIcon="map-marker"
+              value={formData.birthPlace}
+              onChangeText={(v) => updateForm('birthPlace', v)}
+              required
+              error={errors.birthPlace}
+            />
+
+            {/* صور الوثائق */}
             <View style={styles.docRow}>
-              <PhotoUpload shape="square" size={140} label={t('driverReg.licenseDoc')} onPhotoSelected={() => {}} />
-              <PhotoUpload shape="square" size={140} label={t('driverReg.grayCardDoc')} onPhotoSelected={() => {}} />
+              <View style={styles.docItem}>
+                <PhotoUpload
+                  shape="square"
+                  size={140}
+                  label={t('driverReg.licenseDoc')}
+                  initialUri={formData.licensePhotoUri ?? undefined}
+                  onPhotoSelected={(u) => setDocPhoto('licensePhotoUri', u)}
+                />
+                {errors.licensePhoto && (
+                  <Txt size={11} color={Colors.danger} center>{errors.licensePhoto}</Txt>
+                )}
+              </View>
+              <View style={styles.docItem}>
+                <PhotoUpload
+                  shape="square"
+                  size={140}
+                  label={t('driverReg.grayCardDoc')}
+                  initialUri={formData.grayCardPhotoUri ?? undefined}
+                  onPhotoSelected={(u) => setDocPhoto('grayCardPhotoUri', u)}
+                />
+                {errors.grayCardPhoto && (
+                  <Txt size={11} color={Colors.danger} center>{errors.grayCardPhoto}</Txt>
+                )}
+              </View>
             </View>
+
             <View style={styles.infoBanner}>
               <Icon name="help-circle" size={18} color={Colors.gold} />
-              <Txt size={12} color={Colors.white} style={{ flex: 1 }}>{t('driverReg.reviewTime')}</Txt>
+              <Txt size={12} color={Colors.white} style={{ flex: 1 }}>
+                {t('driverReg.reviewTime')}
+              </Txt>
             </View>
           </View>
         )}
 
+        {/* ── STEP 3: معلومات المركبة + صور السيارة ─────────────────── */}
         {step === 3 && (
           <View style={{ gap: Spacing.md }}>
             <Txt size={13} color={Colors.muted}>{t('driverReg.vehicleType')}</Txt>
+
+            {/* نوع المركبة */}
             <View style={styles.typeRow}>
               {VEHICLE_TYPES.map((v) => {
                 const on = formData.vehicleType === v.type
                 return (
-                  <Pressable key={v.type} style={[styles.typeChip, on && styles.typeChipOn]} onPress={() => updateForm('vehicleType', v.type)}>
+                  <Pressable
+                    key={v.type}
+                    style={[styles.typeChip, on && styles.typeChipOn]}
+                    onPress={() => {
+                      updateForm('vehicleType', v.type)
+                      setVehicleMode(v.type === 'moto' ? 'moto' : 'vtc')
+                    }}
+                  >
                     <Icon name={v.icon} size={22} color={on ? Colors.gold : Colors.muted} />
                     <Txt size={11} color={on ? Colors.gold : Colors.muted}>{t(v.labelKey)}</Txt>
                   </Pressable>
                 )
               })}
             </View>
-            <Input label={t('driverReg.brand')} placeholder={t('driverReg.brandPh')} value={formData.vehicleBrand} onChangeText={(text) => updateForm('vehicleBrand', text)} />
-            <Input label={t('driverReg.color')} placeholder={t('driverReg.colorPh')} value={formData.vehicleColor} onChangeText={(text) => updateForm('vehicleColor', text)} />
-            <Input label={t('driverReg.year')} placeholder="2022" type="numeric" value={formData.vehicleYear} onChangeText={(text) => updateForm('vehicleYear', text)} />
-            <Input label={t('driverReg.plate')} placeholder="000-000-16" value={formData.vehiclePlate} onChangeText={(text) => updateForm('vehiclePlate', text)} />
+
+            <Input
+              label={t('driverReg.brand')}
+              placeholder={t('driverReg.brandPh')}
+              value={formData.vehicleBrand}
+              onChangeText={(v) => updateForm('vehicleBrand', v)}
+            />
+            <Input
+              label={t('driverReg.color')}
+              placeholder={t('driverReg.colorPh')}
+              value={formData.vehicleColor}
+              onChangeText={(v) => updateForm('vehicleColor', v)}
+            />
+            <Input
+              label={t('driverReg.year')}
+              placeholder="2022"
+              type="numeric"
+              value={formData.vehicleYear}
+              onChangeText={(v) => updateForm('vehicleYear', v)}
+            />
+            <Input
+              label={t('driverReg.plate')}
+              placeholder="000-000-16"
+              value={formData.vehiclePlate}
+              onChangeText={(v) => updateForm('vehiclePlate', v)}
+            />
+
+            {/* صور المركبة */}
+            <Txt size={13} color={Colors.muted} style={{ marginTop: Spacing.sm }}>
+              {t('driverReg.vehiclePhotos')}
+            </Txt>
+            <View style={styles.docRow}>
+              <View style={styles.docItem}>
+                <PhotoUpload
+                  shape="square"
+                  size={140}
+                  label={t('driverReg.vehicleFront')}
+                  initialUri={formData.vehicleFrontUri ?? undefined}
+                  onPhotoSelected={(u) => setDocPhoto('vehicleFrontUri', u)}
+                />
+                {errors.vehicleFront && (
+                  <Txt size={11} color={Colors.danger} center>{errors.vehicleFront}</Txt>
+                )}
+              </View>
+              <View style={styles.docItem}>
+                <PhotoUpload
+                  shape="square"
+                  size={140}
+                  label={t('driverReg.vehicleRear')}
+                  initialUri={formData.vehicleRearUri ?? undefined}
+                  onPhotoSelected={(u) => setDocPhoto('vehicleRearUri', u)}
+                />
+                {errors.vehicleRear && (
+                  <Txt size={11} color={Colors.danger} center>{errors.vehicleRear}</Txt>
+                )}
+              </View>
+            </View>
+
+            {/* piece_identite — Moto uniquement */}
+            {vehicleMode === 'moto' && (
+              <View style={{ gap: Spacing.sm }}>
+                <Txt size={13} color={Colors.muted}>{t('driverReg.pieceIdentiteHint')}</Txt>
+                <View style={styles.docRowCenter}>
+                  <View style={styles.docItem}>
+                    <PhotoUpload
+                      shape="square"
+                      size={160}
+                      label={t('driverReg.pieceIdentite')}
+                      initialUri={formData.pieceIdentiteUri ?? undefined}
+                      onPhotoSelected={(u) => setDocPhoto('pieceIdentiteUri', u)}
+                    />
+                    {errors.pieceIdentite && (
+                      <Txt size={11} color={Colors.danger} center>{errors.pieceIdentite}</Txt>
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
 
             <Checkbox checked={agree1} onToggle={() => setAgree1(!agree1)} label={t('driverReg.agreeInfo')} />
             <Checkbox checked={agree2} onToggle={() => setAgree2(!agree2)} label={t('driverReg.agreeTerms')} />
           </View>
         )}
+
         <View style={{ height: Spacing.lg }} />
       </ScrollView>
 
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md }]}>
-        <View style={styles.track}><View style={[styles.fill, { width: `${(step / 3) * 100}%` }]} /></View>
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${(step / 3) * 100}%` }]} />
+        </View>
         <View style={styles.footRow}>
           <Txt weight="bold" size={13}>{t('driverReg.stepOf', { step: String(step) })}</Txt>
           <View style={styles.footBtns}>
@@ -149,9 +373,9 @@ export default function DriverRegistration() {
               <DirIcon name="arrow-left" size={20} color={Colors.white} />
             </Pressable>
             <Button
-              label={step === 3 ? t('driverReg.submit') : t('driverReg.next')}
+              label={step === 3 ? (loading ? '...' : t('driverReg.submit')) : t('driverReg.next')}
               fullWidth={false}
-              disabled={step === 3 && (!agree1 || !agree2)}
+              disabled={(step === 3 && (!agree1 || !agree2)) || loading}
               onPress={onNext}
               style={styles.nextBtn}
             />
@@ -159,14 +383,19 @@ export default function DriverRegistration() {
         </View>
       </View>
 
-      <ExitConfirmDialog visible={exit} onConfirm={() => { setExit(false); router.back() }} onCancel={() => setExit(false)} />
+      <ExitConfirmDialog
+        visible={exit}
+        onConfirm={() => { setExit(false); router.back() }}
+        onCancel={() => setExit(false)}
+      />
     </View>
   )
 }
 
+// ─── Checkbox ────────────────────────────────────────────────────────────────
 function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) {
   const Colors = useColors()
-  const isRTL = useIsRTL()
+  const isRTL  = useIsRTL()
   const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
   return (
     <Pressable style={styles.checkRow} onPress={onToggle}>
@@ -178,26 +407,68 @@ function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: ()
   )
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 function makeStyles(Colors: Palette, isRTL: boolean) {
   const row = isRTL ? 'row-reverse' : 'row'
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
-    header: { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
-    content: { paddingVertical: Spacing.sm },
-    docRow: { flexDirection: row, gap: Spacing.md, justifyContent: 'center' },
-    infoBanner: { flexDirection: row, alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.goldAlpha15, borderRadius: 10, padding: Spacing.md },
-    typeRow: { flexDirection: row, gap: Spacing.sm },
-    typeChip: { flex: 1, height: 60, borderRadius: Spacing.radiusMd, borderWidth: 1.5, borderColor: 'transparent', backgroundColor: Colors.dark3, alignItems: 'center', justifyContent: 'center', gap: 4 },
+    container:  { flex: 1, backgroundColor: Colors.dark1, paddingHorizontal: Spacing.screenPadding },
+    header:     { flexDirection: row, alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
+    content:    { paddingVertical: Spacing.sm },
+    docRow:     { flexDirection: row, gap: Spacing.md, justifyContent: 'center' },
+    docRowCenter: { alignItems: 'center' },
+    docItem:    { gap: 4, alignItems: 'center' },
+    infoBanner: {
+      flexDirection: row,
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: Colors.goldAlpha15,
+      borderRadius: 10,
+      padding: Spacing.md,
+    },
+    typeRow:    { flexDirection: row, gap: Spacing.sm },
+    typeChip: {
+      flex: 1,
+      height: 60,
+      borderRadius: Spacing.radiusMd,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+      backgroundColor: Colors.dark3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+    },
     typeChipOn: { borderColor: Colors.gold, backgroundColor: Colors.goldAlpha10 },
-    checkRow: { flexDirection: row, alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusSm, padding: Spacing.md },
-    box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: Colors.muted, alignItems: 'center', justifyContent: 'center' },
-    boxOn: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-    footer: { paddingTop: Spacing.md },
-    track: { height: 3, backgroundColor: Colors.dark3, borderRadius: 2, overflow: 'hidden', marginBottom: Spacing.md },
-    fill: { height: 3, backgroundColor: Colors.gold },
-    footRow: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
+    checkRow: {
+      flexDirection: row,
+      alignItems: 'center',
+      gap: Spacing.md,
+      backgroundColor: Colors.dark3,
+      borderRadius: Spacing.radiusSm,
+      padding: Spacing.md,
+    },
+    box: {
+      width: 24,
+      height: 24,
+      borderRadius: 6,
+      borderWidth: 1.5,
+      borderColor: Colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    boxOn:    { backgroundColor: Colors.gold, borderColor: Colors.gold },
+    footer:   { paddingTop: Spacing.md },
+    track:    { height: 3, backgroundColor: Colors.dark3, borderRadius: 2, overflow: 'hidden', marginBottom: Spacing.md },
+    fill:     { height: 3, backgroundColor: Colors.gold },
+    footRow:  { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
     footBtns: { flexDirection: row, alignItems: 'center', gap: Spacing.sm },
-    backBtn: { height: 44, paddingHorizontal: Spacing.lg, backgroundColor: Colors.dark3, borderRadius: Spacing.radiusMd, alignItems: 'center', justifyContent: 'center' },
+    backBtn: {
+      height: 44,
+      paddingHorizontal: Spacing.lg,
+      backgroundColor: Colors.dark3,
+      borderRadius: Spacing.radiusMd,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     nextBtn: { paddingHorizontal: Spacing.xxl },
   })
 }

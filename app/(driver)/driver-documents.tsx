@@ -13,105 +13,133 @@ import { useT } from '../../hooks/useT'
 import { useIsRTL } from '../../i18n/locale'
 import { type TranslationKey } from '../../i18n/translations'
 import { useUserStore } from '../../store/userStore'
+import { useDriverStore } from '../../store/driverStore'
 import { uploadDocument, getMyDocuments } from '../../services/documents.service'
 import { type DocType } from '../../lib/supabase'
 
-type DocStatus = 'approved' | 'pending' | 'expired' | 'missing'
+type DocStatus = 'approved' | 'pending' | 'rejected' | 'missing'
 
 interface DocItem {
-  key: string
+  key:      string
   labelKey: TranslationKey
-  icon: string
-  status: DocStatus
-  uri?: string
+  icon:     string
+  dbType:   DocType
+  status:   DocStatus
+  uri?:     string
+  rejectReason?: string | null
 }
 
-const INITIAL_DOCS: DocItem[] = [
-  { key: 'license',      labelKey: 'doc.license',      icon: 'card-account-details-outline', status: 'missing' },
-  { key: 'nationalId',   labelKey: 'doc.nationalId',   icon: 'card-bulleted-outline',         status: 'missing' },
-  { key: 'carteGrise',   labelKey: 'doc.carteGrise',   icon: 'file-document-outline',         status: 'missing' },
-  { key: 'insurance',    labelKey: 'doc.insurance',    icon: 'shield-check-outline',          status: 'missing' },
-  { key: 'technical',    labelKey: 'doc.technical',    icon: 'clipboard-check-outline',       status: 'missing' },
-  { key: 'vehiclePhoto', labelKey: 'doc.vehiclePhoto', icon: 'camera-outline',                status: 'missing' },
+// وثائق VTC (سيارة): selfie, permis, carte_grise, vehicle_front, vehicle_rear
+const VTC_DOCS: Omit<DocItem, 'status'>[] = [
+  { key: 'selfie',        labelKey: 'doc.selfie',       icon: 'account-circle-outline',        dbType: 'selfie' },
+  { key: 'permis',        labelKey: 'doc.license',      icon: 'card-account-details-outline',  dbType: 'permis' },
+  { key: 'carte_grise',   labelKey: 'doc.carteGrise',   icon: 'file-document-outline',          dbType: 'carte_grise' },
+  { key: 'vehicle_front', labelKey: 'doc.vehicleFront', icon: 'car-outline',                   dbType: 'vehicle_front' },
+  { key: 'vehicle_rear',  labelKey: 'doc.vehicleRear',  icon: 'car-back',                      dbType: 'vehicle_rear' },
 ]
 
-const DOC_TYPE: Record<string, DocType> = {
-  license:      'permis',
-  nationalId:   'national_id',
-  carteGrise:   'carte_grise',
-  insurance:    'insurance',
-  technical:    'technical_visit',
-  vehiclePhoto: 'vehicle_front',
-}
+// وثائق Moto (دليفري): نفس VTC + piece_identite
+const MOTO_DOCS: Omit<DocItem, 'status'>[] = [
+  ...VTC_DOCS,
+  { key: 'piece_identite', labelKey: 'doc.pieceIdentite', icon: 'card-bulleted-outline', dbType: 'piece_identite' },
+]
 
 const STATUS_ICON: Record<DocStatus, string> = {
   approved: 'check-circle',
   pending:  'clock-outline',
-  expired:  'alert-circle-outline',
+  rejected: 'alert-circle-outline',
   missing:  'minus-circle-outline',
 }
 
 export default function DriverDocuments() {
-  const Colors = useColors()
-  const isRTL = useIsRTL()
-  const styles = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
-  const t = useT()
+  const Colors  = useColors()
+  const isRTL   = useIsRTL()
+  const styles  = useMemo(() => makeStyles(Colors, isRTL), [Colors, isRTL])
+  const t       = useT()
   const profile = useUserStore((s) => s.profile)
-  const [docs, setDocs] = useState<DocItem[]>(INITIAL_DOCS)
-  const [activeKey, setActiveKey] = useState<string | null>(null)
+  const isMoto  = useDriverStore((s) => s.vehicleMode === 'moto')
 
-  // Load existing documents from Supabase on mount
+  const docList = isMoto ? MOTO_DOCS : VTC_DOCS
+
+  const [docs, setDocs] = useState<DocItem[]>(
+    docList.map((d) => ({ ...d, status: 'missing' }))
+  )
+  const [activeKey, setActiveKey] = useState<string | null>(null)
+  const [uploading, setUploading] = useState<string | null>(null)
+
+  // ─── Chargement depuis Supabase ──────────────────────────────────────────────
   useEffect(() => {
     if (!profile?.id) return
-    getMyDocuments(profile.id).then((dbDocs) => {
-      setDocs((prev) => prev.map((d) => {
-        const match = dbDocs.find((db: any) => db.type === DOC_TYPE[d.key])
-        if (!match) return d
-        return {
-          ...d,
-          status: match.status === 'rejected' ? 'expired' : match.status as DocStatus,
-          uri:    match.file_url ?? undefined,
-        }
-      }))
-    }).catch(() => {})
+    getMyDocuments(profile.id)
+      .then((dbDocs) => {
+        setDocs((prev) =>
+          prev.map((d) => {
+            const match = dbDocs.find((db: any) => db.type === d.dbType)
+            if (!match) return d
+            return {
+              ...d,
+              status:       match.status as DocStatus,
+              uri:          match.file_url ?? undefined,
+              rejectReason: match.reject_reason ?? null,
+            }
+          })
+        )
+      })
+      .catch(() => {})
   }, [profile?.id])
 
-  async function saveDocument(key: string, uri: string) {
-    setDocs((prev) => prev.map((d) => (d.key === key ? { ...d, status: 'pending', uri } : d)))
+  // ─── Upload ───────────────────────────────────────────────────────────────────
+  async function saveDocument(key: string, dbType: DocType, uri: string) {
+    setDocs((prev) =>
+      prev.map((d) => (d.key === key ? { ...d, status: 'pending', uri } : d))
+    )
     if (!profile?.id) return
-    uploadDocument({
-      driverId: profile.id,
-      type:     DOC_TYPE[key],
-      uri,
-    }).catch(() => {})
+    setUploading(key)
+    try {
+      await uploadDocument({ driverId: profile.id, type: dbType, uri })
+    } catch {
+      // إعادة للحالة السابقة عند الخطأ
+      setDocs((prev) =>
+        prev.map((d) => (d.key === key ? { ...d, status: 'missing', uri: undefined } : d))
+      )
+    } finally {
+      setUploading(null)
+    }
   }
 
-  async function openCamera(key: string) {
+  async function openCamera(key: string, dbType: DocType) {
     const { granted } = await ImagePicker.requestCameraPermissionsAsync()
     if (!granted) return
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 })
-    if (!result.canceled) saveDocument(key, result.assets[0].uri)
+    if (!result.canceled) saveDocument(key, dbType, result.assets[0].uri)
   }
 
-  async function openGallery(key: string) {
+  async function openGallery(key: string, dbType: DocType) {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!granted) return
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 })
-    if (!result.canceled) saveDocument(key, result.assets[0].uri)
+    if (!result.canceled) saveDocument(key, dbType, result.assets[0].uri)
   }
 
   function statusColor(s: DocStatus): string {
-    return { approved: Colors.success, pending: Colors.gold, expired: Colors.danger, missing: Colors.muted }[s]
+    return {
+      approved: Colors.success,
+      pending:  Colors.gold,
+      rejected: Colors.danger,
+      missing:  Colors.muted,
+    }[s]
   }
 
   function statusLabel(s: DocStatus): string {
     return {
       approved: t('doc.statusApproved'),
       pending:  t('doc.statusPending'),
-      expired:  t('doc.statusExpired'),
+      rejected: t('doc.statusRejected'),
       missing:  t('doc.statusMissing'),
     }[s]
   }
+
+  const activeDoc = docs.find((d) => d.key === activeKey)
 
   return (
     <View style={styles.container}>
@@ -138,13 +166,19 @@ export default function DriverDocuments() {
                 <Icon name={STATUS_ICON[doc.status]} size={13} color={statusColor(doc.status)} />
                 <Txt size={12} color={statusColor(doc.status)}>{statusLabel(doc.status)}</Txt>
               </View>
+              {doc.status === 'rejected' && doc.rejectReason && (
+                <Txt size={11} color={Colors.danger} style={{ marginTop: 2 }}>
+                  {doc.rejectReason}
+                </Txt>
+              )}
             </View>
 
             <Button
-              label={t('doc.update')}
+              label={uploading === doc.key ? '...' : doc.status === 'rejected' ? t('doc.reupload') : t('doc.update')}
               size="sm"
               fullWidth={false}
-              variant={doc.status === 'expired' || doc.status === 'missing' ? 'primary' : 'outline'}
+              variant={doc.status === 'rejected' || doc.status === 'missing' ? 'primary' : 'outline'}
+              disabled={uploading === doc.key || doc.status === 'approved'}
               onPress={() => setActiveKey(doc.key)}
               style={styles.btn}
             />
@@ -158,25 +192,27 @@ export default function DriverDocuments() {
         onClose={() => setActiveKey(null)}
         actions={[
           {
-            label: t('doc.camera'),
-            icon: 'camera-outline',
+            label:   t('doc.camera'),
+            icon:    'camera-outline',
             onPress: () => {
               const k = activeKey
+              const dbT = activeDoc?.dbType
               setActiveKey(null)
-              if (k) openCamera(k)
+              if (k && dbT) openCamera(k, dbT)
             },
           },
           {
-            label: t('doc.gallery'),
-            icon: 'image-multiple-outline',
+            label:   t('doc.gallery'),
+            icon:    'image-multiple-outline',
             onPress: () => {
               const k = activeKey
+              const dbT = activeDoc?.dbType
               setActiveKey(null)
-              if (k) openGallery(k)
+              if (k && dbT) openGallery(k, dbT)
             },
           },
           {
-            label: t('common.cancel'),
+            label:   t('common.cancel'),
             variant: 'cancel',
             onPress: () => setActiveKey(null),
           },
@@ -191,45 +227,41 @@ function makeStyles(Colors: Palette, isRTL: boolean) {
     container: { flex: 1, backgroundColor: Colors.dark1 },
     subtitle: {
       paddingHorizontal: Spacing.screenPadding,
-      paddingVertical: Spacing.md,
-      textAlign: isRTL ? 'right' : 'left',
+      paddingVertical:   Spacing.md,
+      textAlign:         isRTL ? 'right' : 'left',
     },
     list: {
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: Spacing.xxxl,
-      gap: Spacing.md,
-      paddingTop: Spacing.md,
+      paddingBottom:     Spacing.xxxl,
+      gap:               Spacing.md,
+      paddingTop:        Spacing.md,
     },
     card: {
-      flexDirection: isRTL ? 'row-reverse' : 'row',
-      alignItems: 'center',
+      flexDirection:   isRTL ? 'row-reverse' : 'row',
+      alignItems:      'center',
       backgroundColor: Colors.dark3,
-      borderRadius: 14,
-      padding: Spacing.md,
-      gap: Spacing.md,
+      borderRadius:    14,
+      padding:         Spacing.md,
+      gap:             Spacing.md,
     },
     iconWrap: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
+      width:           48,
+      height:          48,
+      borderRadius:    12,
       backgroundColor: Colors.goldAlpha10,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems:      'center',
+      justifyContent:  'center',
     },
-    thumb: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
-    },
+    thumb: { width: 48, height: 48, borderRadius: 12 },
     info: {
-      flex: 1,
-      gap: 4,
+      flex:       1,
+      gap:        4,
       alignItems: isRTL ? 'flex-end' : 'flex-start',
     },
     statusRow: {
       flexDirection: isRTL ? 'row-reverse' : 'row',
-      alignItems: 'center',
-      gap: 4,
+      alignItems:    'center',
+      gap:           4,
     },
     btn: { minWidth: 90 },
   })

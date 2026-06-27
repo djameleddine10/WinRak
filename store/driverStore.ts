@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { mockRides } from '../mock/rides'
+import { supabase } from '../lib/supabase'
+import { uploadDocument } from '../services/documents.service'
 
 type DriverStatus =
   | 'offline' | 'online' | 'has_request'
@@ -10,22 +12,27 @@ type DriverStatus =
 type DriverRegistrationStatus =
   | 'not_started' | 'pending' | 'approved' | 'rejected'
 
+type VehicleMode = 'vtc' | 'moto'
+
 interface DriverFormData {
-  firstName:        string
-  lastName:         string
-  birthDate:        string
-  birthPlace:       string
-  licenseNumber:    string
-  licenseExpiry:    string
-  grayCardNumber:   string
-  vehicleType:      string
-  vehicleBrand:     string
-  vehicleColor:     string
-  vehicleYear:      string
-  vehiclePlate:     string
-  photoUri:         string | null
-  licensePhotoUri:  string | null
-  grayCardPhotoUri: string | null
+  firstName:           string
+  lastName:            string
+  birthDate:           string
+  birthPlace:          string
+  licenseNumber:       string
+  licenseExpiry:       string
+  grayCardNumber:      string
+  vehicleType:         string
+  vehicleBrand:        string
+  vehicleColor:        string
+  vehicleYear:         string
+  vehiclePlate:        string
+  photoUri:            string | null   // selfie
+  licensePhotoUri:     string | null   // permis
+  grayCardPhotoUri:    string | null   // carte_grise
+  vehicleFrontUri:     string | null   // vehicle_front
+  vehicleRearUri:      string | null   // vehicle_rear
+  pieceIdentiteUri:    string | null   // moto uniquement
 }
 
 interface DriverStore {
@@ -33,6 +40,7 @@ interface DriverStore {
   registrationStatus: DriverRegistrationStatus
   registrationStep:   1 | 2 | 3
   driverType:         'city' | null
+  vehicleMode:        VehicleMode
   sheService:         boolean
   incomingRide:       typeof mockRides[0] | null
   activeRide:         typeof mockRides[0] | null
@@ -43,18 +51,20 @@ interface DriverStore {
   formData:           DriverFormData
 
   setDriverType:      (type: 'city') => void
+  setVehicleMode:     (mode: VehicleMode) => void
   setSheService:      (val: boolean) => void
   setOnline:          () => void
   setRealTripId:      (id: string | null) => void
   setOfferId:         (id: string | null) => void
   setIncomingRide:    (ride: typeof mockRides[0]) => void
   setRouteWaypoints:  (pts: Array<{ lat: number; lng: number }> | null) => void
-  nextStep:           () => void
-  prevStep:           () => void
-  updateForm:         (field: keyof DriverFormData, value: string) => void
-  setPhoto:           (uri: string) => void
-  submitRegistration: () => void
-  approveRegistration: () => void
+  nextStep:              () => void
+  prevStep:              () => void
+  updateForm:            (field: keyof DriverFormData, value: string) => void
+  setPhoto:              (uri: string) => void
+  setDocPhoto:           (field: keyof Pick<DriverFormData, 'licensePhotoUri' | 'grayCardPhotoUri' | 'vehicleFrontUri' | 'vehicleRearUri' | 'pieceIdentiteUri'>, uri: string) => void
+  submitRegistration:    (userId: string) => Promise<void>
+  approveRegistration:   () => void
   goOnline:           () => void
   goOffline:          () => void
   simulateRequest:    () => void
@@ -84,6 +94,7 @@ export const useDriverStore = create<DriverStore>()(
       registrationStatus: 'not_started',
       registrationStep:   1,
       driverType:         null,
+      vehicleMode:        'vtc',
       sheService:         false,
       incomingRide:       null,
       activeRide:         null,
@@ -97,10 +108,12 @@ export const useDriverStore = create<DriverStore>()(
         vehicleType: 'sedan', vehicleBrand: '', vehicleColor: '',
         vehicleYear: '', vehiclePlate: '',
         photoUri: null, licensePhotoUri: null, grayCardPhotoUri: null,
+        vehicleFrontUri: null, vehicleRearUri: null, pieceIdentiteUri: null,
       },
 
-      setDriverType: (type) => set({ driverType: type }),
-      setSheService: (val) => set({ sheService: val }),
+      setDriverType:  (type) => set({ driverType: type }),
+      setVehicleMode: (mode) => set({ vehicleMode: mode }),
+      setSheService:  (val) => set({ sheService: val }),
 
       setOnline:          () => set({ status: 'online' }),
       setRealTripId:      (id)  => set({ realTripId: id }),
@@ -137,7 +150,65 @@ export const useDriverStore = create<DriverStore>()(
         formData: { ...s.formData, photoUri: uri },
       })),
 
-      submitRegistration: () => {
+      setDocPhoto: (field, uri) => set((s) => ({
+        formData: { ...s.formData, [field]: uri },
+      })),
+
+      // ─── submitRegistration ───────────────────────────────────────────────────
+      // 1. Upsert row dans drivers avec registration_status='pending'
+      // 2. Upload chaque photo collectée via uploadDocument
+      // 3. Met à jour registrationStatus local → 'pending'
+      submitRegistration: async (userId: string) => {
+        const { formData } = get()
+
+        // 1. Upsert drivers row
+        const vehicleTypeMap: Record<string, string> = {
+          sedan: 'economique',
+          suv:   'confort',
+          van:   'confort',
+          truck: 'economique',
+          moto:  'moto',
+        }
+        const dbVehicleType = vehicleTypeMap[formData.vehicleType] ?? 'economique'
+
+        const { error: driverErr } = await supabase
+          .from('drivers')
+          .upsert(
+            {
+              id:                  userId,
+              user_id:             userId,
+              vehicle_type:        dbVehicleType,
+              vehicle_brand:       formData.vehicleBrand || null,
+              vehicle_color:       formData.vehicleColor || null,
+              vehicle_plate:       formData.vehiclePlate || null,
+              registration_status: 'pending',
+              is_verified:         false,
+              status:              'offline',
+            },
+            { onConflict: 'id' }
+          )
+        if (driverErr) throw driverErr
+
+        // 2. Upload les photos collectées
+        type DocUpload = { uri: string | null; type: import('../lib/supabase').DocType }
+        const docs: DocUpload[] = [
+          { uri: formData.photoUri,         type: 'selfie' },
+          { uri: formData.licensePhotoUri,  type: 'permis' },
+          { uri: formData.grayCardPhotoUri, type: 'carte_grise' },
+          { uri: formData.vehicleFrontUri,  type: 'vehicle_front' },
+          { uri: formData.vehicleRearUri,   type: 'vehicle_rear' },
+          { uri: formData.pieceIdentiteUri, type: 'piece_identite' },
+        ]
+
+        await Promise.allSettled(
+          docs
+            .filter((d) => d.uri !== null)
+            .map((d) =>
+              uploadDocument({ driverId: userId, type: d.type, uri: d.uri! })
+            )
+        )
+
+        // 3. Mettre à jour l'état local
         set({ registrationStatus: 'pending' })
       },
 
@@ -198,7 +269,11 @@ export const useDriverStore = create<DriverStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       // registrationStatus persists so a reload (e.g. on language change) keeps an
       // approved driver in driver mode instead of bouncing back to signup.
-      partialize: (s) => ({ sheService: s.sheService, registrationStatus: s.registrationStatus }),
+      partialize: (s) => ({
+        sheService:         s.sheService,
+        registrationStatus: s.registrationStatus,
+        vehicleMode:        s.vehicleMode,
+      }),
     },
   ),
 )
