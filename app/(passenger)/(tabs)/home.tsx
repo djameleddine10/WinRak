@@ -252,13 +252,11 @@ export default function Home() {
         </View>
       )}
 
-      {/* ── الـ Sheet: ثابت دائماً ── */}
+      {/* ── الـ Sheet ── */}
       <View style={styles.sheet}>
-        <ScrollView
-          contentContainerStyle={styles.scrollBody}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+
+        {/* ═══ القسم الثابت: لا يتحرك أبداً ═══ */}
+        <View style={styles.staticSection}>
           {/* مقبض */}
           <View style={styles.handle} />
 
@@ -271,7 +269,7 @@ export default function Home() {
             </Pressable>
           )}
 
-          {/* ── حقل البحث: إلى أين فقط ── */}
+          {/* حقل البحث */}
           <Pressable style={styles.searchCard} onPress={openCity}>
             <View style={styles.searchRow}>
               <View style={styles.searchDotTo} />
@@ -282,10 +280,9 @@ export default function Home() {
             </View>
           </Pressable>
 
-          {/* ── بطاقات الخدمات: دوائر ── */}
+          {/* الدوائر الثلاث */}
           <View style={styles.circleRow}>
 
-            {/* رحلة — ذهبي */}
             <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openCity}>
               <View style={[styles.circleRing, styles.ringGold]}>
                 <Image source={require('../../../assets/cards/car-gold.png')} style={styles.circleCarImg} resizeMode="contain" />
@@ -298,7 +295,6 @@ export default function Home() {
               </View>
             </Pressable>
 
-            {/* نساء — بنفسجي */}
             <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openShe}>
               <View style={[styles.circleRing, styles.ringPurple]}>
                 <Image source={require('../../../assets/cards/car-purple.png')} style={styles.circleCarImg} resizeMode="contain" />
@@ -311,7 +307,6 @@ export default function Home() {
               </View>
             </Pressable>
 
-            {/* توصيل — تيل */}
             <Pressable style={({ pressed }) => [styles.circleItem, pressed && styles.pressed]} onPress={openDelivery}>
               <View style={[styles.circleRing, styles.ringTeal]}>
                 <Image source={require('../../../assets/cards/parcel-teal.png')} style={styles.circleParcelImg} resizeMode="contain" />
@@ -325,6 +320,34 @@ export default function Home() {
             </Pressable>
 
           </View>
+        </View>
+
+        {/* ═══ القسم المتحرك: يتحرك للأسفل فقط ═══ */}
+        <ScrollView
+          style={styles.scrollSection}
+          contentContainerStyle={styles.scrollBody}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* صف المنزل / العمل */}
+          <QuickPlaces
+            savedPlaces={profile?.savedPlaces}
+            Colors={Colors}
+            styles={styles}
+            isRTL={isRTL}
+            t={t}
+            onPress={(place) => {
+              setSheMode(false)
+              setVehicleType('sedan')
+              setRideMode('city')
+              if (place.address) {
+                setTo(place)
+                router.push('/(passenger)/search')
+              } else {
+                router.push('/(passenger)/search')
+              }
+            }}
+          />
 
           {/* الوجهات الأخيرة */}
           {recentDestinations.length > 0 && (
@@ -351,9 +374,84 @@ export default function Home() {
             </View>
           )}
         </ScrollView>
+
       </View>
 
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </View>
+  )
+}
+
+// ─── مكوّن صف المنزل / العمل ─────────────────────────────────────────────────
+function QuickPlaces({
+  savedPlaces,
+  Colors,
+  styles,
+  isRTL,
+  t,
+  onPress,
+}: {
+  savedPlaces?: { home: { name: string; address: string; lat: number; lng: number }; work: { name: string; address: string; lat: number; lng: number } } | null
+  Colors: Palette
+  styles: ReturnType<typeof makeStyles>
+  isRTL: boolean
+  t: (k: string) => string
+  onPress: (place: { name: string; address: string; lat: number; lng: number }) => void
+}) {
+  const home = savedPlaces?.home
+  const work = savedPlaces?.work
+  const hasHome = !!home?.address
+  const hasWork = !!work?.address
+
+  return (
+    <View style={styles.quickRow}>
+      {/* المنزل */}
+      <Pressable
+        style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+        onPress={() => onPress(hasHome ? home! : { name: t('home.home'), address: '', lat: 0, lng: 0 })}
+      >
+        <View style={[styles.quickIcon, hasHome ? styles.quickIconFilled : styles.quickIconEmpty]}>
+          <Icon name={hasHome ? 'home' : 'home-outline'} size={18} color={hasHome ? GOLD : Colors.muted} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Txt weight="bold" size={13} color={hasHome ? Colors.white : Colors.muted}>
+            {hasHome ? home!.name || t('home.home') : t('home.addHome')}
+          </Txt>
+          {hasHome && (
+            <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 1 }}>
+              {home!.address}
+            </Txt>
+          )}
+        </View>
+        {hasHome
+          ? <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+          : <Icon name="plus-circle-outline" size={16} color={Colors.muted} />
+        }
+      </Pressable>
+
+      {/* العمل */}
+      <Pressable
+        style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+        onPress={() => onPress(hasWork ? work! : { name: t('home.work'), address: '', lat: 0, lng: 0 })}
+      >
+        <View style={[styles.quickIcon, hasWork ? styles.quickIconFilled : styles.quickIconEmpty]}>
+          <Icon name={hasWork ? 'briefcase' : 'briefcase-outline'} size={18} color={hasWork ? PURPLE : Colors.muted} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Txt weight="bold" size={13} color={hasWork ? Colors.white : Colors.muted}>
+            {hasWork ? work!.name || t('home.work') : t('home.addWork')}
+          </Txt>
+          {hasWork && (
+            <Txt size={11} color={Colors.muted} numberOfLines={1} style={{ marginTop: 1 }}>
+              {work!.address}
+            </Txt>
+          )}
+        </View>
+        {hasWork
+          ? <DirIcon name="chevron-right" size={16} color={Colors.dark4} />
+          : <Icon name="plus-circle-outline" size={16} color={Colors.muted} />
+        }
+      </Pressable>
     </View>
   )
 }
@@ -414,7 +512,7 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       alignItems: 'center',
     },
 
-    // الـ sheet — ثابت، لا يتحرك
+    // الـ sheet — الحاوية الكاملة
     sheet: {
       position: 'absolute',
       left: 0, right: 0,
@@ -425,11 +523,24 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
       backgroundColor: Colors.dark1,
       overflow: 'hidden',
     },
-    scrollBody: {
-      flexGrow: 1,
-      paddingTop: 16,
+
+    // القسم الثابت: handle + photoWarn + searchCard + circles
+    staticSection: {
+      paddingTop: 12,
       paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: 90,
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+    },
+
+    // القسم المتحرك
+    scrollSection: {
+      flex: 1,
+    },
+    scrollBody: {
+      paddingTop: 12,
+      paddingHorizontal: Spacing.screenPadding,
+      paddingBottom: 100,
     },
 
     handle: {
@@ -541,7 +652,34 @@ function makeStyles(Colors: Palette, isRTL: boolean, statusBarH: number) {
 
     pressed: { opacity: 0.72 },
 
-    recentWrap:  { marginTop: Spacing.xxl },
+    // صف المنزل / العمل
+    quickRow: {
+      gap: 10,
+      marginBottom: Spacing.md,
+    },
+    quickBtn: {
+      flexDirection: row,
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: Colors.dark2,
+      borderRadius: Spacing.radiusMd,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    quickIcon: {
+      width: 38, height: 38, borderRadius: 19,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    quickIconFilled: {
+      backgroundColor: Colors.goldAlpha10,
+    },
+    quickIconEmpty: {
+      backgroundColor: Colors.dark3,
+    },
+
+    recentWrap:  { marginTop: Spacing.md },
     recentTitle: { textAlign: 'right', marginBottom: Spacing.sm },
     recentRow: {
       flexDirection: row, alignItems: 'center', gap: 14,
